@@ -169,3 +169,4 @@ dialog::backdrop { background: rgba(10, 14, 25, .55); }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .viewer { grid-template-columns: 1fr; }
 }
+.sev.review { background: var(--accent-soft); color: var(--accent); }

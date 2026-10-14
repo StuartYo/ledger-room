@@ -37,7 +37,7 @@ Earlier documents already reviewed (client | folder | invoice no | seller UBN | 
 OCR text lines of this document (digits are reliable):
 {ocr}
 
-Reply with ONE line of JSON only: {{"no":"invoice number or null","seller_ubn":"8 digits","date":"YYYY-MM-DD","total":0,"issues":["RULE_ID"]}}"""
+Reply with ONE line of JSON only (use an empty issues list if no rule applies): {{"no":"invoice number or null","seller_ubn":"8 digits","date":"YYYY-MM-DD","total":0,"issues":["RULE_ID"]}}"""
 
 
 def run_baseline(set_name: str, reader, *, cache: bool = True, progress=None,

@@ -67,6 +67,14 @@ def clean_str(v) -> str | None:
     return None if s.lower() in ("", "null", "none", "n/a") else s
 
 
+def name_sim(a: str | None, b: str | None) -> float:
+    """Character-set overlap; tolerant of OCR's simplified characters and spacing."""
+    if not a or not b:
+        return 0.0
+    sa, sb = set(re.sub(r"\s", "", a)), set(re.sub(r"\s", "", b))
+    return len(sa & sb) / max(1, min(len(sa), len(sb)))
+
+
 def parse_json_loose(text: str) -> dict | None:
     """Parse the first JSON object in a model reply, repairing common small-model slips."""
     if not text:
@@ -84,6 +92,7 @@ def parse_json_loose(text: str) -> dict | None:
                 # 2,360 after a colon -> 2360 ; trailing commas
                 t = re.sub(r'(:\s*)(\d{1,3}(?:,\d{3})+)(?=\s*[,}\]])', lambda m: m.group(1) + m.group(2).replace(",", ""), t)
                 t = re.sub(r",\s*([}\]])", r"\1", t)
+                t = re.sub(r'([\]}])"(\s*[,}\]])', r"\1\2", t)   # stray quote after a closing bracket
             elif attempt == 1:
                 t = t.replace("None", "null").replace("True", "true").replace("False", "false")
     return None

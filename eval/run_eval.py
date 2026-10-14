@@ -106,18 +106,20 @@ def main():
         run = pipeline.audit(s, reader, run_id=f"eval-{s}", progress=prog(f"ledger {s}"))
         lr_pred = {}
         for e in run["exceptions"]:
-            lr_pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
+            if e["rule_id"] in rules.ISSUE_TYPES:
+                lr_pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
         lr_time = [d["timing"].get("total_s") for d in run["docs"]]
         # rules-only time (reads cached)
         t0 = time.time()
-        rdocs = [pipeline.to_rule_doc(d, d["fields"]) for d in run["docs"]]
+        rdocs = [pipeline.to_rule_doc(d, d["fields"], d["provenance"]) for d in run["docs"]]
         rules.run_rules(rdocs, {c["id"]: c for c in run["clients"]})
         rules_ms = round((time.time() - t0) * 1000, 1)
         entry = {
             "n_docs": len(expd), "n_clients": len({d['client_id'] for d in exp["docs"]}),
             "layout_family": exp["layout_family"], "seed": exp["seed"], "issue_counts": exp["issue_counts"],
             "ledger_room": {**score(lr_pred, expd), "sec_per_doc": secs(lr_time), "rules_ms_total": rules_ms,
-                            "unreadable_fields": run["summary"]["unreadable_fields"]},
+                            "unreadable_fields": run["summary"]["unreadable_fields"],
+                            "review_items": run["summary"]["n_review"]},
             "oracle_fields": oracle(s)["micro"],
         }
         if not args.skip_baseline:
@@ -138,7 +140,8 @@ def main():
         run = pipeline.audit(s, reader, run_id=f"eval-{s}", progress=prog(s))
         pred = {}
         for e in run["exceptions"]:
-            pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
+            if e["rule_id"] in rules.ISSUE_TYPES:
+                pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
         ctl[s] = {**score(pred, expd), "flags": sorted(f"{d}:{r}" for d, rs in pred.items() for r in rs)}
     ca = ctl["control_after"]
     results["positive_control"] = {

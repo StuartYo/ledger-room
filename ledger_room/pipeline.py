@@ -23,7 +23,7 @@ from .reader import EXTRACT_PROMPT
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = DATA / "out"
-READER_VERSION = "r3"   # bump when post-processing changes so cached reads are redone
+READER_VERSION = "r6"   # bump when post-processing changes so cached reads are redone
 PII_RULE = {"label": "Bookkeeper personal-data safeguard regulation Art. 19: keep usage records and system logs",
             "url": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340165&flno=19"}
 
@@ -60,8 +60,13 @@ def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
     return clients, docs
 
 
-def to_rule_doc(d: dict, f: dict) -> rules.Doc:
+UNCONFIRMED = {"model-only", "unconfirmed"}
+
+
+def to_rule_doc(d: dict, f: dict, prov: dict | None = None) -> rules.Doc:
+    prov = prov or {}
     return rules.Doc(
+        uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn") if prov.get(k) in UNCONFIRMED},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
         date=date.fromisoformat(f["date"]) if f.get("date") else None,
@@ -110,7 +115,12 @@ class AuditLog:
         return True, n
 
 
-def cache_key(img_sha: str, model_id: str) -> str:
+def cache_key(img_sha: str, model_id: str, raw: bool = False) -> str:
+    """raw = OCR lines + the model's reply (depends on prompt and model only);
+    final = after post-processing (also depends on READER_VERSION)."""
+    if raw:
+        h = hashlib.sha256((EXTRACT_PROMPT + model_id).encode("utf-8")).hexdigest()[:12]
+        return f"{img_sha[:24]}_{h}_raw"
     h = hashlib.sha256((EXTRACT_PROMPT + READER_VERSION + model_id).encode("utf-8")).hexdigest()[:12]
     return f"{img_sha[:24]}_{h}"
 
@@ -123,17 +133,21 @@ def read_docs(docs: list[dict], reader=None, *, cache=True, progress=None, model
         sha = sha256_file(d["path"])
         mid = reader.model_id if reader else (model_id or "Qwen3.5-2B-int4-ov")
         cp = cdir / f"{cache_key(sha, mid)}.json"
+        rp = cdir / f"{cache_key(sha, mid, raw=True)}.json"
         if cache and cp.exists():
             res = json.loads(cp.read_text(encoding="utf-8"))
             res["cached"] = True
         else:
             if reader is None:
                 raise RuntimeError(f"no cached read for {d['doc_id']} and no reader loaded")
-            t = time.time()
-            res = reader.read(d["path"])
-            res["timing"]["total_s"] = round(time.time() - t, 2)
+            raw = json.loads(rp.read_text(encoding="utf-8")) if (cache and rp.exists()) else None
+            raw_cached = raw is not None
+            if raw is None:
+                raw = reader.read_raw(d["path"])
+                rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+            res = reader.read(d["path"], raw)
             res["sha256"] = sha
-            res["cached"] = False
+            res["cached"] = raw_cached
             cp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
         out[d["doc_id"]] = res
         if progress:
@@ -168,14 +182,14 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"))
-    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"]) for d in docs]
+    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"]) for d in docs]
     excs = rules.run_rules(rdocs, clients)
     by_id = {d["doc_id"]: d for d in docs}
     out_ex = []
     for k, e in enumerate(excs):
         ed = e.to_dict()
         r = reads[e.doc_id]
-        fields = EVIDENCE[e.rule_id] or e.evidence_fields
+        fields = EVIDENCE.get(e.rule_id) or e.evidence_fields
         ev = []
         for f in fields:
             box = r["boxes"].get(f)
@@ -200,10 +214,11 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     summary = {
         "run_id": run_id, "set": set_name, "n_docs": len(docs), "n_exceptions": len(out_ex),
         "by_rule": {rid: sum(1 for e in out_ex if e["rule_id"] == rid) for rid in rules.ISSUE_TYPES},
+        "n_review": sum(1 for e in out_ex if e["rule_id"] == "READ_REVIEW"),
         "by_client": {cid: sum(1 for e in out_ex if e["client_id"] == cid) for cid in clients},
         "elapsed_s": elapsed,
         "mean_read_s": round(sum(per_doc_read) / len(per_doc_read), 2) if per_doc_read else None,
-        "unreadable_fields": sum(1 for d in docs for v in reads[d["doc_id"]]["provenance"].values() if v == "unreadable"),
+        "unreadable_fields": sum(1 for d in docs for v in reads[d["doc_id"]]["provenance"].values() if v in UNCONFIRMED),
     }
     log.add("run_end", **{k: v for k, v in summary.items() if k != "run_id"})
     result = {

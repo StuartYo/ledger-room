@@ -77,3 +77,11 @@ def read_lines(image) -> list[Line]:
         ys = [p[1] for p in box]
         out.append(Line(f"L{i + 1}", txt, (int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))), float(conf)))
     return out
+
+
+def recognise_only(rgb: np.ndarray) -> str:
+    """Run only the recognition model on an already-cropped RGB image (no detection)."""
+    eng = _get()
+    with _lock:
+        res, _ = eng(np.asarray(rgb)[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True)
+    return res[0][0] if res else ""

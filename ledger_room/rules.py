@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from . import ubn as ubnlib
+from .normalize import name_sim
 
 LAW = "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode="
 
@@ -70,17 +71,25 @@ RULES: dict[str, dict] = {
     },
 }
 
+# The six issue types that are evaluated. READ_REVIEW is a routing note, not a finding.
 ISSUE_TYPES = list(RULES.keys())
+RULES["READ_REVIEW"] = {
+    "title": "Needs a human look: a field could not be confirmed on the page",
+    "severity": "review",
+    "citations": [{"label": "Not a finding. Ledger Room only reports a checksum failure when the digits are confirmed "
+                            "by OCR or by two of three independent reads.", "url": None}],
+}
 
 # --- category lexicon (auditable keyword table; the model's category is only a fallback) ---
 S19_LEXICON: list[tuple[str, str, list[str]]] = [
     # (category, Art.19(1) item, keywords)
     ("entertainment", "item 3 (entertainment 交際應酬)",
-     ["禮盒", "伴手禮", "宴客", "宴請", "餐敘", "招待", "紅酒", "威士忌", "高粱", "花籃", "賀禮", "喜宴", "交際"]),
+     ["禮盒", "礼盒", "伴手禮", "伴手礼", "宴客", "宴請", "宴请", "餐敘", "招待", "紅酒", "红酒", "威士忌", "高粱",
+      "花籃", "花篮", "賀禮", "贺礼", "喜宴", "交際", "交际"]),   # simplified variants: OCR output
     ("employee_benefit", "item 4 (employee personal benefits 酬勞員工)",
-     ["員工旅遊", "尾牙", "員工禮品", "員工獎品", "生日禮", "三節禮", "員工聚餐"]),
+     ["員工旅遊", "員工旅游", "员工旅游", "尾牙", "員工禮品", "員工礼品", "員工獎品", "生日禮", "三節禮", "員工聚餐"]),
     ("passenger_car", "item 5 (passenger car for own use 自用乘人小汽車)",
-     ["小客車", "轎車", "自用車"]),
+     ["小客車", "小客车", "轎車", "轿车", "自用車", "自用车"]),
     ("non_business", "item 2 (not for business use 非供本業使用)",
      ["家用", "私人", "個人用"]),
 ]
@@ -119,6 +128,7 @@ class Doc:
     total: int | None = None
     note: str | None = None
     model_category: str | None = None   # category proposed by the model (fallback only)
+    uncertain: dict = field(default_factory=dict)   # field -> why it is not confirmed on the page
 
 
 @dataclass
@@ -173,9 +183,13 @@ def s19_category(d: Doc) -> tuple[str | None, str | None, str]:
     return None, None, ""
 
 
-def expense_category(d: Doc) -> tuple[str | None, str | None]:
-    # the seller name is a legitimate signal here (e.g. "...餐廳"), unlike for Art. 19
-    text = doc_text(d) + " " + (d.seller_name or "")
+def expense_category(d: Doc, client_name: str | None = None) -> tuple[str | None, str | None]:
+    # the seller name is a legitimate signal here (e.g. "...餐廳"), unlike for Art. 19 -
+    # but never when it is really the client's own name copied into the seller field
+    seller = d.seller_name or ""
+    if client_name and name_sim(seller, client_name) >= 0.8:
+        seller = ""
+    text = doc_text(d) + " " + seller
     for cat, kws in EXPENSE_LEXICON:
         for kw in kws:
             if kw in text:
@@ -185,11 +199,13 @@ def expense_category(d: Doc) -> tuple[str | None, str | None]:
     return None, None
 
 
-def claimable_input_tax(d: Doc, client_ubn: str) -> int:
+def claimable_input_tax(d: Doc, client: dict) -> int:
     """Input tax this client would deduct from this voucher (0 if none)."""
     if d.doc_type not in ("e_invoice", "triplicate_invoice"):
         return 0
-    if d.buyer_ubn != client_ubn:
+    presumed = (d.buyer_ubn is None and d.doc_type == "triplicate_invoice"
+                and name_sim(d.buyer_name, client.get("name")) >= 0.7)   # buyer UBN unreadable, name matches
+    if d.buyer_ubn != client["ubn"] and not presumed:
         return 0
     if d.tax:
         return d.tax
@@ -214,6 +230,12 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
         # 1. UBN checksum
         for role in ("seller", "buyer"):
             v = getattr(d, f"{role}_ubn")
+            why = d.uncertain.get(f"{role}_ubn")
+            if why:
+                out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                      f"{role.capitalize()} UBN not confirmed on the page ({why}); check it by eye.",
+                                      [f"{role}_ubn"], confidence="low"))
+                continue
             if not v:
                 continue
             chk = ubnlib.check(v)
@@ -223,7 +245,7 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
                                       [f"{role}_ubn"]))
 
         # 4. Art.19
-        tax = claimable_input_tax(d, c["ubn"])
+        tax = claimable_input_tax(d, c)
         if tax > 0:
             cat, kw, conf = s19_category(d)
             if cat:
@@ -235,7 +257,7 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
 
         # 5. policy limit
         limits = c.get("policy", {})
-        cat, kw = expense_category(d)
+        cat, kw = expense_category(d, c.get("name"))
         if d.total is not None:
             if cat and cat in limits and d.total > limits[cat]:
                 out.append(Exception_(d.doc_id, d.client_id, "OVER_LIMIT", "medium",
@@ -321,5 +343,6 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
 def issues_by_doc(exceptions: list[Exception_]) -> dict[str, set[str]]:
     m: dict[str, set[str]] = defaultdict(set)
     for e in exceptions:
-        m[e.doc_id].add(e.rule_id)
+        if e.rule_id in ISSUE_TYPES:
+            m[e.doc_id].add(e.rule_id)
     return m

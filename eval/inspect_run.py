@@ -16,8 +16,12 @@ exp = load_expected(res["summary"]["set"])
 expd = {d["doc_id"]: set(d["issues"]) for d in exp["docs"]}
 truth = {d["doc_id"]: d["truth"] for d in exp["docs"]}
 pred = {}
+from ledger_room.rules import ISSUE_TYPES
+reviews = [e for e in res["exceptions"] if e["rule_id"] == "READ_REVIEW"]
 for e in res["exceptions"]:
-    pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
+    if e["rule_id"] in ISSUE_TYPES:
+        pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
+print("review items:", [(e["doc_id"], e["message"]) for e in reviews])
 sc = score(pred, expd)
 print("micro", sc["micro"], "exact", sc["docs_exact"], "/", sc["n_docs"], "clean flagged", sc["clean_docs_flagged"])
 for t, v in sc["per_type"].items():

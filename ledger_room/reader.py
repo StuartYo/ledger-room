@@ -1,12 +1,17 @@
 """Document reader: OCR (OpenVINO, CPU) + vision-language model (OpenVINO GenAI, Intel GPU).
 
-The model only transcribes. Code then:
-  * snaps the model's digit strings (UBN, invoice number) to the exact strings OCR
-    found on the page when they differ by <= 2 digits (OCR digits are more reliable
-    than a 2B model's transcription; OCR cannot invent a valid-looking number),
-  * prefers an OCR date when exactly one date is printed,
-  * records the page box of every field so exceptions can show evidence crops,
-  * marks each field's provenance (ocr-confirmed / snapped / model-only / ocr).
+The model only transcribes. Code then reconciles what it said with what is printed:
+  * document type from printed keywords (三聯式 / 電子發票證明聯 / 收據),
+  * invoice number and UBN digits snapped to the exact OCR strings (<= 2 digits apart),
+  * UBN roles (seller / buyer) from the words around each number, so a model that copies
+    the seller's number into the buyer field is overruled,
+  * boxed digits that OCR misses: crop next to the label, keep only dark ink (colored form
+    lines and the red stamp disappear), enlarge, read again with OCR and with the model,
+    and accept a value only when two of three independent reads agree,
+  * a single printed date wins over the model's date,
+  * model items that are not on the page are dropped; item rows OCR finds in the item
+    table are added,
+  * every field keeps its provenance and its page box (for evidence crops).
 """
 from __future__ import annotations
 
@@ -14,6 +19,7 @@ import os
 import re
 import threading
 import time
+from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
@@ -27,6 +33,7 @@ DEFAULT_MODEL_DIR = os.environ.get("LEDGER_MODEL_DIR", r"E:\models\Qwen3.5-2B-in
 VLM_MAX_SIDE = int(os.environ.get("LEDGER_VLM_MAX_SIDE", "896"))
 CATEGORIES = ["office", "equipment", "materials", "logistics", "software", "printing", "meal", "taxi",
               "lodging", "entertainment", "employee_benefit", "passenger_car", "non_business", "other"]
+CONFIRMED = {"ocr-confirmed", "ocr-role", "snapped", "ocr", "ocr-keyword", "zoom-vote 2/3", "zoom-vote 3/3"}
 
 EXTRACT_PROMPT = """You are reading ONE photo of a Taiwanese bookkeeping document: a 電子發票證明聯 (e_invoice), a 三聯式統一發票 (triplicate_invoice) or a 收據 (receipt).
 OCR text lines of the photo (OCR may show simplified characters; its digits are reliable, but it can miss digits written in boxes):
@@ -35,10 +42,8 @@ OCR text lines of the photo (OCR may show simplified characters; its digits are 
 Transcribe the document. Reply with ONE line of JSON only, no markdown, numbers without commas:
 {{"type":"e_invoice|triplicate_invoice|receipt","no":"invoice number: 2 letters + 8 digits, or null for a receipt","date":"the transaction date as printed","period":"e-invoice period header such as 115年09-10月, else null","seller":"seller name","seller_ubn":"seller 統一編號: after 賣方, or inside the red seller stamp","buyer":"buyer name or null","buyer_ubn":"buyer 統一編號: after 買方 or 買受人統一編號, else null","items":[{{"d":"item","q":1,"a":100}}],"net":null,"tax":null,"total":0,"note":"text on a yellow sticky note or a handwritten remark; printed footers and amounts in words are NOT notes; else null","category":"one of: {cats}"}}"""
 
-
-def _fmt_ocr(lines: list[Line]) -> str:
-    return "\n".join(f"{l.id}: {l.text}" for l in lines) or "(no text found)"
-
+ZOOM_PROMPT = ("This crop shows a Taiwanese Unified Business Number (統一編號): 8 digits, possibly one digit per box. "
+               "Reply with the 8 digits only.")
 
 _INV = re.compile(r"([A-Za-z]{2})\s*[-－]?\s*(\d{8})(?!\d)")
 _OCR_DATES = [
@@ -46,23 +51,39 @@ _OCR_DATES = [
     re.compile(r"(1\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})"),   # 日 may be split off by OCR
     re.compile(r"(?<!\d)(1\d{2})/(\d{1,2})/(\d{1,2})(?!\d)"),
 ]
+_UBN_LABEL = re.compile(r"[統统]一?[編编]?[號号]|[編编][號号]")   # OCR sometimes drops a character
+SELLER_HINTS = ("賣方", "卖方", "專用章", "专用章", "電話", "电话", "電话")
+BUYER_HINTS = ("買方", "买方", "買受人", "买受人")
+BOILERPLATE = ("退貨", "退货", "專用章", "专用章", "大寫", "大写", "新臺幣", "新台币", "合計", "合计", "總計", "总计",
+               "SYNTHETIC", "隨機碼", "随机码")
+ITEM_HEAD = ("品名", "品 名", "交易明細", "交易明细", "Item")
+ITEM_END = ("合計", "合计", "銷售額", "销售额", "總計", "总计")
+TABLE_LABELS = ("數量", "数量", "單價", "单价", "金額", "金额", "備註", "备注", "備", "品名", "Qty", "Amount")
+PLACEHOLDERS = {"", "item", "d", "desc", "品名", "null"}
+
+
+def _fmt_ocr(lines: list[Line]) -> str:
+    return "\n".join(f"{l.id}: {l.text}" for l in lines) or "(no text found)"
+
+
+def _cjk(s: str) -> int:
+    return sum(1 for ch in s if "\u4e00" <= ch <= "\u9fff")
+
+
+name_sim = N.name_sim
 
 
 def ocr_tokens(lines: list[Line]):
-    inv, ubn, dates = [], [], []
+    inv, dates = [], []
     for l in lines:
-        t = l.text
-        for m in _INV.finditer(t):
+        for m in _INV.finditer(l.text):
             inv.append((m.group(1).upper() + m.group(2), l))
-        t2 = _INV.sub(" ", t)
-        for m in re.finditer(r"(?<!\d)(\d{8})(?!\d)", t2):
-            ubn.append((m.group(1), l))
         for rx in _OCR_DATES:
-            for m in rx.finditer(t):
+            for m in rx.finditer(l.text):
                 d = N.parse_date("-".join(m.groups()))
                 if d:
                     dates.append((d, l))
-    return inv, ubn, dates
+    return inv, dates
 
 
 def _ham(a: str, b: str) -> int:
@@ -114,13 +135,6 @@ def locate_amount(lines: list[Line], value: int | None) -> Line | None:
     return None
 
 
-_UBN_LABEL = re.compile(r"[統统][一]?[編编][號号]")
-SELLER_HINTS = ("賣方", "卖方", "專用章", "专用章", "電話", "电话", "電话")
-BUYER_HINTS = ("買方", "买方", "買受人", "买受人")
-BOILERPLATE = ("退貨", "退货", "專用章", "专用章", "大寫", "大写", "新臺幣", "新台币", "合計", "合计", "總計", "总计",
-               "SYNTHETIC", "隨機碼", "随机码")
-
-
 def doc_type_from_ocr(lines: list[Line]) -> str | None:
     text = "".join(l.text for l in lines)
     if any(k in text for k in ("三聯", "三联", "扣抵", "三式")):
@@ -134,7 +148,7 @@ def doc_type_from_ocr(lines: list[Line]) -> str | None:
     return None
 
 
-def _near(lines: list[Line], line: Line, radius: float = 2.4) -> list[tuple[float, Line]]:
+def _near(lines: list[Line], line: Line, radius: float = 3.2) -> list[tuple[float, Line]]:
     h = max(12, line.box[3] - line.box[1])
     cy = (line.box[1] + line.box[3]) / 2
     out = []
@@ -170,6 +184,10 @@ def ubn_roles(lines: list[Line]) -> dict[str, list[tuple[str, Line]]]:
                 break
         for tok, _ in toks:
             roles[role].append((tok, l))
+    unknown = list(dict.fromkeys(t for t, _ in roles["unknown"]))
+    if not roles["seller"] and len(unknown) == 1:   # a lone unlabelled UBN on a voucher is the issuer's
+        roles["seller"] = [x for x in roles["unknown"]]
+        roles["unknown"] = []
     return roles
 
 
@@ -177,7 +195,7 @@ def buyer_label_line(lines: list[Line]) -> Line | None:
     """The 統一編號 label that belongs to the buyer (used for the zoom re-read)."""
     for l in lines:
         if _UBN_LABEL.search(l.text) and not re.search(r"\d{4}", l.text):
-            for dy, nl in _near(lines, l):
+            for dy, nl in _near(lines, l, 2.4):
                 if any(k in nl.text for k in BUYER_HINTS):
                     return l
                 if any(k in nl.text for k in SELLER_HINTS):
@@ -197,6 +215,100 @@ def ocr_amounts(lines: list[Line]) -> list[int]:
             if v and v >= 10:
                 out.append(v)
     return out
+
+
+def ocr_item_lines(lines: list[Line]) -> list[Line]:
+    """Text rows inside the item table: below the 品名/交易明細 header, above the first total row."""
+    head = next((l for l in sorted(lines, key=lambda l: l.box[1]) if any(k in l.text for k in ITEM_HEAD)), None)
+    if head is None:
+        return []
+    ends = [l for l in lines if l.box[1] > head.box[3] and any(k in l.text for k in ITEM_END)]
+    end_y = min((l.box[1] for l in ends), default=head.box[3] + 400)
+    out = []
+    for l in lines:
+        cy = (l.box[1] + l.box[3]) / 2
+        if head.box[3] - 4 <= cy <= end_y and _cjk(l.text) >= 2 and not any(k == l.text.strip() for k in TABLE_LABELS) \
+                and not any(k in l.text for k in ITEM_HEAD):
+            out.append(l)
+    return out
+
+
+def ink_only(img: Image.Image) -> Image.Image:
+    """Keep dark, low-saturation pixels (printed or written digits); drop colored form lines and the red stamp."""
+    a = np.asarray(img.convert("RGB")).astype(np.int16)
+    mx, mn = a.max(axis=2), a.min(axis=2)
+    ink = (mx < 125) & ((mx - mn) < 60)
+    out = np.full(a.shape[:2], 255, np.uint8)
+    out[ink] = 0
+    return Image.fromarray(out).convert("RGB")
+
+
+def _ink(q: np.ndarray) -> np.ndarray:
+    mx, mn = q.max(axis=2), q.min(axis=2)
+    return (mx < 120) & ((mx - mn) < 40)
+
+
+def box_cells(crop: Image.Image):
+    """Find the printed digit boxes (colored vertical form lines) and return the cells between them."""
+    q = np.asarray(crop.convert("RGB")).astype(np.int16)
+    r, g, b = q[..., 0], q[..., 1], q[..., 2]
+    mx, mn = q.max(axis=2), q.min(axis=2)
+    colored = ((mx - mn) > 35) & ~((r > g + 40) & (r > b + 40))   # form-line ink, not the red stamp
+    line_cols = np.where(colored.mean(axis=0) > 0.25)[0]
+    if line_cols.size == 0:
+        return None
+    groups = [[line_cols[0], line_cols[0]]]
+    for x in line_cols[1:]:
+        if x - groups[-1][1] <= 2:
+            groups[-1][1] = x
+        else:
+            groups.append([x, x])
+    cells = [(a1 + 1, b0) for (a0, a1), (b0, b1) in zip(groups, groups[1:]) if b0 - a1 > 12]
+    ys = np.where(colored.mean(axis=1) > 0.25)[0]
+    span = (int(ys.min()), int(ys.max())) if ys.size else (0, q.shape[0])
+    return cells, span
+
+
+def read_digit_cell(cell: Image.Image) -> str:
+    """Recognise one boxed digit: keep its ink, centre it on a white square, run the OCR recogniser only."""
+    from .ocr import recognise_only
+    m = _ink(np.asarray(cell.convert("RGB")).astype(np.int16))
+    if not m.any():
+        return ""
+    yy, xx = np.where(m)
+    m = m[yy.min(): yy.max() + 1, xx.min(): xx.max() + 1]
+    h, w = m.shape
+    side = max(h, w) + 16
+    canvas = np.full((side, side), 255, np.uint8)
+    canvas[(side - h) // 2:(side - h) // 2 + h, (side - w) // 2:(side - w) // 2 + w] = np.where(m, 0, 255)
+    im = Image.fromarray(canvas).convert("RGB").resize((48, 48), Image.LANCZOS)
+    return re.sub(r"\D", "", recognise_only(np.asarray(im)))[:1]
+
+
+def read_boxed_digits(crop: Image.Image) -> str | None:
+    r = box_cells(crop)
+    if not r:
+        return None
+    cells, (ya, yb) = r
+    if len(cells) != 8:
+        return None
+    digs = "".join(read_digit_cell(crop.crop((a + 2, ya + 3, b - 2, yb - 3))) for a, b in cells)
+    return digs if len(digs) == 8 else None
+
+
+def seller_name_from_ocr(lines: list[Line], seller_line: Line | None, dtype: str | None) -> tuple[str | None, Line | None]:
+    if seller_line is not None:   # the line just above the seller UBN inside the stamp
+        above = [l for l in lines if l.box[3] <= seller_line.box[1] + 4 and seller_line.box[1] - l.box[3] < 3 * (seller_line.box[3] - seller_line.box[1])
+                 and abs(l.box[0] - seller_line.box[0]) < 160 and _cjk(l.text) >= 3 and not re.search(r"\d{3}", l.text)]
+        if above:
+            l = max(above, key=lambda l: l.box[3])
+            return l.text, l
+    if dtype == "e_invoice":
+        top = sorted(lines, key=lambda l: l.box[1])[:2]
+        for l in top:
+            if _cjk(l.text) >= 3 and "證明" not in l.text and "证明" not in l.text:
+                return l.text, l
+    return None, None
 
 
 class Reader:
@@ -228,7 +340,8 @@ class Reader:
         return r.texts[0], {"vlm_s": round(time.time() - t, 2), "ttft_s": round(pm.get_ttft().mean / 1000, 2),
                             "gen_tokens": int(pm.get_num_generated_tokens())}
 
-    def read(self, path: str | Path) -> dict:
+    def read_raw(self, path: str | Path) -> dict:
+        """OCR + one model call. Cached by the pipeline separately from post-processing."""
         path = Path(path)
         img = Image.open(path).convert("RGB")
         t = time.time()
@@ -237,49 +350,61 @@ class Reader:
         prompt = EXTRACT_PROMPT.format(ocr=_fmt_ocr(lines), cats=", ".join(CATEGORIES))
         raw, timing = self.generate(prompt, img)
         timing["ocr_s"] = ocr_s
-        obj = N.parse_json_loose(raw) or {}
-        fields, prov, boxes = postprocess(obj, lines)
+        return {"ocr_lines": [asdict(l) for l in lines], "raw": raw, "timing": timing, "image_size": list(img.size),
+                "model": self.model_id, "device": self.device}
+
+    def read(self, path: str | Path, raw: dict | None = None) -> dict:
+        path = Path(path)
+        raw = raw or self.read_raw(path)
+        lines = [Line(l["id"], l["text"], tuple(l["box"]), l["conf"]) for l in raw["ocr_lines"]]
+        timing = dict(raw["timing"])
+        obj = N.parse_json_loose(raw["raw"]) or {}
+        fields, prov, boxes, extra = postprocess(obj, lines)
         if prov.get("buyer_ubn") == "needs-zoom":
-            v, how, box, zt = self.zoom_read_ubn(img, buyer_label_line(lines))
+            img = Image.open(path).convert("RGB")
+            v, how, box, cands, zt = self.zoom_vote(img, buyer_label_line(lines), extra.get("buyer_ubn_model"))
             timing["zoom_s"] = zt
-            if v:
-                fields["buyer_ubn"], prov["buyer_ubn"] = v, how
+            fields["buyer_ubn"], prov["buyer_ubn"] = v, how
+            extra["buyer_ubn_reads"] = cands
+            if box:
                 boxes["buyer_ubn"] = box
-            else:
-                prov["buyer_ubn"] = "model-only" if fields["buyer_ubn"] else "unreadable"
+        timing["total_s"] = round(sum(timing.get(k, 0) for k in ("ocr_s", "vlm_s", "zoom_s")), 2)
         return {
-            "fields": fields, "provenance": prov, "boxes": boxes,
-            "ocr_lines": [asdict(l) for l in lines], "raw": raw, "parsed": bool(obj),
-            "timing": timing, "model": self.model_id, "device": self.device,
-            "image_size": list(img.size),
+            "fields": fields, "provenance": prov, "boxes": boxes, "extra": extra,
+            "ocr_lines": raw["ocr_lines"], "raw": raw["raw"], "parsed": bool(obj),
+            "timing": timing, "model": raw.get("model", self.model_id), "device": raw.get("device", self.device),
+            "image_size": raw["image_size"],
         }
 
-
-    def zoom_read_ubn(self, img: Image.Image, label: Line | None):
-        """Crop the area right of a 統一編號 label, upscale, OCR it; if that fails ask the VLM about the crop only."""
+    def zoom_vote(self, img: Image.Image, label: Line | None, model_value: str | None):
+        """Three independent reads of a boxed UBN; accept only a value two of them agree on."""
         t = time.time()
-        if label is None:
-            return None, None, None, 0.0
-        x0, y0, x1, y1 = label.box
-        h = y1 - y0
-        box = (max(0, x0), max(0, y0 - h), min(img.width, x1 + 520), min(img.height, y1 + h))
-        crop = img.crop(box)
-        big = crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS)
-        zl = read_lines(np.array(big))
-        digs = "".join(re.sub(r"\D", "", l.text) for l in sorted(zl, key=lambda l: l.box[0]))
-        if len(digs) == 8:
-            return digs, "ocr-zoom", list(box), round(time.time() - t, 2)
-        txt, _ = self.generate("This crop shows a Taiwanese Unified Business Number (統一編號): 8 digits, "
-                               "possibly one digit per box. Reply with the 8 digits only.", big, max_new_tokens=16)
-        d = re.sub(r"\D", "", txt)
-        if len(d) == 8:
-            return d, "vlm-zoom", list(box), round(time.time() - t, 2)
-        return None, None, None, round(time.time() - t, 2)
+        reads = {"model_page": model_value if model_value and len(model_value) == 8 else None,
+                 "ocr_zoom": None, "vlm_zoom": None}
+        box = None
+        if label is not None:
+            x0, y0, x1, y1 = label.box
+            h = y1 - y0
+            box = [max(0, x1 - 4), max(0, int(y0 - 0.8 * h)), min(img.width, x1 + 520), min(img.height, int(y1 + 0.8 * h))]
+            crop = img.crop(box)
+            reads["ocr_zoom"] = read_boxed_digits(crop)       # one digit per printed box
+            clean = ink_only(crop)
+            big = clean.resize((clean.width * 2, clean.height * 2), Image.LANCZOS)
+            txt, _ = self.generate(ZOOM_PROMPT, big, max_new_tokens=16)
+            d = re.sub(r"\D", "", txt)
+            reads["vlm_zoom"] = d if len(d) == 8 else None
+        votes = Counter(v for v in reads.values() if v)
+        zt = round(time.time() - t, 2)
+        if votes:
+            val, n = votes.most_common(1)[0]
+            if n >= 2:
+                return val, f"zoom-vote {n}/3", box, reads, zt
+        return None, "unconfirmed", box, reads, zt
 
 
-def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
-    inv_c, ubn_c, date_c = ocr_tokens(lines)
-    prov, boxes = {}, {}
+def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict, dict]:
+    inv_c, date_c = ocr_tokens(lines)
+    prov, boxes, extra = {}, {}, {}
 
     def put_box(name, line):
         if line is not None:
@@ -305,19 +430,23 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
     # UBNs: page context decides the role; the model fills gaps
     roles = ubn_roles(lines)
     has_buyer_label = any(any(k in l.text for k in BUYER_HINTS) for l in lines)
-    out_ubn = {}
+    out_ubn, ubn_line = {}, {}
     for role in ("seller", "buyer"):
         v = N.digits(obj.get(f"{role}_ubn"))
         v = v if v and len(v) == 8 else (v or None)
+        if role == "buyer":
+            extra["buyer_ubn_model"] = v
         mine = list(dict.fromkeys(tok for tok, _ in roles[role]))
         if len(mine) == 1:
             tok = mine[0]
             prov[f"{role}_ubn"] = "ocr-confirmed" if v == tok else "ocr-role"
             out_ubn[role] = tok
-            put_box(f"{role}_ubn", next(l for t, l in roles[role] if t == tok))
+            ubn_line[role] = next(l for t, l in roles[role] if t == tok)
+            put_box(f"{role}_ubn", ubn_line[role])
             continue
         other = "buyer" if role == "seller" else "seller"
         pool = roles[role] + roles["unknown"]
+        l = None
         if v and len(v) == 8:
             v2, how, l = snap(v, pool) if pool else (v, "model-only", None)
             if v2 in {t for t, _ in roles[other]}:
@@ -325,13 +454,13 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
             v, prov[f"{role}_ubn"] = v2, how
         else:
             prov[f"{role}_ubn"] = "model-only" if v else "missing"
-            l = None
         if role == "buyer" and not has_buyer_label:
             v, prov["buyer_ubn"], l = None, "no-buyer-label", None
         if role == "buyer" and has_buyer_label and dtype == "triplicate_invoice" \
-                and (v is None or prov["buyer_ubn"] == "model-only"):
-            prov["buyer_ubn"] = "needs-zoom"   # nothing on the page confirms the model: zoom in and re-read
+                and prov["buyer_ubn"] not in ("ocr-confirmed", "snapped"):
+            prov["buyer_ubn"] = "needs-zoom"   # nothing on the page confirms it: zoom in and vote
         out_ubn[role] = v
+        ubn_line[role] = l
         put_box(f"{role}_ubn", l)
 
     # date: prefer a single unambiguous OCR date
@@ -361,18 +490,26 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
                 put_box("invoice_period", l)
                 break
 
+    # items: keep model items that are on the page, add OCR rows from the item table
     items = []
     for it in obj.get("items") or []:
         if isinstance(it, dict):
-            desc = N.clean_str(it.get("d") or it.get("desc"))
-            items.append({"desc": desc or "", "qty": N.to_int(it.get("q") or it.get("qty")),
-                          "amount": N.to_int(it.get("a") or it.get("amount"))})
+            desc = N.clean_str(it.get("d") or it.get("desc")) or ""
+            q, a = it.get("q") or it.get("qty"), it.get("a") or it.get("amount")
         elif isinstance(it, (list, tuple)) and it:
-            items.append({"desc": str(it[0]), "qty": N.to_int(it[1]) if len(it) > 1 else None,
-                          "amount": N.to_int(it[-1]) if len(it) > 2 else None})
-    item_lines = [locate_text(lines, i["desc"]) for i in items]
-    if item_lines and item_lines[0] is not None:
-        put_box("items", item_lines[0])
+            desc, q, a = str(it[0]), (it[1] if len(it) > 1 else None), (it[-1] if len(it) > 2 else None)
+        else:
+            continue
+        if desc.strip().lower() in PLACEHOLDERS or locate_text(lines, desc, 0.6) is None:
+            continue
+        items.append({"desc": desc, "qty": N.to_int(q), "amount": N.to_int(a), "source": "model"})
+    item_rows = ocr_item_lines(lines)
+    for l in item_rows:
+        if not any(name_sim(l.text, i["desc"]) >= 0.6 for i in items):
+            items.append({"desc": l.text, "qty": None, "amount": None, "source": "ocr"})
+    prov["items"] = "model+ocr" if any(i["source"] == "ocr" for i in items) else ("model" if items else "missing")
+    first = next((locate_text(lines, i["desc"]) for i in items), None)
+    put_box("items", first)
 
     total, net, tax = N.to_int(obj.get("total")), N.to_int(obj.get("net")), N.to_int(obj.get("tax"))
     amts = ocr_amounts(lines)
@@ -383,6 +520,7 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
     else:
         prov["total"] = "model-only" if total is not None else "missing"
     put_box("total", locate_amount(lines, total))
+
     note = N.clean_str(obj.get("note"))
     words = re.sub(r"[\s零壹貳贰參叁肆伍陸陆柒捌玖拾佰仟萬万元整]", "", note or "")
     if note and (any(k in note for k in BOILERPLATE) or note.startswith("text on") or note.startswith("handwritten")
@@ -392,14 +530,25 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict]:
     if note and note_line is None:
         note, prov["note"] = None, "dropped-not-on-page"
     put_box("note", note_line)
+
+    seller_name = N.clean_str(obj.get("seller"))
+    buyer_name = N.clean_str(obj.get("buyer"))
+    prov["seller_name"] = "model"
+    if not seller_name or (buyer_name and name_sim(seller_name, buyer_name) >= 0.8):
+        nm, nl = seller_name_from_ocr(lines, ubn_line.get("seller"), dtype)
+        if nm:
+            seller_name, prov["seller_name"] = nm, "ocr-stamp"
+            put_box("seller_name", nl)
+    if "seller_name" not in boxes:
+        put_box("seller_name", locate_text(lines, seller_name))
+
     cat = N.clean_str(obj.get("category"))
     fields = {
         "doc_type": dtype, "invoice_no": inv, "date": d.isoformat() if d else None,
         "invoice_period": period if dtype == "e_invoice" or (dtype is None and period) else None,
-        "seller_name": N.clean_str(obj.get("seller")), "seller_ubn": out_ubn["seller"],
-        "buyer_name": N.clean_str(obj.get("buyer")), "buyer_ubn": out_ubn["buyer"],
+        "seller_name": seller_name, "seller_ubn": out_ubn["seller"],
+        "buyer_name": buyer_name, "buyer_ubn": out_ubn["buyer"],
         "items": items, "net": net, "tax": tax, "total": total, "note": note,
         "category": cat if cat in CATEGORIES else None,
     }
-    put_box("seller_name", locate_text(lines, fields["seller_name"]))
-    return fields, prov, boxes
+    return fields, prov, boxes, extra
