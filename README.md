@@ -93,7 +93,7 @@ python -m venv .venv
 .venv\Scripts\python -m ledger_room.get_model          # one-time, ~2.1 GB, to E:\models or %LEDGER_MODEL_DIR%
 .venv\Scripts\python -m pytest -q                      # rules, frozen answer keys, result consistency
 .venv\Scripts\python -m ledger_room.pipeline --set main   # batch audit of the synthetic firm inbox
-.venv\Scripts\python -m web.server                     # http://127.0.0.1:8765
+.venv\Scripts\python -m web.server                     # http://127.0.0.1:8780
 ```
 
 Environment variables: `LEDGER_MODEL_DIR` (model folder), `LEDGER_DEVICE` (`GPU` or `CPU`),

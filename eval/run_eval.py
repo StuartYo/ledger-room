@@ -150,6 +150,26 @@ def main():
         "after_detected": ca["micro"]["tp"], "after_false_flags": ca["micro"]["fp"],
         "detail": ctl,
     }
+    bf = ROOT / "eval" / "results_blind_first_run.json"
+    if bf.exists():   # the first evaluation, before anything was changed after seeing held-out errors
+        B = json.loads(bf.read_text(encoding="utf-8"))
+        results["blind_first_run"] = {
+            "note": "First evaluation; the held-out set had never been looked at. Fixes made after reading its errors "
+                    "are in later code revisions, so later held-out numbers are not blind.",
+            "generated_at": B["generated_at"], "code_rev": B["code_rev"], "reader_version": B["reader_version"],
+            "sets": {s: {"ledger_room": v["ledger_room"]["micro"], "pure_model": v["pure_model"]["micro"],
+                         "ledger_docs_exact": v["ledger_room"]["docs_exact"], "n_docs": v["n_docs"],
+                         "ledger_clean_flagged": v["ledger_room"]["clean_docs_flagged"], "clean_docs": v["ledger_room"]["clean_docs"]}
+                     for s, v in B["sets"].items()},
+            "positive_control": {k: B["positive_control"][k] for k in ("before_flags", "after_planted", "after_detected", "after_false_flags")},
+        }
+        results["fixes_after_blind"] = "three"
+        results["fixes_after_blind_detail"] = [
+            "UBN roles: a 買方 label owns one number; a line OCR reads as '方：12345678' (the 賣 dropped) is the seller's.",
+            "Totals: skip the e-invoice random code when OCR prints it in mixed characters (随機码), and prefer the number "
+            "on the 總計 / 合計 row over the largest number on the page.",
+            "Seller name: take the stamp's name line when the stamp is rotated (display only; no rule uses it).",
+        ]
     ratios = [v.get("pure_over_ledger_f1") for v in results["sets"].values() if v.get("pure_over_ledger_f1") is not None]
     results["gate"] = {"rule": f"stop if pure-model micro F1 >= {GATE:.0%} of Ledger Room on any set",
                        "max_ratio": max(ratios) if ratios else None,

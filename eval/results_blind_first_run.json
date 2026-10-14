@@ -1,0 +1,550 @@
+{
+ "synthetic": true,
+ "generated_at": "2026-10-14T12:05:50+08:00",
+ "code_rev": "5d02c9b",
+ "reader_version": "r6",
+ "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
+ "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
+ "hardware": "Dev laptop: Intel Core i7-13620H, Intel UHD Graphics (iGPU, device 'GPU') for the model, CPU for OCR, 32 GB RAM. No Arc Pro B70 used; B70 figures elsewhere are plans, not measurements.",
+ "host": "DESKTOP-G62O404",
+ "gate_threshold": 0.95,
+ "model_selection": {
+  "measured_on": "2026-10-14",
+  "hardware": "Intel Core i7-13620H laptop, Intel UHD Graphics (iGPU), 32 GB RAM; same triplicate-invoice test image",
+  "note": "One-off measurements taken while choosing the runtime (scratch scripts, two runs each). Final per-document times come from the evaluation runs.",
+  "vlm": [
+   {
+    "config": "Qwen3.5-2B INT4, OpenVINO GenAI, CPU, full-size image (1144x844)",
+    "sec_per_doc": "43-48",
+    "prefill_s": "21-23",
+    "tokens_per_s": "8-9",
+    "used": false
+   },
+   {
+    "config": "Qwen3.5-2B INT4, OpenVINO GenAI, Intel iGPU, full-size image",
+    "sec_per_doc": "22-28",
+    "prefill_s": "8-16",
+    "tokens_per_s": "16-17",
+    "used": false
+   },
+   {
+    "config": "Qwen3.5-2B INT4, OpenVINO GenAI, Intel iGPU, image max side 896 px",
+    "sec_per_doc": "14-16",
+    "prefill_s": "3.6-5",
+    "tokens_per_s": "18-19",
+    "used": true
+   },
+   {
+    "config": "Same + built-in MTP speculative decoding (2 draft tokens)",
+    "sec_per_doc": "14.5 then 38",
+    "prefill_s": "5.5-5.8",
+    "tokens_per_s": "21 then 6",
+    "used": false
+   }
+  ],
+  "ocr": [
+   {
+    "config": "PP-OCRv4 det+rec .onnx via ONNX Runtime 1.31, CPU",
+    "sec_per_page": "17-28",
+    "used": false
+   },
+   {
+    "config": "Same .onnx files compiled by OpenVINO 2026.4, CPU",
+    "sec_per_page": "0.3-1.1",
+    "used": true
+   }
+  ],
+  "not_used": [
+   "NVIDIA RTX 4050 through the OpenVINO GPU plugin (listed via OpenCL): not a supported OpenVINO target; the test did not complete.",
+   "Ollama / CUDA on the NVIDIA GPU: not tried (not measured). It might be faster on this laptop, but it leaves the Intel toolchain that the B70 build will use."
+  ]
+ },
+ "sets": {
+  "main": {
+   "n_docs": 52,
+   "n_clients": 5,
+   "layout_family": "A",
+   "seed": 20261014,
+   "issue_counts": {
+    "UBN_CHECKSUM": 4,
+    "DUP_CROSS_MONTH": 3,
+    "DUP_CROSS_CLIENT": 4,
+    "S19_NONDEDUCTIBLE": 5,
+    "OVER_LIMIT": 4,
+    "PERIOD_MISMATCH": 4
+   },
+   "ledger_room": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "docs_exact": 52,
+    "n_docs": 52,
+    "clean_docs": 28,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 16.8,
+     "median": 16.0,
+     "max": 26.9,
+     "n": 52
+    },
+    "rules_ms_total": 5.6,
+    "unreadable_fields": 3,
+    "review_items": 0
+   },
+   "oracle_fields": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "pure_model": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 3,
+      "fp": 12,
+      "fn": 1,
+      "precision": 0.2,
+      "recall": 0.75,
+      "f1": 0.316
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "precision": null,
+      "recall": 0.0,
+      "f1": 0.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 1,
+      "fp": 8,
+      "fn": 3,
+      "precision": 0.111,
+      "recall": 0.25,
+      "f1": 0.154
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 3,
+      "fp": 35,
+      "fn": 2,
+      "precision": 0.079,
+      "recall": 0.6,
+      "f1": 0.14
+     },
+     "OVER_LIMIT": {
+      "tp": 2,
+      "fp": 26,
+      "fn": 2,
+      "precision": 0.071,
+      "recall": 0.5,
+      "f1": 0.125
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 3,
+      "fp": 25,
+      "fn": 1,
+      "precision": 0.107,
+      "recall": 0.75,
+      "f1": 0.188
+     }
+    },
+    "micro": {
+     "tp": 12,
+     "fp": 106,
+     "fn": 12,
+     "precision": 0.102,
+     "recall": 0.5,
+     "f1": 0.169
+    },
+    "docs_exact": 0,
+    "n_docs": 52,
+    "clean_docs": 28,
+    "clean_docs_flagged": 28,
+    "sec_per_doc": {
+     "mean": 10.9,
+     "median": 11.2,
+     "max": 14.5,
+     "n": 52
+    },
+    "unparsed_replies": 0
+   },
+   "pure_over_ledger_f1": 0.169
+  },
+  "heldout": {
+   "n_docs": 47,
+   "n_clients": 5,
+   "layout_family": "B",
+   "seed": 777013,
+   "issue_counts": {
+    "UBN_CHECKSUM": 5,
+    "DUP_CROSS_MONTH": 2,
+    "DUP_CROSS_CLIENT": 4,
+    "S19_NONDEDUCTIBLE": 5,
+    "OVER_LIMIT": 4,
+    "PERIOD_MISMATCH": 4
+   },
+   "ledger_room": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1": 0.889
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1": 0.889
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 22,
+     "fp": 0,
+     "fn": 2,
+     "precision": 1.0,
+     "recall": 0.917,
+     "f1": 0.957
+    },
+    "docs_exact": 45,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 12.2,
+     "median": 12.2,
+     "max": 16.4,
+     "n": 47
+    },
+    "rules_ms_total": 1.5,
+    "unreadable_fields": 0,
+    "review_items": 0
+   },
+   "oracle_fields": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "pure_model": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 5,
+      "fp": 42,
+      "fn": 0,
+      "precision": 0.106,
+      "recall": 1.0,
+      "f1": 0.192
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "precision": null,
+      "recall": 0.0,
+      "f1": 0.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 0,
+      "fp": 2,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 5,
+      "precision": null,
+      "recall": 0.0,
+      "f1": 0.0
+     },
+     "OVER_LIMIT": {
+      "tp": 2,
+      "fp": 22,
+      "fn": 2,
+      "precision": 0.083,
+      "recall": 0.5,
+      "f1": 0.143
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 3,
+      "fp": 37,
+      "fn": 1,
+      "precision": 0.075,
+      "recall": 0.75,
+      "f1": 0.136
+     }
+    },
+    "micro": {
+     "tp": 10,
+     "fp": 103,
+     "fn": 14,
+     "precision": 0.088,
+     "recall": 0.417,
+     "f1": 0.146
+    },
+    "docs_exact": 0,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 23,
+    "sec_per_doc": {
+     "mean": 10.8,
+     "median": 10.6,
+     "max": 13.8,
+     "n": 47
+    },
+    "unparsed_replies": 0
+   },
+   "pure_over_ledger_f1": 0.153
+  }
+ },
+ "positive_control": {
+  "before_flags": 0,
+  "after_planted": 7,
+  "after_detected": 7,
+  "after_false_flags": 1,
+  "detail": {
+   "control_before": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "OVER_LIMIT": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     }
+    },
+    "micro": {
+     "tp": 0,
+     "fp": 0,
+     "fn": 0,
+     "precision": null,
+     "recall": null,
+     "f1": null
+    },
+    "docs_exact": 6,
+    "n_docs": 6,
+    "clean_docs": 6,
+    "clean_docs_flagged": 0,
+    "flags": []
+   },
+   "control_after": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.667
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 7,
+     "fp": 1,
+     "fn": 0,
+     "precision": 0.875,
+     "recall": 1.0,
+     "f1": 0.933
+    },
+    "docs_exact": 11,
+    "n_docs": 12,
+    "clean_docs": 5,
+    "clean_docs_flagged": 0,
+    "flags": [
+     "K01/2026-09/IMG_2822.jpg:DUP_CROSS_CLIENT",
+     "K01/2026-09/IMG_2822.jpg:OVER_LIMIT",
+     "K01/2026-09/IMG_7689.jpg:PERIOD_MISMATCH",
+     "K01/2026-10/IMG_1424.jpg:UBN_CHECKSUM",
+     "K01/2026-10/IMG_8829.jpg:DUP_CROSS_MONTH",
+     "K02/2026-09/IMG_6769.jpg:DUP_CROSS_CLIENT",
+     "K02/2026-10/IMG_3795.jpg:OVER_LIMIT",
+     "K02/2026-10/IMG_9826.jpg:S19_NONDEDUCTIBLE"
+    ]
+   }
+  }
+ },
+ "gate": {
+  "rule": "stop if pure-model micro F1 >= 95% of Ledger Room on any set",
+  "max_ratio": 0.169,
+  "stop": false
+ }
+}

@@ -49,9 +49,13 @@ async function loadRun(runId) {
   if (S.tab === "log") renderLog();
 }
 
+const SEV_ORDER = { high: 0, medium: 1, review: 2 };
 function exceptions() {
   if (!S.run) return [];
-  return S.run.exceptions.filter((e) => (S.client === "ALL" || e.client_id === S.client) && (!S.rules.size || S.rules.has(e.rule_id)));
+  return S.run.exceptions
+    .filter((e) => (S.client === "ALL" || e.client_id === S.client) && (!S.rules.size || S.rules.has(e.rule_id)))
+    .slice()
+    .sort((a, b) => (SEV_ORDER[a.severity] ?? 3) - (SEV_ORDER[b.severity] ?? 3) || a.client_id.localeCompare(b.client_id) || a.doc_id.localeCompare(b.doc_id));
 }
 
 function renderAll() { renderClients(); renderStats(); renderChips(); renderExceptions(); renderDocs(); }

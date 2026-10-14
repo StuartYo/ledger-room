@@ -1,6 +1,6 @@
 """Ledger Room local web app. Python standard library only; no external assets; works offline.
 
-python -m web.server                 # http://127.0.0.1:8765
+python -m web.server                 # http://127.0.0.1:8780
 python -m web.server --host 0.0.0.0  # share on the office LAN (the documents still never leave the machine)
 """
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import sys
 import threading
 import time
 import traceback
@@ -16,7 +17,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from ledger_room import pipeline
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # allow `python web/server.py`
+
+from ledger_room import pipeline  # noqa: E402
 from ledger_room.pipeline import DATA, OUT, AuditLog
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -162,7 +165,7 @@ class H(BaseHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--port", type=int, default=8780)
     a = ap.parse_args()
     srv = ThreadingHTTPServer((a.host, a.port), H)
     print(f"Ledger Room on http://{a.host}:{a.port}  (synthetic data; no outbound network calls)")

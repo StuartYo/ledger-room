@@ -23,7 +23,7 @@ from .reader import EXTRACT_PROMPT
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = DATA / "out"
-READER_VERSION = "r6"   # bump when post-processing changes so cached reads are redone
+READER_VERSION = "r7"   # bump when post-processing changes so cached reads are redone
 PII_RULE = {"label": "Bookkeeper personal-data safeguard regulation Art. 19: keep usage records and system logs",
             "url": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340165&flno=19"}
 

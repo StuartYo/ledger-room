@@ -64,9 +64,9 @@ select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid v
   border: 1px solid transparent; transition: background .15s, border-color .15s; }
 .clients li:hover { background: var(--paper); }
 .clients li.active { background: var(--accent-soft); border-color: var(--accent); }
-.clients .cname { font-weight: 600; font-size: 14px; }
-.clients .cmeta { grid-column: 1; color: var(--muted); font-size: 12px; font-family: var(--mono); }
-.badge { grid-row: 1 / span 2; align-self: center; min-width: 28px; text-align: center; padding: 2px 8px; border-radius: 999px;
+.clients .cname { grid-column: 1; grid-row: 1; font-weight: 600; font-size: 14px; min-width: 0; }
+.clients .cmeta { grid-column: 1; grid-row: 2; color: var(--muted); font-size: 12px; font-family: var(--mono); min-width: 0; }
+.badge { grid-column: 2; grid-row: 1 / span 2; align-self: center; min-width: 28px; text-align: center; padding: 2px 8px; border-radius: 999px;
   font-size: 12.5px; font-weight: 700; background: var(--paper); color: var(--muted); }
 .badge.hot { background: var(--stamp-soft); color: var(--stamp); }
 

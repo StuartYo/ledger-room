@@ -33,7 +33,7 @@ DEFAULT_MODEL_DIR = os.environ.get("LEDGER_MODEL_DIR", r"E:\models\Qwen3.5-2B-in
 VLM_MAX_SIDE = int(os.environ.get("LEDGER_VLM_MAX_SIDE", "896"))
 CATEGORIES = ["office", "equipment", "materials", "logistics", "software", "printing", "meal", "taxi",
               "lodging", "entertainment", "employee_benefit", "passenger_car", "non_business", "other"]
-CONFIRMED = {"ocr-confirmed", "ocr-role", "snapped", "ocr", "ocr-keyword", "zoom-vote 2/3", "zoom-vote 3/3"}
+CONFIRMED = {"ocr-confirmed", "ocr-role", "snapped", "ocr", "ocr-keyword", "ocr-total-line", "zoom-vote 2/3", "zoom-vote 3/3"}
 
 EXTRACT_PROMPT = """You are reading ONE photo of a Taiwanese bookkeeping document: a 電子發票證明聯 (e_invoice), a 三聯式統一發票 (triplicate_invoice) or a 收據 (receipt).
 OCR text lines of the photo (OCR may show simplified characters; its digits are reliable, but it can miss digits written in boxes):
@@ -167,6 +167,10 @@ def ubn_roles(lines: list[Line]) -> dict[str, list[tuple[str, Line]]]:
         toks = [(m.group(1), m.start()) for m in re.finditer(r"(?<!\d)(\d{8})(?!\d)", t)]
         if not toks:
             continue
+        if re.search(r"(?<![買买])方\s*[:：]?\s*\d{8}", t) and not any(k in t for k in ("買方", "买方")):
+            for tok, _ in toks:          # OCR dropped the 賣 of 賣方
+                roles["seller"].append((tok, l))
+            continue
         if any(k in t for k in ("賣方", "卖方", "買方", "买方")):
             for tok, pos in toks:
                 before = t[:pos]
@@ -184,6 +188,11 @@ def ubn_roles(lines: list[Line]) -> dict[str, list[tuple[str, Line]]]:
                 break
         for tok, _ in toks:
             roles[role].append((tok, l))
+    # a buyer label owns one number: if one buyer number carries its own 買方 label, the others are not the buyer's
+    labelled = [(t, l) for t, l in roles["buyer"] if any(k in l.text for k in BUYER_HINTS)]
+    if labelled and len({t for t, _ in roles["buyer"]}) > 1:
+        roles["unknown"] += [(t, l) for t, l in roles["buyer"] if (t, l) not in labelled]
+        roles["buyer"] = labelled
     unknown = list(dict.fromkeys(t for t, _ in roles["unknown"]))
     if not roles["seller"] and len(unknown) == 1:   # a lone unlabelled UBN on a voucher is the issuer's
         roles["seller"] = [x for x in roles["unknown"]]
@@ -206,7 +215,9 @@ def buyer_label_line(lines: list[Line]) -> Line | None:
 def ocr_amounts(lines: list[Line]) -> list[int]:
     out = []
     for l in lines:
-        if any(k in l.text for k in ("電話", "电话", "電话", "No.", "隨機碼", "随机码", "年", "月", "日", "/", ":", "：")) \
+        if re.search(r"[隨随][機机][碼码]|[電电][話话]", l.text):
+            continue
+        if any(k in l.text for k in ("No.", "年", "月", "日", "/", ":", "：")) \
                 and not any(k in l.text for k in ("總計", "总计", "合計", "合计")):
             continue
         t = _INV.sub(" ", l.text)
@@ -214,6 +225,21 @@ def ocr_amounts(lines: list[Line]) -> list[int]:
             v = N.to_int(m.group(1))
             if v and v >= 10:
                 out.append(v)
+    return out
+
+
+def ocr_total_line_amounts(lines: list[Line]) -> list[int]:
+    """Numbers printed on (or on the same row as) a 總計 / 合計 label."""
+    out = []
+    labels = [l for l in lines if re.search(r"[總总]計?|[總总]计|[合][計计]", l.text) and "新" not in l.text]
+    for lab in labels:
+        cands = [lab] + [l for l in lines if l is not lab and abs((l.box[1] + l.box[3]) / 2 - (lab.box[1] + lab.box[3]) / 2)
+                         < 0.8 * (lab.box[3] - lab.box[1]) and l.box[0] > lab.box[0]]
+        for l in cands:
+            for m in re.finditer(r"(?<![\d.])(\d{1,3}(?:,\d{3})+|\d{1,6})(?![\d.])", _INV.sub(" ", l.text)):
+                v = N.to_int(m.group(1))
+                if v and v >= 10:
+                    out.append(v)
     return out
 
 
@@ -297,9 +323,16 @@ def read_boxed_digits(crop: Image.Image) -> str | None:
 
 
 def seller_name_from_ocr(lines: list[Line], seller_line: Line | None, dtype: str | None) -> tuple[str | None, Line | None]:
-    if seller_line is not None:   # the line just above the seller UBN inside the stamp
-        above = [l for l in lines if l.box[3] <= seller_line.box[1] + 4 and seller_line.box[1] - l.box[3] < 3 * (seller_line.box[3] - seller_line.box[1])
-                 and abs(l.box[0] - seller_line.box[0]) < 160 and _cjk(l.text) >= 3 and not re.search(r"\d{3}", l.text)]
+    if seller_line is not None:   # the line just above the seller UBN inside the (possibly rotated) stamp
+        sh = seller_line.box[3] - seller_line.box[1]
+        scy = (seller_line.box[1] + seller_line.box[3]) / 2
+        above = []
+        for l in lines:
+            cy = (l.box[1] + l.box[3]) / 2
+            x_overlap = min(l.box[2], seller_line.box[2]) - max(l.box[0], seller_line.box[0])
+            if 0.3 * sh < scy - cy < 3 * sh and x_overlap > 0 and _cjk(l.text) >= 3 \
+                    and not re.search(r"\d{3}", l.text) and not _UBN_LABEL.search(l.text):
+                above.append(l)
         if above:
             l = max(above, key=lambda l: l.box[3])
             return l.text, l
@@ -513,8 +546,11 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict, dict]:
 
     total, net, tax = N.to_int(obj.get("total")), N.to_int(obj.get("net")), N.to_int(obj.get("tax"))
     amts = ocr_amounts(lines)
+    tl = ocr_total_line_amounts(lines)
     if total is not None and total in amts:
         prov["total"] = "ocr-confirmed"
+    elif tl:
+        total, prov["total"] = max(tl), "ocr-total-line"
     elif amts:
         total, prov["total"] = max(amts), "ocr-max"
     else:

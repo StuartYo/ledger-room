@@ -29,6 +29,18 @@ def load() -> dict:
     return json.loads((ROOT / "eval" / "results.json").read_text(encoding="utf-8"))
 
 
+def blind_lines(R: dict) -> list[str]:
+    B = R.get("blind_first_run")
+    if not B or "heldout" not in B["sets"]:
+        return []
+    h = B["sets"]["heldout"]
+    return [f"**Held-out, first blind run** (code {B['code_rev']}, before any change made after seeing held-out errors): "
+            f"Ledger Room F1 {f2(h['ledger_room']['f1'])} (P {pct(h['ledger_room']['precision'])}, "
+            f"R {pct(h['ledger_room']['recall'])}), pure model F1 {f2(h['pure_model']['f1'])}. "
+            f"The table above uses later code that fixes {R.get('fixes_after_blind', 'some')} reading bugs found on the "
+            "held-out set, so its held-out row is no longer blind.", ""]
+
+
 def readme_block(R: dict) -> str:
     rows = []
     for s, v in R["sets"].items():
@@ -51,6 +63,7 @@ def readme_block(R: dict) -> str:
         "|---|---|---|---|",
         *rows,
         "",
+        *blind_lines(R),
         f"Positive control: {pc['after_detected']}/{pc['after_planted']} planted changes detected, "
         f"{pc['after_false_flags']} false flags after, {pc['before_flags']} flags before. "
         f"Gate (stop if pure model >= {R['gate_threshold']:.0%} of Ledger Room): "
@@ -89,7 +102,8 @@ def results_md(R: dict) -> str:
          "",
          "Held-out set: different seed, different clients, different layouts (family B: other fonts, column order, "
          "landscape receipts, stronger photo effects). Its answers were committed before any prompt or code tuning; "
-         "tuning used the main set only.",
+         "tuning used the main set only. After the first evaluation, three generic reading bugs seen in held-out errors "
+         "were fixed; the blind numbers from before those fixes are kept below under \"First blind run\".",
          ""]
     for s, v in R["sets"].items():
         lr, pm = v["ledger_room"], v.get("pure_model")
@@ -118,6 +132,23 @@ def results_md(R: dict) -> str:
               + (f" Pure-model replies that were not valid JSON: {pm['unparsed_replies']}." if pm else ""), ""]
         if v.get("pure_over_ledger_f1") is not None:
             L += [f"Pure model F1 / Ledger Room F1 = {f2(v['pure_over_ledger_f1'])}.", ""]
+    B = R.get("blind_first_run")
+    if B:
+        L += ["## First blind run", "", B["note"], "",
+              f"Code {B['code_rev']}, reader {B['reader_version']}, {B['generated_at']}.", "",
+              "| Set | Ledger Room F1 (P / R) | Pure model F1 (P / R) | Ledger Room exact documents | Clean documents wrongly flagged |",
+              "|---|---|---|---|---|"]
+        for s, v in B["sets"].items():
+            a, b = v["ledger_room"], v["pure_model"]
+            L.append(f"| {s} | {f2(a['f1'])} ({pct(a['precision'])} / {pct(a['recall'])}) | "
+                     f"{f2(b['f1'])} ({pct(b['precision'])} / {pct(b['recall'])}) | {v['ledger_docs_exact']}/{v['n_docs']} | "
+                     f"{v['ledger_clean_flagged']}/{v['clean_docs']} |")
+        bpc = B["positive_control"]
+        L += ["", f"Positive control in that run: {bpc['after_detected']}/{bpc['after_planted']} detected, "
+              f"{bpc['after_false_flags']} false flag(s), {bpc['before_flags']} flags on the clean batch.", "",
+              f"Bugs found by reading those errors and fixed afterwards ({R.get('fixes_after_blind', '')}):", ""]
+        L += [f"- {x}" for x in R.get("fixes_after_blind_detail", [])]
+        L += [""]
     pc = R["positive_control"]
     L += ["## Positive control", "",
           f"- Clean batch: {pc['before_flags']} flags (expected 0).",
