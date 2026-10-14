@@ -83,7 +83,9 @@ Stage II will measure this on the organisers' Thunderstorm environment.
 **Offline.** The only step that needs the internet is the one-time model download. At run time nothing is sent out:
 OCR, the model and the rules run in-process, and the web app loads no external scripts, fonts or images. OpenVINO's
 optional telemetry package is installed as a dependency, but it is only used by the `ovc` model-conversion tool,
-which Ledger Room does not call.
+which Ledger Room does not call. Spot check on 2026-10-14: during a live run in the web app (model loading and
+reading), the server process's TCP connections were sampled every 6 seconds for a minute; none went to a non-local
+address. Stage II should repeat this with the network adapter disabled.
 
 ## Quick start (Windows, Python 3.12)
 
@@ -121,10 +123,10 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 
 | Set | Ledger Room micro F1 | Pure model micro F1 | Ledger Room s/doc (laptop iGPU) |
 |---|---|---|---|
-| main (52 docs, layout A) | 0.98 (P 96%, R 100%) | 0.17 (P 10%, R 50%) | 16.7 s |
+| main (52 docs, layout A) | 1.00 (P 100%, R 100%) | 0.17 (P 10%, R 50%) | 16.7 s |
 | heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 12.2 s |
 
-**Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code that fixes three reading bugs found on the held-out set, so its held-out row is no longer blind.
+**Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
 
 Positive control: 7/7 planted changes detected, 0 false flags after, 0 flags before. Gate (stop if pure model >= 95% of Ledger Room): max ratio 0.17, pass. Details: [eval/RESULTS.md](eval/RESULTS.md).
 

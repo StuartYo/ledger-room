@@ -102,8 +102,8 @@ def results_md(R: dict) -> str:
          "",
          "Held-out set: different seed, different clients, different layouts (family B: other fonts, column order, "
          "landscape receipts, stronger photo effects). Its answers were committed before any prompt or code tuning; "
-         "tuning used the main set only. After the first evaluation, three generic reading bugs seen in held-out errors "
-         "were fixed; the blind numbers from before those fixes are kept below under \"First blind run\".",
+         "tuning used the main set only. After the first evaluation, four fixes were made (one prompted by a held-out "
+         "error, one by the positive control); the blind numbers from before them are kept below under \"First blind run\".",
          ""]
     for s, v in R["sets"].items():
         lr, pm = v["ledger_room"], v.get("pure_model")
@@ -128,7 +128,8 @@ def results_md(R: dict) -> str:
                      f"{pct(b['recall']) if b else 'n/a'} | {pct(b['precision']) if b else 'n/a'} |")
         L += ["", f"Oracle control (rules on ground-truth fields): F1 {f2(v['oracle_fields']['f1'])}. "
               f"Rule engine time for the whole set: {lr['rules_ms_total']} ms. "
-              f"Fields the reader could not read and routed to a human: {lr['unreadable_fields']}."
+              f"Fields read by the model but not confirmed on the page: {lr['unreadable_fields']}; "
+              f"review items raised: {lr.get('review_items', 0)}."
               + (f" Pure-model replies that were not valid JSON: {pm['unparsed_replies']}." if pm else ""), ""]
         if v.get("pure_over_ledger_f1") is not None:
             L += [f"Pure model F1 / Ledger Room F1 = {f2(v['pure_over_ledger_f1'])}.", ""]
