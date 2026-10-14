@@ -64,12 +64,35 @@ RULES: dict[str, dict] = {
         "citations": [
             {"label": "VAT Act Art. 35: VAT is filed per two-month period",
              "url": LAW + "G0340080&flno=35"},
-            {"label": "VAT Enforcement Rules Art. 29: a voucher not filed in its period may be filed in the next; "
-                      "later than that requires a written reason",
+            {"label": "VAT Enforcement Rules Art. 29: input tax not claimed in its period may be claimed in the next; "
+                      "after that, with a stated reason, for up to ten years",
              "url": LAW + "G0340081&flno=29"},
         ],
     },
 }
+
+# Duplicates are cited by what the voucher actually carries. A voucher with input tax that this client would deduct
+# risks over-claimed VAT (Art. 51). A voucher without input tax (e.g. a taxi receipt) cannot over-claim VAT; there the
+# risk is the same expense being counted twice for income tax.
+CITE_DUP_VAT = [
+    {"label": "VAT Act Art. 51(1)(5): over-claimed input tax is penalised up to 5x", "url": LAW + "G0340080&flno=51"},
+]
+CITE_DUP_VAT_CROSS = CITE_DUP_VAT + [
+    {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
+     "url": LAW + "G0340080&flno=33"},
+]
+CITE_DUP_INCOME = [
+    {"label": "Income Tax Act Art. 24: taxable income is revenue minus the costs and expenses of the year",
+     "url": LAW + "G0340003&flno=24"},
+    {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67: an expense without its own original "
+              "voucher is not recognised",
+     "url": LAW + "G0340051&flno=67"},
+]
+CITE_PERIOD_EARLY = [
+    {"label": "VAT Enforcement Rules Art. 29: input tax not claimed in its period may be claimed in the next; "
+              "after that, with a stated reason, for up to ten years",
+     "url": LAW + "G0340081&flno=29"},
+]
 
 # The six issue types that are evaluated. READ_REVIEW is a routing note, not a finding.
 ISSUE_TYPES = list(RULES.keys())
@@ -79,13 +102,24 @@ RULES["READ_REVIEW"] = {
     "citations": [{"label": "Not a finding. Ledger Room only reports a checksum failure when the digits are confirmed "
                             "by OCR or by two of three independent reads.", "url": None}],
 }
+# Optional, only when the firm keeps a local copy of the MOF business-registration open data (see registry.py).
+# Not one of the six evaluated issue types: the synthetic UBNs are random and are not in any register.
+RULES["UBN_NOT_REGISTERED"] = {
+    "title": "UBN passes the checksum but is not in the business-registration file",
+    "severity": "warning",
+    "citations": [{"label": "MOF Fiscal Information Agency open data: national business (tax) registration file "
+                            "(local copy; see registry.py for the date of the copy)",
+                   "url": "https://data.gov.tw/dataset/9400"}],
+}
 
 # --- category lexicon (auditable keyword table; the model's category is only a fallback) ---
 S19_LEXICON: list[tuple[str, str, list[str]]] = [
     # (category, Art.19(1) item, keywords)
     ("entertainment", "item 3 (entertainment 交際應酬)",
      ["禮盒", "礼盒", "伴手禮", "伴手礼", "宴客", "宴請", "宴请", "餐敘", "招待", "紅酒", "红酒", "威士忌", "高粱",
-      "花籃", "花篮", "賀禮", "贺礼", "喜宴", "交際", "交际"]),   # simplified variants: OCR output
+      "花籃", "花篮", "賀禮", "贺礼", "喜宴", "交際", "交际",   # simplified variants: OCR output
+      # added after the real e-invoice check (2026-10-14) found beer and cocktails that the table missed
+      "啤酒", "調酒", "调酒", "清酒", "葡萄酒", "香檳", "梅酒", "燒酎", "雞尾酒"]),
     ("employee_benefit", "item 4 (employee personal benefits 酬勞員工)",
      ["員工旅遊", "員工旅游", "员工旅游", "尾牙", "員工禮品", "員工礼品", "員工獎品", "生日禮", "三節禮", "員工聚餐"]),
     ("passenger_car", "item 5 (passenger car for own use 自用乘人小汽車)",
@@ -141,6 +175,7 @@ class Exception_:
     evidence_fields: list[str]
     related_docs: list[str] = field(default_factory=list)
     confidence: str = "high"        # high = keyword/arith evidence; medium = model-suggested category
+    citations: list[dict] | None = None   # overrides the rule's default citations for this exception
 
     def to_dict(self) -> dict:
         r = RULES[self.rule_id]
@@ -154,7 +189,7 @@ class Exception_:
             "evidence_fields": self.evidence_fields,
             "related_docs": self.related_docs,
             "confidence": self.confidence,
-            "citations": r["citations"],
+            "citations": self.citations if self.citations is not None else r["citations"],
         }
 
 
@@ -234,12 +269,15 @@ def _hamming(a: str, b: str) -> int:
 
 # ---------------- the engine ----------------
 
-def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
+def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[Exception_]:
+    """registry: optional ledger_room.registry.Registry (local copy of the MOF business-registration file).
+    With it, a checksum failure that is one digit away from a registered business is reported as a likely misread,
+    and a well-formed number missing from the register gets a UBN_NOT_REGISTERED warning."""
     out: list[Exception_] = []
 
     for d in docs:
         c = clients[d.client_id]
-        # 1. UBN checksum
+        # 1. UBN checksum (+ optional registration lookup)
         for role in ("seller", "buyer"):
             v = getattr(d, f"{role}_ubn")
             why = d.uncertain.get(f"{role}_ubn")
@@ -252,9 +290,21 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
                 continue
             chk = ubnlib.check(v)
             if chk.well_formed and not chk.valid_new:
-                out.append(Exception_(d.doc_id, d.client_id, "UBN_CHECKSUM", "high",
-                                      f"{role.capitalize()} UBN {v}: {chk.explanation}.",
-                                      [f"{role}_ubn"]))
+                msg = f"{role.capitalize()} UBN {v}: {chk.explanation}."
+                if registry is not None:
+                    near = registry.near_misses(v)
+                    msg += (" One digit away from registered "
+                            + "; ".join(f"{u} {n}" for u, n in near[:3])
+                            + ": more likely a misread or a typo than a fake number; compare with the paper."
+                            if near else " No registered business is one digit away.")
+                out.append(Exception_(d.doc_id, d.client_id, "UBN_CHECKSUM", "high", msg, [f"{role}_ubn"]))
+            elif chk.well_formed and registry is not None and v != c.get("ubn"):
+                name = registry.name(v)
+                if name is None:
+                    out.append(Exception_(d.doc_id, d.client_id, "UBN_NOT_REGISTERED", "warning",
+                                          f"{role.capitalize()} UBN {v} passes the checksum but is not in the "
+                                          f"registration file ({registry.label}). New or closed business, or a made-up "
+                                          "number: check before deducting.", [f"{role}_ubn"]))
 
         # 4. Art.19
         tax = claimable_input_tax(d, c)
@@ -284,10 +334,12 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
         p0, p1 = date.fromisoformat(c["period"][0]), date.fromisoformat(c["period"][1])
         if d.date:
             if d.date < p0:
-                out.append(Exception_(d.doc_id, d.client_id, "PERIOD_MISMATCH", "medium",
-                                      f"Dated {d.date.isoformat()}, before the filing period {p0}..{p1}. "
-                                      "Prior-period voucher: needs a written reason if filed late (Enforcement Rules Art. 29).",
-                                      ["date"]))
+                # a warning, not an error: Art. 29 lets input tax be claimed in a later period
+                out.append(Exception_(d.doc_id, d.client_id, "PERIOD_MISMATCH", "warning",
+                                      f"Dated {d.date.isoformat()}, before the filing period {p0}..{p1}. Allowed as a "
+                                      "deferred claim (Enforcement Rules Art. 29; from the second period on, with a "
+                                      "stated reason). Confirm it was not already claimed in its own period.",
+                                      ["date"], citations=CITE_PERIOD_EARLY))
             elif d.date > p1:
                 out.append(Exception_(d.doc_id, d.client_id, "PERIOD_MISMATCH", "medium",
                                       f"Dated {d.date.isoformat()}, after the filing period ends ({p1}).",
@@ -338,17 +390,23 @@ def run_rules(docs: list[Doc], clients: dict[str, dict]) -> list[Exception_]:
             d = docs[i]
             earlier_same = [docs[j] for j in ms[:pos] if docs[j].client_id == d.client_id]
             others = [docs[j] for j in ms if docs[j].client_id != d.client_id]
+            tax = claimable_input_tax(d, clients[d.client_id])
+            why = (" This client would deduct its input tax twice." if tax > 0 else
+                   " It carries no input tax for this client, so the risk is the same expense counted twice "
+                   "(income tax), not over-claimed VAT.")
             if earlier_same:
                 e = earlier_same[0]
                 out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_MONTH", "high",
-                                      f"Same voucher already submitted by this client ({e.month}: {e.doc_id}).",
-                                      ["invoice_no", "seller_ubn", "date", "total"], related_docs=[e.doc_id]))
+                                      f"Same voucher already submitted by this client ({e.month}: {e.doc_id})." + why,
+                                      ["invoice_no", "seller_ubn", "date", "total"], related_docs=[e.doc_id],
+                                      citations=CITE_DUP_VAT if tax > 0 else CITE_DUP_INCOME))
             if others:
                 out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_CLIENT", "high",
                                       "Same voucher also appears under client(s) "
-                                      + ", ".join(sorted({o.client_id for o in others})) + ".",
+                                      + ", ".join(sorted({o.client_id for o in others})) + "." + why,
                                       ["invoice_no", "seller_ubn", "date", "total"],
-                                      related_docs=[o.doc_id for o in others]))
+                                      related_docs=[o.doc_id for o in others],
+                                      citations=CITE_DUP_VAT_CROSS if tax > 0 else CITE_DUP_INCOME))
     return out
 
 

@@ -7,24 +7,26 @@ from __future__ import annotations
 
 import getpass
 import hashlib
+import hmac
 import json
 import platform
 import subprocess
+import threading
 import time
-from dataclasses import asdict
 from datetime import date, datetime
 from pathlib import Path
 
 from PIL import Image
 
-from . import rules
+from . import export, keys, rules
 from .reader import EXTRACT_PROMPT
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = DATA / "out"
 READER_VERSION = "r7"   # bump when post-processing changes so cached reads are redone
-PII_RULE = {"label": "Bookkeeper personal-data safeguard regulation Art. 19: keep usage records and system logs",
+PII_RULE = {"label": "Bookkeepers' personal-data safeguard regulation Art. 19: keep personal-data usage records "
+                     "and automated-equipment trail data, for at least five years",
             "url": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340165&flno=19"}
 
 EVIDENCE = {
@@ -80,39 +82,61 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None) -> rules.Doc:
 
 
 class AuditLog:
-    """Append-only JSONL; each entry carries the SHA-256 of the previous one (tamper-evident)."""
+    """Append-only JSONL. Each entry carries the SHA-256 of the previous one and an HMAC-SHA256 under the operator key
+    (keys.py). The plain hash chain only shows accidental damage: someone who can write the disk can recompute it.
+    The HMAC makes an edit, insertion or deletion detectable by whoever holds the key, as long as the key is not on
+    the same disk as the log. Neither stops someone who holds both."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, key: bytes | None = None, append: bool = False):
         self.path = path
+        self.key = key if key is not None else keys.audit_key()
         self.prev = "0" * 64
         self.seq = 0
+        self.lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("", encoding="utf-8")
+        if append and path.exists() and path.stat().st_size:
+            last = path.read_text(encoding="utf-8").splitlines()[-1]
+            e = json.loads(last)
+            self.prev, self.seq = e["hash"], e["seq"]
+        else:
+            path.write_text("", encoding="utf-8")
 
     def add(self, event: str, **kw) -> None:
-        self.seq += 1
-        e = {"seq": self.seq, "ts": datetime.now().astimezone().isoformat(timespec="seconds"), "event": event, **kw,
-             "prev": self.prev}
-        body = json.dumps(e, ensure_ascii=False, sort_keys=True)
-        e["hash"] = hashlib.sha256(body.encode("utf-8")).hexdigest()
-        self.prev = e["hash"]
-        with self.path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(e, ensure_ascii=False, sort_keys=True) + "\n")
+        with self.lock:
+            self.seq += 1
+            e = {"seq": self.seq, "ts": datetime.now().astimezone().isoformat(timespec="seconds"), "event": event, **kw,
+                 "prev": self.prev}
+            body = json.dumps(e, ensure_ascii=False, sort_keys=True).encode("utf-8")
+            e["hash"] = hashlib.sha256(body).hexdigest()
+            e["mac"] = hmac.new(self.key, body, hashlib.sha256).hexdigest()
+            self.prev = e["hash"]
+            with self.path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(e, ensure_ascii=False, sort_keys=True) + "\n")
 
     @staticmethod
-    def verify(path: Path) -> tuple[bool, int]:
+    def verify_detail(path: Path, key: bytes | None = None) -> dict:
+        """chain_ok: hashes link up. mac_ok: every entry's HMAC matches `key` (None when no key was given).
+        n: entries checked before the first failure."""
         prev = "0" * 64
         n = 0
+        mac_ok = None if key is None else True
         for line in path.read_text(encoding="utf-8").splitlines():
             e = json.loads(line)
             h = e.pop("hash")
-            if e["prev"] != prev:
-                return False, n
-            if hashlib.sha256(json.dumps(e, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest() != h:
-                return False, n
+            m = e.pop("mac", None)
+            body = json.dumps(e, ensure_ascii=False, sort_keys=True).encode("utf-8")
+            if e["prev"] != prev or hashlib.sha256(body).hexdigest() != h:
+                return {"chain_ok": False, "mac_ok": False if key else None, "n": n}
+            if key is not None and (m is None or not hmac.compare_digest(m, hmac.new(key, body, hashlib.sha256).hexdigest())):
+                return {"chain_ok": True, "mac_ok": False, "n": n}
             prev = h
             n += 1
-        return True, n
+        return {"chain_ok": True, "mac_ok": mac_ok, "n": n}
+
+    @staticmethod
+    def verify(path: Path, key: bytes | None = None) -> tuple[bool, int]:
+        r = AuditLog.verify_detail(path, key)
+        return r["chain_ok"] and r["mac_ok"] is not False, r["n"]
 
 
 def cache_key(img_sha: str, model_id: str, raw: bool = False) -> str:
@@ -166,15 +190,18 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
     return b
 
 
-def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None) -> dict:
+def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
+          registry=None, operator: str | None = None) -> dict:
+    """registry: optional business-registration lookup (registry.py); the evaluation never passes one."""
     clients, docs = load_inbox(set_name)
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     rdir = OUT / "runs" / run_id
     log = AuditLog(rdir / "audit_log.jsonl")
-    log.add("run_start", run_id=run_id, inbox=f"data/{set_name}", n_docs=len(docs), operator=getpass.getuser(),
+    log.add("run_start", run_id=run_id, inbox=f"data/{set_name}", n_docs=len(docs), operator=operator or getpass.getuser(),
             host=platform.node(), code_rev=git_rev(), reader_version=READER_VERSION,
             model=reader.model_id if reader else "cache", device=reader.device if reader else "cache",
-            network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE)
+            network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE,
+            registry=registry.label if registry is not None else None)
     t0 = time.time()
     reads = read_docs(docs, reader, cache=cache, progress=progress)
     for d in docs:
@@ -183,7 +210,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"))
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"]) for d in docs]
-    excs = rules.run_rules(rdocs, clients)
+    excs = rules.run_rules(rdocs, clients, registry=registry)
     by_id = {d["doc_id"]: d for d in docs}
     out_ex = []
     for k, e in enumerate(excs):
@@ -215,6 +242,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         "run_id": run_id, "set": set_name, "n_docs": len(docs), "n_exceptions": len(out_ex),
         "by_rule": {rid: sum(1 for e in out_ex if e["rule_id"] == rid) for rid in rules.ISSUE_TYPES},
         "n_review": sum(1 for e in out_ex if e["rule_id"] == "READ_REVIEW"),
+        "n_warning": sum(1 for e in out_ex if e["severity"] == "warning"),
         "by_client": {cid: sum(1 for e in out_ex if e["client_id"] == cid) for cid in clients},
         "elapsed_s": elapsed,
         "mean_read_s": round(sum(per_doc_read) / len(per_doc_read), 2) if per_doc_read else None,
@@ -232,7 +260,9 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         "exceptions": out_ex,
         "rules": rules.RULES,
         "audit_log": str((rdir / "audit_log.jsonl").relative_to(OUT)).replace("\\", "/"),
+        "export_401": str((rdir / "export_401.csv").relative_to(OUT)).replace("\\", "/"),
     }
+    export.write_csv(result, rdir / "export_401.csv")
     (rdir / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     return result
 
@@ -254,7 +284,11 @@ def main():
         t = res["timing"].get("total_s")
         print(f"[{i}/{n}] {doc_id} {'cached' if res.get('cached') else f'{t}s'}", flush=True)
 
-    res = audit(args.set, reader, cache=not args.no_cache, progress=prog)
+    from .registry import load_default
+    reg = load_default()
+    if reg is not None:
+        print(f"business register: {reg.label}")
+    res = audit(args.set, reader, cache=not args.no_cache, progress=prog, registry=reg)
     print(json.dumps(res["summary"], ensure_ascii=False, indent=1))
 
 

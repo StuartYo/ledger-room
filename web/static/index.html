@@ -19,6 +19,8 @@
     <span class="pill ok" title="OCR and the model run on this machine through OpenVINO. The app makes no outbound requests.">
       <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Local only, no outbound requests</span>
     <span class="pill" id="modelPill">Model: Qwen3.5-2B INT4 on OpenVINO</span>
+    <span class="pill" id="userPill" hidden></span>
+    <button class="pill linkbtn" id="logoutBtn" hidden>Log out</button>
   </div>
 </header>
 
@@ -43,6 +45,7 @@
           <p class="muted" id="batchSub">Reads every document in every client folder, then runs the rule engine across the whole firm.</p>
         </div>
         <div class="btns">
+          <button id="exportBtn" class="btn" disabled>Export CSV <small>401 format codes</small></button>
           <button id="replayBtn" class="btn">Replay batch <small>cached reads</small></button>
           <button id="liveBtn" class="btn primary">Run live <small>re-read with the model</small></button>
         </div>
@@ -73,9 +76,23 @@
     <div id="tab-log" class="tabpane" hidden>
       <div id="logHead"></div>
       <div class="tablewrap"><table class="log" id="logTable"></table></div>
+      <h3 class="ophead">Operation log <small class="muted">who logged in, ran, viewed and exported (admin only)</small></h3>
+      <div id="opHead"></div>
+      <div class="tablewrap"><table class="log" id="opTable"></table></div>
     </div>
   </section>
 </main>
+
+<dialog id="login">
+  <form class="loginbox" id="loginForm">
+    <h3>Sign in to Ledger Room</h3>
+    <p class="muted small">Accounts are set up on this machine with <span class="mono">python -m web.users add</span>.</p>
+    <label class="lbl" for="lgUser">User</label><input id="lgUser" autocomplete="username" required>
+    <label class="lbl" for="lgPass">Password</label><input id="lgPass" type="password" autocomplete="current-password" required>
+    <p id="lgErr" class="err" hidden></p>
+    <button class="btn primary" type="submit">Sign in</button>
+  </form>
+</dialog>
 
 <dialog id="viewer">
   <div class="viewer">

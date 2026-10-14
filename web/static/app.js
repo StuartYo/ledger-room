@@ -1,7 +1,7 @@
 "use strict";
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const S = { set: "main", inbox: null, run: null, runId: null, client: "ALL", rules: new Set(), tab: "exceptions" };
+const S = { set: "main", inbox: null, run: null, runId: null, client: "ALL", rules: new Set(), tab: "exceptions", me: null };
 const RULE_SHORT = {
   UBN_CHECKSUM: "UBN checksum", DUP_CROSS_MONTH: "Duplicate, same client", DUP_CROSS_CLIENT: "Duplicate, across clients",
   S19_NONDEDUCTIBLE: "Art. 19 non-deductible", OVER_LIMIT: "Over policy limit", PERIOD_MISMATCH: "Period mismatch",
@@ -9,9 +9,49 @@ const RULE_SHORT = {
 const GOOD = new Set(["ocr-confirmed", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword"]);
 const ICON_LINK = '<svg viewBox="0 0 24 24"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>';
 
-async function j(url, opt) { const r = await fetch(url, opt); if (!r.ok) throw new Error(url + " " + r.status); return r.json(); }
+async function j(url, opt) {
+  const r = await fetch(url, opt);
+  if (r.status === 401) { await login(); return j(url, opt); }
+  if (!r.ok) throw new Error(url + " " + r.status);
+  return r.json();
+}
+
+// Sign-in: only when the office has set up accounts (python -m web.users add); otherwise one local user on 127.0.0.1.
+function login() {
+  return new Promise((resolve) => {
+    const dlg = $("#login");
+    $("#lgErr").hidden = true;
+    $("#loginForm").onsubmit = async (ev) => {
+      ev.preventDefault();
+      const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: $("#lgUser").value, password: $("#lgPass").value }) });
+      const b = await r.json();
+      if (!r.ok) { $("#lgErr").textContent = b.error || "Sign-in failed"; $("#lgErr").hidden = false; return; }
+      $("#lgPass").value = "";
+      dlg.close(); S.me = b; showUser(); resolve();
+    };
+    dlg.addEventListener("cancel", (e) => e.preventDefault());
+    if (!dlg.open) dlg.showModal();
+  });
+}
+
+function showUser() {
+  const me = S.me || {};
+  const pill = $("#userPill");
+  pill.hidden = !me.user || me.local;
+  pill.textContent = me.user ? `${me.user} (${me.role})` : "";
+  $("#logoutBtn").hidden = !me.user || me.local;
+  const admin = me.role === "admin";
+  $("#liveBtn").disabled = !admin;
+  $("#liveBtn").title = admin ? "" : "Only an admin can run the model live";
+}
 
 async function init() {
+  S.me = await (await fetch("/api/me")).json();
+  if (!S.me.user) await login();
+  showUser();
+  $("#logoutBtn").onclick = async () => { await fetch("/api/logout", { method: "POST" }); location.reload(); };
+  $("#exportBtn").onclick = () => { if (S.runId) location.href = `/api/export?run=${encodeURIComponent(S.runId)}`; };
   const boxes = await j("/api/inboxes");
   const sel = $("#inbox");
   sel.innerHTML = boxes.map((b) => `<option value="${esc(b.set)}">${esc(b.set)} (${b.n_docs} documents, ${b.n_clients} clients)</option>`).join("");
@@ -49,7 +89,7 @@ async function loadRun(runId) {
   if (S.tab === "log") renderLog();
 }
 
-const SEV_ORDER = { high: 0, medium: 1, review: 2 };
+const SEV_ORDER = { high: 0, medium: 1, warning: 2, review: 3 };
 function exceptions() {
   if (!S.run) return [];
   return S.run.exceptions
@@ -58,7 +98,7 @@ function exceptions() {
     .sort((a, b) => (SEV_ORDER[a.severity] ?? 3) - (SEV_ORDER[b.severity] ?? 3) || a.client_id.localeCompare(b.client_id) || a.doc_id.localeCompare(b.doc_id));
 }
 
-function renderAll() { renderClients(); renderStats(); renderChips(); renderExceptions(); renderDocs(); }
+function renderAll() { renderClients(); renderStats(); renderChips(); renderExceptions(); renderDocs(); $("#exportBtn").disabled = !S.runId; }
 
 function renderClients() {
   const counts = {};
@@ -190,16 +230,39 @@ function setTab(t) {
 
 async function renderLog() {
   if (!S.runId) { $("#logHead").innerHTML = `<p class="muted">No run yet.</p>`; $("#logTable").innerHTML = ""; return; }
+  if (S.me && S.me.role !== "admin") {
+    $("#logHead").innerHTML = `<p class="muted">The audit log and the operation log are visible to admins only.</p>`;
+    $("#logTable").innerHTML = ""; $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return;
+  }
   const L = await j(`/api/audit-log?run=${encodeURIComponent(S.runId)}`);
-  $("#logHead").innerHTML = `<div class="verify ${L.verified ? "ok" : "bad"}">
-    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>${L.verified ? '<path d="M9 12l2 2 4-4"/>' : ""}</svg>
-    ${L.verified ? `Hash chain verified: ${L.entries_verified} entries, none altered` : `Hash chain broken after entry ${L.entries_verified}`}</div>
-    <p class="muted small">Every read and every exception is logged with the document's SHA-256, the model and the device. Each entry carries the hash of the previous one,
-    so edits are detectable. Supports Art. 19 of the bookkeepers' personal-data safeguard regulation (usage records and system logs).</p>`;
+  $("#logHead").innerHTML = verifyBox(L) + `<p class="muted small">Every read and every exception is logged with the document's SHA-256, the model and the device.
+    Each entry carries the hash of the previous entry and an HMAC under the operator key, which is kept outside the data folder. That detects edits,
+    insertions and deletions made by anyone without the key; it cannot stop someone who holds both the disk and the key. Supports Art. 19 of the
+    bookkeepers' personal-data safeguard regulation (usage records and trail data, kept at least five years).</p>`;
+  renderOplog();
   $("#logTable").innerHTML = `<tr><th>#</th><th>Time</th><th>Event</th><th>Document</th><th>Detail</th><th>Hash</th></tr>` +
     L.entries.map((e) => `<tr><td>${e.seq}</td><td>${esc((e.ts || "").slice(11, 19))}</td><td>${esc(e.event)}</td>
       <td class="mono">${esc(e.doc_id || "")}</td>
       <td>${esc(e.rule_id || (e.event === "doc_read" ? `${e.model || ""} ${e.device || ""}${e.cached ? " (cached)" : ""}` : e.event === "run_start" ? e.network : e.event === "run_end" ? `${e.n_exceptions} exceptions` : ""))}</td>
+      <td class="h">${esc((e.hash || "").slice(0, 12))}</td></tr>`).join("");
+}
+
+function verifyBox(L) {
+  const ok = L.verified;
+  const what = !L.chain_ok ? `Hash chain broken after entry ${L.entries_verified}`
+    : L.mac_ok === false ? `HMAC mismatch after entry ${L.entries_verified}: an entry was changed without the operator key`
+    : L.mac_ok ? `Hash chain and HMAC verified: ${L.entries_verified} entries, none altered`
+    : `Hash chain verified (${L.entries_verified} entries); operator key not found on this machine, HMAC not checked`;
+  return `<div class="verify ${ok ? "ok" : "bad"}"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>${ok ? '<path d="M9 12l2 2 4-4"/>' : ""}</svg>${esc(what)}</div>`;
+}
+
+async function renderOplog() {
+  let L;
+  try { L = await j("/api/oplog"); } catch (e) { $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return; }
+  $("#opHead").innerHTML = verifyBox(L);
+  $("#opTable").innerHTML = `<tr><th>#</th><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>Hash</th></tr>` +
+    L.entries.slice().reverse().slice(0, 200).map((e) => `<tr><td>${e.seq}</td><td>${esc((e.ts || "").slice(5, 19).replace("T", " "))}</td>
+      <td>${esc(e.event)}</td><td>${esc(e.user || "")}</td><td class="mono">${esc(e.run_id || e.inbox || e.host || e.path || "")}</td>
       <td class="h">${esc((e.hash || "").slice(0, 12))}</td></tr>`).join("");
 }
 
@@ -227,7 +290,8 @@ async function startRun(live) {
       if (s.status === "error") { $("#progText").textContent = "Error: " + s.error; break; }
     }
   } finally {
-    $("#replayBtn").disabled = $("#liveBtn").disabled = false;
+    $("#replayBtn").disabled = false;
+    showUser();
   }
 }
 

@@ -114,6 +114,7 @@ select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid v
 .sev { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; font-weight: 700; }
 .sev.high { background: var(--stamp-soft); color: var(--stamp); }
 .sev.medium { background: var(--warn-soft); color: var(--warn); }
+.sev.warning { background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }
 .ex .msg { margin: 6px 0; }
 .ex .meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
 .cite { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; font-size: 12.5px; }
@@ -170,3 +171,12 @@ dialog::backdrop { background: rgba(10, 14, 25, .55); }
   .viewer { grid-template-columns: 1fr; }
 }
 .sev.review { background: var(--accent-soft); color: var(--accent); }
+
+#login { border: none; border-radius: var(--radius); padding: 0; box-shadow: var(--shadow); background: var(--card); color: var(--ink); }
+#login::backdrop { background: rgba(18, 21, 28, .55); }
+.loginbox { display: flex; flex-direction: column; gap: 6px; padding: 24px 26px; width: min(360px, 90vw); }
+.loginbox h3 { margin: 0 0 4px; }
+.loginbox input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+.loginbox .btn { margin-top: 10px; }
+.err { color: var(--stamp); font-size: 13px; margin: 4px 0 0; }
+.ophead { margin: 22px 0 6px; font-size: 15px; }

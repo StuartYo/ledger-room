@@ -41,6 +41,54 @@ def blind_lines(R: dict) -> list[str]:
             "(listed in eval/RESULTS.md), so its held-out row is no longer blind.", ""]
 
 
+def larger_lines(R: dict) -> list[str]:
+    """2B vs larger reader on the held-out set (markdown table + one sentence)."""
+    L = R.get("larger_model")
+    h = R["sets"].get("heldout")
+    if not L or not h:
+        return []
+    lr2, pm2, rd2 = h["ledger_room"], h.get("pure_model"), h["ledger_room"].get("reading")
+    lr9, pm9, rd9 = L["ledger_room"], L["pure_model"], L["reading"]
+
+    def row(name, lr, pm, rd, sp):
+        return (f"| {name} | {f2(lr['micro']['f1'])} | {f2(pm['micro']['f1']) if pm else 'n/a'} | "
+                f"{pct(rd['field_error_rate']) if rd else 'n/a'} ({rd['fields_wrong']}/{rd['fields_compared']}) | "
+                f"{rd['docs_items_right']}/{rd['docs']} | {sp} s |")
+    mem = L.get("memory", {})
+    cpu = L.get("cpu_sample")
+    return [
+        f"**Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, "
+        f"{L['model']} on {L['device']}:",
+        "",
+        "| Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |",
+        "|---|---|---|---|---|---|",
+        row(R["model"].split(" ")[0], lr2, pm2, rd2, lr2["sec_per_doc"]["mean"]),
+        row(L["model"], lr9, pm9, rd9, lr9["sec_per_doc"]["mean"]),
+        "",
+        f"Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Larger reader: "
+        f"{L['model_on_disk_gb']} GB on disk, peak process memory {mem.get('peak_commit_gb', 'n/a')} GB "
+        f"(iGPU shares system RAM), about {L['docs_per_hour']} documents per hour"
+        + (f"; on the CPU {cpu['mean']} s per document ({cpu['docs']} documents)." if cpu else "."),
+        "",
+    ]
+
+
+def einvoice_lines(R: dict) -> list[str]:
+    E = R.get("einvoice_check")
+    if not E:
+        return []
+    asif = E["rule_exceptions_as_if_issued_to_a_company"].get("S19_NONDEDUCTIBLE", 0)
+    return [f"**Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF "
+            f"platform ({E['months']} months; not a bookkeeping firm's client data; aggregates only). "
+            f"{E['invoices']} invoices / {E['line_items']} line items imported "
+            f"({E['invoices_with_discount_lines']} with discount lines, {E['invoices_with_zero_price_lines']} with "
+            f"zero-price lines). Seller UBNs passing the 2023 checksum: {E['seller_ubn_pass_2023_rule']} "
+            f"({E['sellers_failing_old_mod10_rule']} of them would fail an outdated mod-10 checker). "
+            f"Duplicates: {E['duplicates_found']}. Art. 19 keyword hits: {asif} invoices (alcohol); "
+            f"meal invoices: {E['expense_category'].get('meal', 0)}. "
+            f"Import plus rules: {E['ms_per_invoice_import_plus_rules']} ms per invoice.", ""]
+
+
 def readme_block(R: dict) -> str:
     rows = []
     for s, v in R["sets"].items():
@@ -59,11 +107,13 @@ def readme_block(R: dict) -> str:
         "Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo + OCR text in both columns; "
         "the pure model gets the rules in its prompt but no code checks.",
         "",
-        "| Set | Ledger Room micro F1 | Pure model micro F1 | Ledger Room s/doc (laptop iGPU) |",
+        "| Set | Ledger Room micro F1 | Pure model micro F1 | Read time per document (laptop iGPU) |",
         "|---|---|---|---|",
         *rows,
         "",
         *blind_lines(R),
+        *larger_lines(R),
+        *einvoice_lines(R),
         f"Positive control: {pc['after_detected']}/{pc['after_planted']} planted changes detected, "
         f"{pc['after_false_flags']} false flags after, {pc['before_flags']} flags before. "
         f"Gate (stop if pure model >= {R['gate_threshold']:.0%} of Ledger Room): "
@@ -131,6 +181,12 @@ def results_md(R: dict) -> str:
               f"Fields read by the model but not confirmed on the page: {lr['unreadable_fields']}; "
               f"review items raised: {lr.get('review_items', 0)}."
               + (f" Pure-model replies that were not valid JSON: {pm['unparsed_replies']}." if pm else ""), ""]
+        rd = lr.get("reading")
+        if rd:
+            L += [f"Reading (fields Ledger Room ends up with, against the key): {pct(rd['field_error_rate'])} of key fields "
+                  f"wrong ({rd['fields_wrong']}/{rd['fields_compared']}); documents with every key field right "
+                  f"{rd['docs_all_key_fields_right']}/{rd['docs']}; with every item line right {rd['docs_items_right']}/{rd['docs']}. "
+                  "Per field: " + ", ".join(f"{k} {x}" for k, x in rd["per_field"].items()) + ".", ""]
         if v.get("pure_over_ledger_f1") is not None:
             L += [f"Pure model F1 / Ledger Room F1 = {f2(v['pure_over_ledger_f1'])}.", ""]
     B = R.get("blind_first_run")
@@ -150,6 +206,18 @@ def results_md(R: dict) -> str:
               f"Bugs found by reading those errors and fixed afterwards ({R.get('fixes_after_blind', '')}):", ""]
         L += [f"- {x}" for x in R.get("fixes_after_blind_detail", [])]
         L += [""]
+    LG = larger_lines(R)
+    if LG:
+        LM = R["larger_model"]
+        L += ["## Larger reader on the held-out set", "",
+              f"Generated {LM['generated_at']} (code {LM['code_rev']}). Same code, same rules, same prompts; only the "
+              "model folder changes. The pure-model baseline is rerun with the larger model.", "", *LG,
+              "Reading errors per field (wrong / compared): 2B " +
+              ", ".join(f"{k} {v}" for k, v in R["sets"]["heldout"]["ledger_room"]["reading"]["per_field"].items()) +
+              f"; {LM['model']} " + ", ".join(f"{k} {v}" for k, v in LM["reading"]["per_field"].items()) + ".", ""]
+    EL = einvoice_lines(R)
+    if EL:
+        L += ["## Real e-invoice import check", "", *EL]
     pc = R["positive_control"]
     L += ["## Positive control", "",
           f"- Clean batch: {pc['before_flags']} flags (expected 0).",

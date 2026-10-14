@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from eval.read_accuracy import score_reads
 from ledger_room import pipeline, rules
 from ledger_room.pipeline import git_rev
 from synth.generate import to_rule_doc
@@ -119,7 +120,8 @@ def main():
             "layout_family": exp["layout_family"], "seed": exp["seed"], "issue_counts": exp["issue_counts"],
             "ledger_room": {**score(lr_pred, expd), "sec_per_doc": secs(lr_time), "rules_ms_total": rules_ms,
                             "unreadable_fields": run["summary"]["unreadable_fields"],
-                            "review_items": run["summary"]["n_review"]},
+                            "review_items": run["summary"]["n_review"],
+                            "reading": score_reads({d["doc_id"]: d for d in run["docs"]}, exp)},
             "oracle_fields": oracle(s)["micro"],
         }
         if not args.skip_baseline:
@@ -172,7 +174,20 @@ def main():
             "Expense category: seller names now match only multi-character terms (餐廳, 咖啡, 商旅...). Fix 3 exposed this "
             "on the main set, where OCR read a garage stamp 保養廠 as 保餐廠. (main)",
         ]
+    lg = ROOT / "eval" / "results_larger.json"
+    if lg.exists():   # written by eval.run_larger (larger reader on the held-out set)
+        results["larger_model"] = json.loads(lg.read_text(encoding="utf-8"))
+        h = results["sets"].get("heldout")
+        if h and h.get("ledger_room"):
+            results["larger_model"]["pure_over_ledger_f1"] = (
+                round(results["larger_model"]["pure_model"]["micro"]["f1"] / h["ledger_room"]["micro"]["f1"], 3)
+                if h["ledger_room"]["micro"]["f1"] else None)
+    ec = ROOT / "eval" / "results_einvoice_check.json"
+    if ec.exists():   # aggregates only, from eval.einvoice_check on a private platform export
+        results["einvoice_check"] = json.loads(ec.read_text(encoding="utf-8"))
     ratios = [v.get("pure_over_ledger_f1") for v in results["sets"].values() if v.get("pure_over_ledger_f1") is not None]
+    if results.get("larger_model", {}).get("pure_over_ledger_f1") is not None:
+        ratios.append(results["larger_model"]["pure_over_ledger_f1"])
     results["gate"] = {"rule": f"stop if pure-model micro F1 >= {GATE:.0%} of Ledger Room on any set",
                        "max_ratio": max(ratios) if ratios else None,
                        "stop": bool(ratios) and max(ratios) >= GATE}
