@@ -1,0 +1,1765 @@
+{
+ "synthetic": true,
+ "set": "main",
+ "seed": 20261014,
+ "layout_family": "A",
+ "frozen_at": "2026-10-14T10:50:41+08:00",
+ "n_docs": 52,
+ "n_clean": 28,
+ "issue_counts": {
+  "UBN_CHECKSUM": 4,
+  "DUP_CROSS_MONTH": 3,
+  "DUP_CROSS_CLIENT": 4,
+  "S19_NONDEDUCTIBLE": 5,
+  "OVER_LIMIT": 4,
+  "PERIOD_MISMATCH": 4
+ },
+ "docs": [
+  {
+   "doc_id": "C01/2026-09/IMG_1843.jpg",
+   "client_id": "C01",
+   "month": "2026-09",
+   "sha256": "4add6230721cbe638fe55b9a2202780c4780376fa50102540538497f1c9ddfe6",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-11",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "名片 2盒",
+      "qty": 1,
+      "amount": 500
+     },
+     {
+      "desc": "海報輸出 A1",
+      "qty": 3,
+      "amount": 1140
+     },
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7100
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 8740,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-09/IMG_3734.jpg",
+   "client_id": "C01",
+   "month": "2026-09",
+   "sha256": "f9a5ef8f2fe5f427db19414a724ab9bb372ff3df9bd4d819b9de5931911bfe22",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GT42401437",
+    "date": "2026-09-04",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "原子筆 12入",
+      "qty": 1,
+      "amount": 180
+     }
+    ],
+    "net": 180,
+    "tax": 9,
+    "total": 189,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-09/IMG_7120.jpg",
+   "client_id": "C01",
+   "month": "2026-09",
+   "sha256": "4e022f50cf2cf1475f52a0c2f184f4e68fb1805f8db9edf4100177d515317f6b",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-22",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "45707961",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "酸梅湯",
+      "qty": 2,
+      "amount": 60
+     },
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 80
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 2,
+      "amount": 380
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 520,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_2171.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "caf8acad192ded0add3c46dc6e6ee87cea64f6fbe7196ebe99c8fa34c39bb12a",
+   "issues": [
+    "OVER_LIMIT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "SH51395646",
+    "date": "2026-10-29",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "49738574",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 2,
+      "amount": 4400
+     }
+    ],
+    "net": 4190,
+    "tax": 210,
+    "total": 4400,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_3459.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "92c46811501726612b89ff7c18c0d951c2bcdd1ba309ab0d0f34739c0aa024b3",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "VG18906997",
+    "date": "2026-10-31",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "08062094",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "無線滑鼠",
+      "qty": 1,
+      "amount": 680
+     },
+     {
+      "desc": "外接硬碟 2TB",
+      "qty": 2,
+      "amount": 5680
+     }
+    ],
+    "net": 6360,
+    "tax": 318,
+    "total": 6678,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_4239.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "d1a53f5e714db89c20c71d2f6421707c6762071c9ee8c436c402c4c7667b1128",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "MD70752461",
+    "date": "2026-10-15",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "名片 2盒",
+      "qty": 2,
+      "amount": 900
+     },
+     {
+      "desc": "海報輸出 A1",
+      "qty": 1,
+      "amount": 550
+     }
+    ],
+    "net": 1450,
+    "tax": 72,
+    "total": 1522,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_4649.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "c5ae00fec6f3312a6acf1d70e4fdfbc1b6de250cdbd2c06a1de4be1110bb1139",
+   "issues": [
+    "DUP_CROSS_MONTH"
+   ],
+   "duplicate_of": "C01/2026-09/IMG_1843.jpg",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-11",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "名片 2盒",
+      "qty": 1,
+      "amount": 500
+     },
+     {
+      "desc": "海報輸出 A1",
+      "qty": 3,
+      "amount": 1140
+     },
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7100
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 8740,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_4668.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "93ea072efcfa34b670156f46ff961a020fa32fc49ec731d86d3d0895b5126528",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "QU89673890",
+    "date": "2026-10-31",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "45707961",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 120
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 2,
+      "amount": 60
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 180,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_4808.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "c92149634ebc13af9cb02b981f02638f1c41152f267e7352dd3e93aa7feb10e7",
+   "issues": [
+    "DUP_CROSS_MONTH"
+   ],
+   "duplicate_of": "C01/2026-09/IMG_3734.jpg",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GT42401437",
+    "date": "2026-09-04",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "原子筆 12入",
+      "qty": 1,
+      "amount": 180
+     }
+    ],
+    "net": 180,
+    "tax": 9,
+    "total": 189,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_6264.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "ce53c24e4b4559175205979f95f211b56f563a7f83bc94dcf3a870805cfa1e5b",
+   "issues": [
+    "PERIOD_MISMATCH"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "ZW16250406",
+    "date": "2026-11-03",
+    "invoice_period": null,
+    "seller_name": "永固建材行",
+    "seller_ubn": "46463576",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "PVC 管 4米",
+      "qty": 5,
+      "amount": 450
+     }
+    ],
+    "net": 450,
+    "tax": 22,
+    "total": 472,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_9039.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "a41ae0ce3805193b162f3691fdbef26e09dbf77b64627b54d483febbfdbc594c",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "DR87481551",
+    "date": "2026-10-25",
+    "invoice_period": null,
+    "seller_name": "好禮伴手禮專賣店",
+    "seller_ubn": "00317051",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "精緻禮盒",
+      "qty": 2,
+      "amount": 2360
+     }
+    ],
+    "net": 2360,
+    "tax": 118,
+    "total": 2478,
+    "note": "用途：中秋送客戶"
+   }
+  },
+  {
+   "doc_id": "C01/2026-10/IMG_9540.jpg",
+   "client_id": "C01",
+   "month": "2026-10",
+   "sha256": "2502d5ab44dafaa2e3aed149c28e5055c6c6f6e89450583cf0b5bf3014944145",
+   "issues": [
+    "UBN_CHECKSUM"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "DR66862046",
+    "date": "2026-10-22",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398328",
+    "buyer_name": "青嵐室內設計有限公司",
+    "buyer_ubn": "91541552",
+    "items": [
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 1,
+      "amount": 660
+     },
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 210
+     }
+    ],
+    "net": 870,
+    "tax": 44,
+    "total": 914,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-09/IMG_2725.jpg",
+   "client_id": "C02",
+   "month": "2026-09",
+   "sha256": "44cbf1eb6fa3a5a4dc9a1fb36f39d01f064dcaef11258e5092e118089799d845",
+   "issues": [
+    "UBN_CHECKSUM"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "XA54483993",
+    "date": "2026-09-16",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "22360766",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 320
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 320,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-09/IMG_3573.jpg",
+   "client_id": "C02",
+   "month": "2026-09",
+   "sha256": "396df2ff2d280c33d4e73e5e4b1d00644c29a3a3c3a016966adae888caec4a3e",
+   "issues": [
+    "OVER_LIMIT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-26",
+    "invoice_period": null,
+    "seller_name": "港邊海鮮餐廳",
+    "seller_ubn": "09563640",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "海鮮合菜 6人份",
+      "qty": 1,
+      "amount": 3480
+     },
+     {
+      "desc": "炒青菜",
+      "qty": 1,
+      "amount": 220
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 3700,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-09/IMG_3602.jpg",
+   "client_id": "C02",
+   "month": "2026-09",
+   "sha256": "972a51efa04840c4b807b0197ea16377843e62f64f5d1d96f5ceb3a597bec2f5",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-21",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "34207521",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 380
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 380,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-09/IMG_4830.jpg",
+   "client_id": "C02",
+   "month": "2026-09",
+   "sha256": "ef4ddcfb6137a9c81e61452f28ad3e22b21f7e4b7b384130c103e315a20f7f7a",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-20",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "22460766",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 280
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 280,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-09/IMG_8306.jpg",
+   "client_id": "C02",
+   "month": "2026-09",
+   "sha256": "13e57f87205beacc5be4bea17e4d8ecb2d9591cf448479a56c990941b98e32a8",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-22",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 4710
+     },
+     {
+      "desc": "名片 2盒",
+      "qty": 1,
+      "amount": 520
+     },
+     {
+      "desc": "海報輸出 A1",
+      "qty": 3,
+      "amount": 1470
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 6700,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-10/IMG_1953.jpg",
+   "client_id": "C02",
+   "month": "2026-10",
+   "sha256": "def903660bba42ae152336f8f894461c6f4fae3fbe545d7a4ed5688c9050b0cf",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "XB61950622",
+    "date": "2026-10-30",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "08062094",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": "85215306",
+    "items": [
+     {
+      "desc": "外接硬碟 2TB",
+      "qty": 2,
+      "amount": 5400
+     },
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1920
+     }
+    ],
+    "net": 7320,
+    "tax": 366,
+    "total": 7686,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-10/IMG_3715.jpg",
+   "client_id": "C02",
+   "month": "2026-10",
+   "sha256": "73e1a77a62dfa586b873ff36385348a5a700196262e4fcb7ed7f1214f7776757",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "TN05610705",
+    "date": "2026-10-11",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "49738574",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": "85215306",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2120
+     }
+    ],
+    "net": 2019,
+    "tax": 101,
+    "total": 2120,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-10/IMG_3878.jpg",
+   "client_id": "C02",
+   "month": "2026-10",
+   "sha256": "0b4ec3a4f4a6ab5c47c3574717704051ad33f4eb6d98798c287446d2923c5996",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-13",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "34207521",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 290
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 290,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C02/2026-10/IMG_7588.jpg",
+   "client_id": "C02",
+   "month": "2026-10",
+   "sha256": "30f4405a02367332bd7012d6ceb060a86c2e9691a218d86f367ab4d062116575",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "UC28665240",
+    "date": "2026-10-11",
+    "invoice_period": null,
+    "seller_name": "酒窖洋酒行",
+    "seller_ubn": "14720923",
+    "buyer_name": "港町咖啡有限公司",
+    "buyer_ubn": "85215306",
+    "items": [
+     {
+      "desc": "紅酒 750ml",
+      "qty": 2,
+      "amount": 2020
+     }
+    ],
+    "net": 2020,
+    "tax": 101,
+    "total": 2121,
+    "note": "招待廠商"
+   }
+  },
+  {
+   "doc_id": "C03/2026-09/IMG_4351.jpg",
+   "client_id": "C03",
+   "month": "2026-09",
+   "sha256": "5abaa2014ebc572d275e436cff7ebf6ac7b57b5b26f9f8f2eb0a0b67376e5a84",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "GZ27061694",
+    "date": "2026-09-05",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "63944962",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5720
+     },
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 2420
+     }
+    ],
+    "net": 7752,
+    "tax": 388,
+    "total": 8140,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-09/IMG_5532.jpg",
+   "client_id": "C03",
+   "month": "2026-09",
+   "sha256": "97fdfa966ffc1bdf42d0506bcd3046535ba22757341cc104ff431a5f55d507ab",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "JL22978841",
+    "date": "2026-09-06",
+    "invoice_period": null,
+    "seller_name": "栖山商旅",
+    "seller_ubn": "49738574",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2560
+     }
+    ],
+    "net": 2560,
+    "tax": 128,
+    "total": 2688,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-09/IMG_8109.jpg",
+   "client_id": "C03",
+   "month": "2026-09",
+   "sha256": "df647fbb7c4fa4660e11fdd6cfe93a606747c7bb148abcd456baf57721e37cb3",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "UN68173042",
+    "date": "2026-09-19",
+    "invoice_period": null,
+    "seller_name": "永固建材行",
+    "seller_ubn": "46463576",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "開關面板",
+      "qty": 10,
+      "amount": 1450
+     },
+     {
+      "desc": "電線 2.0mm 一捆",
+      "qty": 2,
+      "amount": 3380
+     },
+     {
+      "desc": "PVC 管 4米",
+      "qty": 5,
+      "amount": 300
+     }
+    ],
+    "net": 5130,
+    "tax": 256,
+    "total": 5386,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-09/IMG_9887.jpg",
+   "client_id": "C03",
+   "month": "2026-09",
+   "sha256": "b5300fb7133bf539bfefbae5cea080247c035163231c3f9bf00259328f006f30",
+   "issues": [
+    "PERIOD_MISMATCH"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-07-28",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "34207521",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 620
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 620,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_1307.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "6cd48a06338ed6661e3c3ec0aeab1e6f032267198ab961bd2a900a4064ed99f1",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-17",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "45707961",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 80
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 3,
+      "amount": 540
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 620,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_2384.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "37f618978499f74da0b2a3e50d4a94263c1c2b28fc26f5276314681e2ccfe58c",
+   "issues": [
+    "DUP_CROSS_MONTH"
+   ],
+   "duplicate_of": "C03/2026-09/IMG_5532.jpg",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "JL22978841",
+    "date": "2026-09-06",
+    "invoice_period": null,
+    "seller_name": "栖山商旅",
+    "seller_ubn": "49738574",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2560
+     }
+    ],
+    "net": 2560,
+    "tax": 128,
+    "total": 2688,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_2644.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "85c6b2aa21679628568679209333b8b8ddfd27008cd8a57df92a47d4db69c1b2",
+   "issues": [
+    "UBN_CHECKSUM"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "QN53922861",
+    "date": "2026-10-19",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "08062094",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "56476646",
+    "items": [
+     {
+      "desc": "外接硬碟 2TB",
+      "qty": 1,
+      "amount": 2800
+     },
+     {
+      "desc": "無線滑鼠",
+      "qty": 1,
+      "amount": 540
+     },
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1690
+     }
+    ],
+    "net": 5030,
+    "tax": 252,
+    "total": 5282,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_3095.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "d1c8ce819e840b4c4c34dd895e1dd7c04144ae17ac19d8438face1ca3dfc37c2",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "LJ11167523",
+    "date": "2026-10-13",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 150
+     },
+     {
+      "desc": "原子筆 12入",
+      "qty": 2,
+      "amount": 360
+     }
+    ],
+    "net": 486,
+    "tax": 24,
+    "total": 510,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_4404.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "de9c9b2c87ea7cd23bd85a81f3a95217166246702642aba2e6838a5eba5036f9",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": "C04/2026-10/IMG_1984.jpg",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-15",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7120
+     },
+     {
+      "desc": "名片 2盒",
+      "qty": 2,
+      "amount": 1120
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 8240,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_6681.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "4e7348a6668a58e238af3c10536d91c779ebf11a19a9ad4495fd82b47f1f555e",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "AP86468021",
+    "date": "2026-10-18",
+    "invoice_period": null,
+    "seller_name": "樂遊旅行社有限公司",
+    "seller_ubn": "16424503",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "員工旅遊團費",
+      "qty": 2,
+      "amount": 10700
+     }
+    ],
+    "net": 10700,
+    "tax": 535,
+    "total": 11235,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C03/2026-10/IMG_7830.jpg",
+   "client_id": "C03",
+   "month": "2026-10",
+   "sha256": "02e1b1c84b11eec848b6bbdfb1c06a696c5c49f863a50566f35053634587a2a4",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "ZN59224982",
+    "date": "2026-10-27",
+    "invoice_period": null,
+    "seller_name": "永固建材行",
+    "seller_ubn": "46463576",
+    "buyer_name": "北辰軟體工作室有限公司",
+    "buyer_ubn": "59476646",
+    "items": [
+     {
+      "desc": "PVC 管 4米",
+      "qty": 5,
+      "amount": 300
+     },
+     {
+      "desc": "配電箱",
+      "qty": 1,
+      "amount": 1660
+     },
+     {
+      "desc": "電線 2.0mm 一捆",
+      "qty": 2,
+      "amount": 3200
+     }
+    ],
+    "net": 5160,
+    "tax": 258,
+    "total": 5418,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-09/IMG_5229.jpg",
+   "client_id": "C04",
+   "month": "2026-09",
+   "sha256": "5e32b08dd2dd73f379a4d0850e51f6f419a059c084713e7a9a6efb76693642d6",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GP67940771",
+    "date": "2026-09-29",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "63944962",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 4930
+     }
+    ],
+    "net": 4930,
+    "tax": 246,
+    "total": 5176,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-09/IMG_7909.jpg",
+   "client_id": "C04",
+   "month": "2026-09",
+   "sha256": "418bd45bf79ade136a5e17799b195a28d3eb2578a4ff585afd75a95106c3b258",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "HG35047973",
+    "date": "2026-09-13",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "22460766",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 200
+     },
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 1,
+      "amount": 120
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 320,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-09/IMG_8482.jpg",
+   "client_id": "C04",
+   "month": "2026-09",
+   "sha256": "e4e51ca3b7f0c7937f8651fea4470dd4d4147fea94e657bff769453509b7e9bb",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "PD85248431",
+    "date": "2026-09-15",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "20234353",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 800
+     },
+     {
+      "desc": "宅配運費",
+      "qty": 3,
+      "amount": 510
+     }
+    ],
+    "net": 1248,
+    "tax": 62,
+    "total": 1310,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-09/IMG_8653.jpg",
+   "client_id": "C04",
+   "month": "2026-09",
+   "sha256": "2d9c884db9b89ad714184f9d739e1a10ff60f4ad7bf50c424d9d9316a034bdb3",
+   "issues": [
+    "PERIOD_MISMATCH"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZM33894036",
+    "date": "2026-09-05",
+    "invoice_period": "2026-07/2026-08",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "20234353",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1290
+     },
+     {
+      "desc": "宅配運費",
+      "qty": 1,
+      "amount": 170
+     }
+    ],
+    "net": 1390,
+    "tax": 70,
+    "total": 1460,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_1583.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "d6e4b258bcab35d46a665ff00976ccba6f155f58eb811ee06cd0e276c66553c8",
+   "issues": [
+    "OVER_LIMIT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "ND00728850",
+    "date": "2026-10-22",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "08062094",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "27吋螢幕",
+      "qty": 7,
+      "amount": 48930
+     }
+    ],
+    "net": 48930,
+    "tax": 2446,
+    "total": 51376,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_1984.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "dff9230573fda024d6c32905ddda7a84e873916c2526001b591e78aa9bd2a444",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-15",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "22210975",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7120
+     },
+     {
+      "desc": "名片 2盒",
+      "qty": 2,
+      "amount": 1120
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 8240,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_2144.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "c1f7028c065e5dc2e466eeee645d85996d24e661b2ce1cdeab89a5d4d2039b1c",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "RD60347243",
+    "date": "2026-10-17",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "22460766",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 1,
+      "amount": 120
+     },
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 220
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 340,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_7622.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "f287fa5f1782515903c9a839b27bc8e679f9e65bcb753c8f0290a522aee7bd03",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GM73085481",
+    "date": "2026-10-25",
+    "invoice_period": null,
+    "seller_name": "順風汽車保養廠",
+    "seller_ubn": "90523606",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "自用小客車定期保養",
+      "qty": 1,
+      "amount": 3480
+     }
+    ],
+    "net": 3480,
+    "tax": 174,
+    "total": 3654,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_8952.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "928c07d458caf0a409411d649e330cb7a3e8e90da6ae7ca2fa02892f4a26638d",
+   "issues": [
+    "UBN_CHECKSUM"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "TZ07582654",
+    "date": "2026-10-22",
+    "invoice_period": null,
+    "seller_name": "永固建材行",
+    "seller_ubn": "46466576",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "開關面板",
+      "qty": 6,
+      "amount": 750
+     },
+     {
+      "desc": "PVC 管 4米",
+      "qty": 5,
+      "amount": 400
+     }
+    ],
+    "net": 1150,
+    "tax": 58,
+    "total": 1208,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C04/2026-10/IMG_9595.jpg",
+   "client_id": "C04",
+   "month": "2026-10",
+   "sha256": "cd695b4c7f15902a2d1d7d69a41a86c650789ac67bfe142378534fc5e464c44f",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZT03247728",
+    "date": "2026-10-30",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "20234353",
+    "buyer_name": "禾豐農產有限公司",
+    "buyer_ubn": "72550077",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1490
+     },
+     {
+      "desc": "宅配運費",
+      "qty": 2,
+      "amount": 360
+     }
+    ],
+    "net": 1762,
+    "tax": 88,
+    "total": 1850,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-09/IMG_3143.jpg",
+   "client_id": "C05",
+   "month": "2026-09",
+   "sha256": "2b83aa8e474827a0ee7a2e5d0b71f77059c12429ab9cc480985e9d2ec6eb2614",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "RW51533414",
+    "date": "2026-09-02",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "全家福量販店",
+    "seller_ubn": "01102552",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "家用清潔用品組",
+      "qty": 1,
+      "amount": 799
+     }
+    ],
+    "net": 761,
+    "tax": 38,
+    "total": 799,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-09/IMG_4401.jpg",
+   "client_id": "C05",
+   "month": "2026-09",
+   "sha256": "0a0ea7f3fba47fc6f652846335c8e5b79bf279851c48bdcf65a9117a4748cfc1",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ML35324786",
+    "date": "2026-09-23",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "08062094",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "無線滑鼠",
+      "qty": 1,
+      "amount": 650
+     },
+     {
+      "desc": "27吋螢幕",
+      "qty": 2,
+      "amount": 11480
+     }
+    ],
+    "net": 11552,
+    "tax": 578,
+    "total": 12130,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-09/IMG_4968.jpg",
+   "client_id": "C05",
+   "month": "2026-09",
+   "sha256": "f89a4dc8cd4b17348049277e8582dbf00c418652bb829031e967a0377e8e6ac8",
+   "issues": [
+    "PERIOD_MISMATCH"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "CN54100676",
+    "date": "2026-08-30",
+    "invoice_period": "2026-07/2026-08",
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 2470
+     },
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 2,
+      "amount": 1520
+     }
+    ],
+    "net": 3800,
+    "tax": 190,
+    "total": 3990,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-09/IMG_5778.jpg",
+   "client_id": "C05",
+   "month": "2026-09",
+   "sha256": "5c1bd7050358037c88f7601d5fe4c1db7e90108ef7e98ae806e7173bfc4d4ec3",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "RQ09594680",
+    "date": "2026-09-30",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 500
+     },
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 1,
+      "amount": 780
+     }
+    ],
+    "net": 1280,
+    "tax": 64,
+    "total": 1344,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-09/IMG_8446.jpg",
+   "client_id": "C05",
+   "month": "2026-09",
+   "sha256": "0da137e01eece9410fb45b63e1f321378d3b2ed0324e1a22e1d1073750d8cc6f",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-30",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "34207521",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 350
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 350,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-10/IMG_1131.jpg",
+   "client_id": "C05",
+   "month": "2026-10",
+   "sha256": "71515ff206756661d54e9f97d3f2e8cdec7555dccc787dbef7f613f093eddf2f",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GT16618627",
+    "date": "2026-10-10",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "16398028",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 400
+     },
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 2,
+      "amount": 1380
+     },
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 2400
+     }
+    ],
+    "net": 4180,
+    "tax": 209,
+    "total": 4389,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-10/IMG_1785.jpg",
+   "client_id": "C05",
+   "month": "2026-10",
+   "sha256": "4bc7bdc184994d90afd48d3adccc850379a8185668cceb464f753dbc88bd34aa",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": "C04/2026-10/IMG_2144.jpg",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "RD60347243",
+    "date": "2026-10-17",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "22460766",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 1,
+      "amount": 120
+     },
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 220
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 340,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-10/IMG_3755.jpg",
+   "client_id": "C05",
+   "month": "2026-10",
+   "sha256": "2f81729eb391190b112e333b98f5bef3b98da78074fe407848c25b2f53bfc4ee",
+   "issues": [
+    "OVER_LIMIT"
+   ],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-17",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "34207521",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 1450
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 1450,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-10/IMG_3758.jpg",
+   "client_id": "C05",
+   "month": "2026-10",
+   "sha256": "91f09a4eaf5fc12c1ed518f7d6f9b743215e73ebd066f74a80f2c225a967e8cc",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "PJ57032863",
+    "date": "2026-10-10",
+    "invoice_period": null,
+    "seller_name": "栖山商旅",
+    "seller_ubn": "49738574",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2420
+     }
+    ],
+    "net": 2420,
+    "tax": 121,
+    "total": 2541,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "C05/2026-10/IMG_5513.jpg",
+   "client_id": "C05",
+   "month": "2026-10",
+   "sha256": "2982bb31cf6e48b18aedda91626965c23e7c51b747bfc55d3683a2f880fa77ec",
+   "issues": [],
+   "duplicate_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "PN36101240",
+    "date": "2026-10-01",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "20234353",
+    "buyer_name": "明川水電工程有限公司",
+    "buyer_ubn": "52714197",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1040
+     },
+     {
+      "desc": "宅配運費",
+      "qty": 1,
+      "amount": 160
+     }
+    ],
+    "net": 1143,
+    "tax": 57,
+    "total": 1200,
+    "note": null
+   }
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+# dependencies / envs
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# model weights never go into git (download to E:\models or set LEDGER_MODEL_DIR)
+models/
+*.bin
+*.safetensors
+openvino_*.xml
+openvino_*.bin
+
+# pipeline outputs (regenerable)
+data/out/
+eval/runs/
+
+# secrets / local
+.env
+.env.*
+*.log
