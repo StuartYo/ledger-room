@@ -102,6 +102,39 @@ RULES["READ_REVIEW"] = {
     "citations": [{"label": "Not a finding. Ledger Room only reports a checksum failure when the digits are confirmed "
                             "by OCR or by two of three independent reads.", "url": None}],
 }
+# Routing rules: they decide whether a line may go into the filing, but they are not among the six evaluated issue
+# types (the answer keys were frozen before they existed). Their counts are reported separately.
+RULES["AMOUNT_MISMATCH"] = {
+    "title": "Hold: the amounts do not add up (net + tax = total, tax = 5% of net)",
+    "severity": "hold",
+    "citations": [{"label": "Arithmetic check, not a legal finding: on a voucher with tax, net + tax must equal the total "
+                            "(NT$1 rounding allowed). Usually a misread amount; fix it before the line is exported.",
+                   "url": None}],
+}
+RULES["BUYER_NOT_CLIENT"] = {
+    "title": "No deductible input tax: the buyer UBN is missing or is not this client",
+    "severity": "medium",
+    "citations": [
+        {"label": "VAT Act Art. 19(1)(1): input tax is not deductible without the vouchers required by Art. 33",
+         "url": LAW + "G0340080&flno=19"},
+        {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
+         "url": LAW + "G0340080&flno=33"},
+    ],
+}
+RULES["BUYER_PRESUMED"] = {
+    "title": "Hold: buyer UBN could not be read; the buyer name looks like this client",
+    "severity": "hold",
+    "citations": [{"label": "Not deducted on a guess: VAT Act Art. 33 requires the buyer UBN on the voucher. "
+                            "Check the paper before deducting.", "url": LAW + "G0340080&flno=33"}],
+}
+RULES["SMALL_RECEIPT_CAP"] = {
+    "title": "Plain receipts from small businesses above 3% of the year's expenses",
+    "severity": "warning",
+    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(3): plain receipts (普通收據) from "
+                            "small businesses count only up to 3% (千分之三十) of the year's manufacturing and operating "
+                            "expenses", "url": LAW + "G0340051&flno=67"}],
+}
+
 # Optional, only when the firm keeps a local copy of the MOF business-registration open data (see registry.py).
 # Not one of the six evaluated issue types: the synthetic UBNs are random and are not in any register.
 RULES["UBN_NOT_REGISTERED"] = {
@@ -128,6 +161,10 @@ S19_LEXICON: list[tuple[str, str, list[str]]] = [
      ["家用", "私人", "個人用"]),
 ]
 S19_MODEL_CATEGORIES = {c for c, _, _ in S19_LEXICON}
+# Alcohol and meals are often entertainment, but a restaurant buys beer to resell and staff travel meals can be
+# business costs. A match on these words is reported as "to confirm", not as a finding.
+TO_CONFIRM_KW = {"紅酒", "红酒", "威士忌", "高粱", "啤酒", "調酒", "调酒", "清酒", "葡萄酒", "香檳", "梅酒", "燒酎", "雞尾酒",
+                 "宴客", "宴請", "宴请", "餐敘", "喜宴", "員工聚餐"}
 
 EXPENSE_LEXICON: list[tuple[str, list[str]]] = [
     ("taxi", ["計程車", "車資", "乘車", "叫車"]),
@@ -246,13 +283,29 @@ def expense_category(d: Doc, client_name: str | None = None) -> tuple[str | None
     return None, None
 
 
-def claimable_input_tax(d: Doc, client: dict) -> int:
-    """Input tax this client would deduct from this voucher (0 if none)."""
-    if d.doc_type not in ("e_invoice", "triplicate_invoice"):
+TAX_VOUCHERS = ("e_invoice", "triplicate_invoice", "two_part_register")
+
+
+def buyer_presumed(d: Doc, client: dict) -> bool:
+    """Buyer UBN unreadable on a triplicate invoice, but the printed buyer name looks like this client."""
+    return (d.buyer_ubn is None and d.doc_type == "triplicate_invoice"
+            and name_sim(d.buyer_name, client.get("name")) >= 0.7)
+
+
+def amounts_inconsistent(net, tax, total) -> bool:
+    """net + tax != total, or tax is not 5% of net, beyond NT$1 rounding (only when all three are known and tax > 0).
+    Assumes the standard 5% rate; zero-rated or special-rate vouchers would need their own rate."""
+    if net is None or tax is None or total is None or not tax:
+        return False
+    return abs(net + tax - total) > 1 or abs(tax - net * 0.05) > 1
+
+
+def claimable_input_tax(d: Doc, client: dict, allow_presumed: bool = False) -> int:
+    """Input tax this client could deduct from this voucher (0 if none). allow_presumed=True also counts a voucher
+    whose buyer UBN could not be read but whose buyer name matches: used to explain risk, never to deduct."""
+    if d.doc_type not in TAX_VOUCHERS:
         return 0
-    presumed = (d.buyer_ubn is None and d.doc_type == "triplicate_invoice"
-                and name_sim(d.buyer_name, client.get("name")) >= 0.7)   # buyer UBN unreadable, name matches
-    if d.buyer_ubn != client["ubn"] and not presumed:
+    if d.buyer_ubn != client["ubn"] and not (allow_presumed and buyer_presumed(d, client)):
         return 0
     if d.tax:
         return d.tax
@@ -306,16 +359,49 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                                           f"registration file ({registry.label}). New or closed business, or a made-up "
                                           "number: check before deducting.", [f"{role}_ubn"]))
 
-        # 4. Art.19
-        tax = claimable_input_tax(d, c)
+        # 4. Art.19 (a held voucher with a presumed buyer is still checked, so the risk is visible)
+        tax = claimable_input_tax(d, c, allow_presumed=True)
         if tax > 0:
             cat, kw, conf = s19_category(d)
             if cat:
                 art = next(a for cc, a, _ in S19_LEXICON if cc == cat)
                 why = f"keyword '{kw}'" if kw else "model-suggested category (no keyword match; confirm)"
-                out.append(Exception_(d.doc_id, d.client_id, "S19_NONDEDUCTIBLE", "medium",
-                                      f"Input tax NT${tax:,} is not deductible: Art. 19(1) {art}; {why}.",
-                                      ["items", "note"], confidence=conf))
+                if kw in TO_CONFIRM_KW:
+                    out.append(Exception_(d.doc_id, d.client_id, "S19_NONDEDUCTIBLE", "warning",
+                                          f"To confirm: input tax NT${tax:,} is not deductible if this was entertainment "
+                                          f"or a staff benefit (Art. 19(1) {art}); {why}. Deductible if bought for resale "
+                                          "or as a business cost.", ["items", "note"], confidence=conf))
+                else:
+                    out.append(Exception_(d.doc_id, d.client_id, "S19_NONDEDUCTIBLE", "medium",
+                                          f"Input tax NT${tax:,} is not deductible: Art. 19(1) {art}; {why}.",
+                                          ["items", "note"], confidence=conf))
+
+        # 7. deductibility of the voucher itself (Art. 19(1)(1), Art. 33)
+        if d.doc_type in TAX_VOUCHERS:
+            if buyer_presumed(d, c):
+                out.append(Exception_(d.doc_id, d.client_id, "BUYER_PRESUMED", "hold",
+                                      f"Buyer UBN not readable; printed buyer name '{d.buyer_name}' looks like this client. "
+                                      "Held: not deducted until the UBN is checked on the paper.", ["buyer_ubn"]))
+            elif d.buyer_ubn and d.buyer_ubn != c["ubn"]:
+                out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "medium",
+                                      f"Buyer UBN {d.buyer_ubn} is not this client's ({c['ubn']}): its input tax cannot be "
+                                      "deducted by this client.", ["buyer_ubn"]))
+            elif not d.buyer_ubn:
+                out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "warning",
+                                      "No buyer UBN on the voucher (consumer-style invoice): an expense voucher only, "
+                                      "no deductible input tax.", ["buyer_ubn"]))
+
+        # 8. arithmetic: net + tax = total and tax = 5% of net; a deductible line also needs both amounts read
+        if amounts_inconsistent(d.net, d.tax, d.total):
+            out.append(Exception_(d.doc_id, d.client_id, "AMOUNT_MISMATCH", "hold",
+                                  f"Net NT${d.net:,} + tax NT${d.tax:,} (total NT${d.total if d.total is not None else 0:,}) "
+                                  "do not add up, or the tax is not 5% of the net. Probably a misread amount; held until "
+                                  "corrected.", ["net", "tax", "total"]))
+        elif (d.doc_type in TAX_VOUCHERS and d.buyer_ubn == c["ubn"]
+              and (d.net is None or d.tax is None)):
+            out.append(Exception_(d.doc_id, d.client_id, "AMOUNT_MISMATCH", "hold",
+                                  "Net or tax not read on a voucher this client would deduct; held until both are filled in.",
+                                  ["net", "tax", "total"]))
 
         # 5. policy limit
         limits = c.get("policy", {})
@@ -350,6 +436,22 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                     out.append(Exception_(d.doc_id, d.client_id, "PERIOD_MISMATCH", "medium",
                                           f"Printed invoice period {d.invoice_period} does not contain the printed date "
                                           f"{d.date.isoformat()} (internal inconsistency).", ["date", "invoice_period"]))
+
+    # 9. Audit Regulations Art. 67(3): plain receipts from small businesses, cumulative per client (only when the
+    #    client's yearly manufacturing + operating expenses are configured as "annual_expenses")
+    run_sum: dict[str, int] = defaultdict(int)
+    for d in sorted(docs, key=lambda x: (x.client_id, x.date or date.min, x.doc_id)):
+        c = clients[d.client_id]
+        cap_base = c.get("annual_expenses")
+        if not cap_base or d.doc_type != "receipt" or d.tax or d.total is None:
+            continue
+        run_sum[d.client_id] += d.total
+        cap = round(cap_base * 0.03)
+        if run_sum[d.client_id] > cap:
+            out.append(Exception_(d.doc_id, d.client_id, "SMALL_RECEIPT_CAP", "warning",
+                                  f"Plain receipts so far NT${run_sum[d.client_id]:,} exceed 3% of the client's yearly "
+                                  f"expenses (NT${cap:,}); the excess is not recognised as an expense. Assumes the "
+                                  "seller is a small business issuing plain receipts.", ["total"]))
 
     # 2/3. duplicates: union-find over invoice number, or seller+date+total
     parent = list(range(len(docs)))
@@ -390,19 +492,25 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             d = docs[i]
             earlier_same = [docs[j] for j in ms[:pos] if docs[j].client_id == d.client_id]
             others = [docs[j] for j in ms if docs[j].client_id != d.client_id]
-            tax = claimable_input_tax(d, clients[d.client_id])
+            tax = claimable_input_tax(d, clients[d.client_id], allow_presumed=True)
+            same_no = lambda o: bool(d.invoice_no) and d.invoice_no == o.invoice_no   # noqa: E731
             why = (" This client would deduct its input tax twice." if tax > 0 else
                    " It carries no input tax for this client, so the risk is the same expense counted twice "
                    "(income tax), not over-claimed VAT.")
+            maybe = ("Possible duplicate (same seller, date and amount, no shared invoice number; two same-day "
+                     "purchases at the same price are normal, so check with the client): ")
             if earlier_same:
                 e = earlier_same[0]
-                out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_MONTH", "high",
+                sure = same_no(e)
+                out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_MONTH", "high" if sure else "warning",
+                                      ("" if sure else maybe) +
                                       f"Same voucher already submitted by this client ({e.month}: {e.doc_id})." + why,
                                       ["invoice_no", "seller_ubn", "date", "total"], related_docs=[e.doc_id],
                                       citations=CITE_DUP_VAT if tax > 0 else CITE_DUP_INCOME))
             if others:
-                out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_CLIENT", "high",
-                                      "Same voucher also appears under client(s) "
+                sure = any(same_no(o) for o in others)
+                out.append(Exception_(d.doc_id, d.client_id, "DUP_CROSS_CLIENT", "high" if sure else "warning",
+                                      ("" if sure else maybe) + "Same voucher also appears under client(s) "
                                       + ", ".join(sorted({o.client_id for o in others})) + "." + why,
                                       ["invoice_no", "seller_ubn", "date", "total"],
                                       related_docs=[o.doc_id for o in others],

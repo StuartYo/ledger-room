@@ -60,6 +60,9 @@ def main():
     ap.add_argument("--model-dir", required=True)
     ap.add_argument("--device", default=None)
     ap.add_argument("--cpu-sample", type=int, default=0, help="also time N held-out documents on the CPU")
+    ap.add_argument("--skip-baseline", action="store_true", help="reading and Ledger Room only")
+    ap.add_argument("--out", default="results_larger.json")
+    ap.add_argument("--score-only", action="store_true", help="re-score from caches (no model load)")
     a = ap.parse_args()
     from eval.baseline import run_baseline
     from ledger_room.reader import Reader
@@ -67,11 +70,16 @@ def main():
     s = "heldout"
     exp = load_expected(s)
     expd = {d["doc_id"]: set(d["issues"]) for d in exp["docs"]}
-    reader = Reader(a.model_dir, a.device)
-    print(f"model {reader.model_id} on {reader.device}, load {reader.load_s}s", flush=True)
+    mid = Path(a.model_dir).name
+    if a.score_only:   # re-score cached reads and cached baseline answers with the current rules; keep timings/memory
+        reader = None
+        old = json.loads((ROOT / "eval" / a.out).read_text(encoding="utf-8"))
+    else:
+        reader = Reader(a.model_dir, a.device)
+        print(f"model {reader.model_id} on {reader.device}, load {reader.load_s}s", flush=True)
     prog = lambda tag: (lambda i, n, did, r: print(f"[{tag} {i}/{n}] {did}", flush=True))   # noqa: E731
     t0 = time.time()
-    run = pipeline.audit(s, reader, run_id=f"eval-{s}-{reader.model_id}", progress=prog("ledger"))
+    run = pipeline.audit(s, reader, run_id=f"eval-{s}-{mid}", progress=prog("ledger"), model_id=mid)
     lr_wall = time.time() - t0
     pred = {}
     for e in run["exceptions"]:
@@ -79,21 +87,22 @@ def main():
             pred.setdefault(e["doc_id"], set()).add(e["rule_id"])
     reads = {d["doc_id"]: d for d in run["docs"]}
     lr_times = [d["timing"].get("total_s") for d in run["docs"]]
-    base = run_baseline(s, reader, progress=prog("pure"))
-    bp = {k: set(v["issues"]) for k, v in base.items()}
+    base = None if a.skip_baseline else run_baseline(s, reader, progress=prog("pure"), model_id=mid)
+    bp = {k: set(v["issues"]) for k, v in base.items()} if base else {}
     out = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"), "code_rev": git_rev(),
-        "set": s, "model": reader.model_id, "device": reader.device, "load_s": reader.load_s,
+        "set": s, "model": mid, "device": reader.device if reader else old["device"],
+        "load_s": reader.load_s if reader else old.get("load_s"),
         "model_on_disk_gb": dir_gb(Path(a.model_dir)),
         "hardware": "same laptop: Intel Core i7-13620H, Intel UHD iGPU (shared memory), 32 GB RAM",
         "ledger_room": {**score(pred, expd), "sec_per_doc": secs(lr_times),
                         "unreadable_fields": run["summary"]["unreadable_fields"], "review_items": run["summary"]["n_review"]},
-        "pure_model": {**score(bp, expd), "sec_per_doc": secs([v["seconds"] for v in base.values()]),
-                       "unparsed_replies": sum(1 for v in base.values() if not v["parsed"])},
-        "reading": score_reads(reads, exp),
+        "pure_model": ({**score(bp, expd), "sec_per_doc": secs([v["seconds"] for v in base.values()]),
+                        "unparsed_replies": sum(1 for v in base.values() if not v["parsed"])} if base else None),
+        "reading": score_reads(reads, exp, held={e["doc_id"] for e in run["exceptions"] if e["rule_id"] == "AMOUNT_MISMATCH"}),
         "docs_per_hour": round(3600 / statistics.mean([x for x in lr_times if x])),
-        "wall_s_ledger_room": round(lr_wall, 1),
-        "memory": peak_memory_gb(),
+        "memory": peak_memory_gb() if reader else old.get("memory", {}),
+        "thinking": reader.thinking if reader else old.get("thinking", "off"),
     }
     if a.cpu_sample:
         del reader
@@ -107,9 +116,9 @@ def main():
             print("cpu", d["doc_id"], ts[-1], flush=True)
         out["cpu_sample"] = {"docs": len(ts), "sec_per_doc": ts, "mean": round(statistics.mean(ts), 1), "load_s": cpu.load_s,
                              "memory_after": peak_memory_gb()}
-    p = ROOT / "eval" / "results_larger.json"
+    p = ROOT / "eval" / a.out
     p.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps({k: out[k] for k in ("ledger_room", "pure_model")}, indent=1)[:1500])
+    print(json.dumps({k: out[k] for k in ("ledger_room", "pure_model")}, indent=1)[:800])
     print("reading", out["reading"], "memory", out["memory"])
 
 

@@ -63,4 +63,41 @@ def test_401_export_codes():
     rows = {r["doc_id"]: r for r in export.rows(res)}
     assert (rows["t"]["format_code_格式代號"], rows["t"]["deduction_code_扣抵代號"], rows["t"]["status"]) == ("21", "1", "READY")
     assert (rows["g"]["format_code_格式代號"], rows["g"]["deduction_code_扣抵代號"]) == ("25", "3")
-    assert rows["r"]["status"] == "NOT_IN_401" and rows["t"]["date_roc"] == "1150903"
+    assert rows["r"]["status"] == "NOT_IN_FILE" and rows["t"]["date_roc"] == "1150903"
+
+
+def test_amount_rule_holds_misread_amounts():
+    ok = rules.Doc("ok", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="00501503", net=1000, tax=50, total=1050)
+    bad_sum = rules.Doc("s", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="00501503", net=1000, tax=50, total=1500)
+    bad_rate = rules.Doc("r", "A", "2026-09", doc_type="e_invoice", buyer_ubn="00501503", net=1950, tax=460, total=2410)
+    missing = rules.Doc("m", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="00501503", total=1050)
+    held = {e.doc_id for e in rules.run_rules([ok, bad_sum, bad_rate, missing], CL) if e.rule_id == "AMOUNT_MISMATCH"}
+    assert held == {"s", "r", "m"}
+
+
+def test_buyer_rules_and_presumed_hold():
+    other = rules.Doc("o", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="12345675", net=100, tax=5, total=105)
+    b2c = rules.Doc("c", "A", "2026-09", doc_type="e_invoice", net=100, tax=5, total=105)
+    guess = rules.Doc("g", "A", "2026-09", doc_type="triplicate_invoice", buyer_name="甲公司", net=100, tax=5, total=105)
+    ex = {(e.doc_id, e.rule_id, e.severity) for e in rules.run_rules([other, b2c, guess], CL)}
+    assert ("o", "BUYER_NOT_CLIENT", "medium") in ex and ("c", "BUYER_NOT_CLIENT", "warning") in ex
+    assert ("g", "BUYER_PRESUMED", "hold") in ex
+    assert rules.claimable_input_tax(guess, CL["A"]) == 0          # never deducted on a guess
+
+
+def test_possible_duplicate_and_alcohol_to_confirm():
+    ex = [e for e in rules.run_rules([taxi("A", "a"), taxi("B", "b")], CL) if e.rule_id == "DUP_CROSS_CLIENT"]
+    assert all(e.severity == "warning" and e.message.startswith("Possible duplicate") for e in ex)
+    beer = rules.Doc("w", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="00501503",
+                     items=[rules.Item("啤酒 24入", 1, 1000)], net=1000, tax=50, total=1050)
+    gift = rules.Doc("x", "A", "2026-09", doc_type="triplicate_invoice", buyer_ubn="00501503",
+                     items=[rules.Item("中秋禮盒", 1, 1000)], net=1000, tax=50, total=1050)
+    sev = {e.doc_id: e.severity for e in rules.run_rules([beer, gift], CL) if e.rule_id == "S19_NONDEDUCTIBLE"}
+    assert sev == {"w": "warning", "x": "medium"}
+
+
+def test_small_business_receipt_cap():
+    cl = {"A": dict(CL["A"], annual_expenses=100000)}               # 3% = NT$3,000
+    docs = [rules.Doc(f"r{i}", "A", "2026-09", doc_type="receipt", date=date(2026, 9, i + 1), total=1000) for i in range(4)]
+    flagged = [e.doc_id for e in rules.run_rules(docs, cl) if e.rule_id == "SMALL_RECEIPT_CAP"]
+    assert flagged == ["r3"]

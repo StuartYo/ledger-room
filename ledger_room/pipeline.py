@@ -191,7 +191,7 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 
 
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
-          registry=None, operator: str | None = None) -> dict:
+          registry=None, operator: str | None = None, model_id: str | None = None) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one."""
     clients, docs = load_inbox(set_name)
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -199,11 +199,11 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     log = AuditLog(rdir / "audit_log.jsonl")
     log.add("run_start", run_id=run_id, inbox=f"data/{set_name}", n_docs=len(docs), operator=operator or getpass.getuser(),
             host=platform.node(), code_rev=git_rev(), reader_version=READER_VERSION,
-            model=reader.model_id if reader else "cache", device=reader.device if reader else "cache",
+            model=reader.model_id if reader else f"cache ({model_id or 'Qwen3.5-2B-int4-ov'})", device=reader.device if reader else "cache",
             network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE,
             registry=registry.label if registry is not None else None)
     t0 = time.time()
-    reads = read_docs(docs, reader, cache=cache, progress=progress)
+    reads = read_docs(docs, reader, cache=cache, progress=progress, model_id=model_id)
     for d in docs:
         r = reads[d["doc_id"]]
         log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
@@ -260,9 +260,9 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         "exceptions": out_ex,
         "rules": rules.RULES,
         "audit_log": str((rdir / "audit_log.jsonl").relative_to(OUT)).replace("\\", "/"),
-        "export_401": str((rdir / "export_401.csv").relative_to(OUT)).replace("\\", "/"),
+        "export_media": str((rdir / "export_media.csv").relative_to(OUT)).replace("\\", "/"),
     }
-    export.write_csv(result, rdir / "export_401.csv")
+    export.write_csv(result, rdir / "export_media.csv")
     (rdir / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     return result
 

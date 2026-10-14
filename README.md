@@ -5,7 +5,7 @@ and uniform invoices (統一發票) into `client/month/` folders on one office m
 (Qwen3.5-2B INT4 on OpenVINO, Intel GPU) read every document. Deterministic code then checks Unified Business Number
 (統一編號, UBN) checksums under the 2023 rule, duplicates within a client and across clients, VAT Act Art. 19
 non-deductible items, client expense limits and filing periods. The bookkeeper gets a per-client exception list with
-evidence crops, law citations, a CSV with the 401 format and deduction codes, and an HMAC-chained audit log, and
+evidence crops, law citations, a CSV laid out like the input records of the VAT media filing file (進項媒體申報檔) with format and deduction codes, and an HMAC-chained audit log, and
 nothing leaves the office network. On the held-out synthetic set, first blind run, Ledger Room scored micro F1 0.96;
 the same model auditing on its own scored 0.15 (details under [Results](#results)).
 
@@ -46,6 +46,23 @@ The model only reads. Every decision below is made by code in `ledger_room/rules
 | `OVER_LIMIT` | A document above the client's own expense policy (meal, taxi, lodging, approval threshold) | client policy in `clients.json` |
 | `PERIOD_MISMATCH` | A date after the filing period, or an e-invoice period header that does not contain its own date. A date **before** the period is only a warning: input tax may be claimed in a later period (from the second period on, with a stated reason, up to ten years) | [Art. 35](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=35), [Enforcement Rules Art. 29](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=29) |
 
+Severities: a match on seller + date + amount without a shared invoice number is a **possible duplicate** (warning:
+two same-day taxi rides at the same fare are normal); a shared invoice number is a duplicate (high). Art. 19 matches on
+alcohol and meal words are **to confirm** (warning: a restaurant buys beer to resell); gifts, staff trips and passenger
+cars stay findings.
+
+Routing rules, outside the six evaluated types (the answer keys were frozen before them), reported separately:
+
+| Rule id | What it does | Source |
+|---|---|---|
+| `AMOUNT_MISMATCH` (hold) | net + tax must equal the total and tax must be 5% of net (NT$1 rounding); a voucher the client would deduct also needs both amounts read. Held until corrected. | arithmetic, 5% standard rate |
+| `BUYER_NOT_CLIENT` | buyer UBN missing (consumer-style invoice: expense only) or another company's: no deductible input tax | [VAT Act Art. 19(1)(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19), [Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) |
+| `BUYER_PRESUMED` (hold) | buyer UBN unreadable but the buyer name looks like the client: never deducted on a guess | Art. 33 |
+| `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) assumed to come from small businesses, cumulative per client, above 3% (千分之三十) of the yearly expenses set as `annual_expenses` in `clients.json`; off when that is not set | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
+
+Deduction codes: the export sets 1 (deductible purchases and expenses) or 3 (non-deductible, Art. 19). Codes 2 and 4
+(fixed assets) are not detected; the 記帳士 sets them.
+
 Optional, off in the evaluation: `UBN_NOT_REGISTERED` (warning). With a local copy of the MOF business-registration
 open data ([data.gov.tw dataset 9400](https://data.gov.tw/dataset/9400), set `LEDGER_REGISTRY` to the .zip or .csv),
 a checksum failure one digit away from a registered business is reported as a likely misread, and a well-formed
@@ -63,7 +80,7 @@ flowchart LR
   H[MOF e-invoice platform CSV<br/>no OCR] --> E
   D --> E[Rule engine<br/>6 deterministic rules,<br/>firm-wide duplicate index]
   E --> F[Per-client exceptions<br/>evidence crops + citations]
-  E --> I[CSV with 401 format<br/>and deduction codes]
+  E --> I[CSV for the 進項媒體申報檔<br/>format + deduction codes]
   E --> G[Audit log<br/>SHA-256 chain + HMAC]
 ```
 
@@ -76,9 +93,9 @@ flowchart LR
    (`ocr-confirmed`, `snapped`, `ocr-zoom`, `model-only`, ...).
 3. **Check (code).** The six rules run across the whole firm at once, which is what makes cross-client duplicates visible.
 4. **Show, export and log.** The web app lists exceptions per client with the evidence crop, the field provenance and
-   the official citation. Each run also writes `export_401.csv`: one line per document with the 401 media-file format
-   code (格式代號 21 / 22 / 25), the deduction code (扣抵代號 1, or 3 when Art. 19 applies; 2 and 4 for fixed assets are
-   set by hand), the ROC date and a status (`READY`, `HOLD` until an exception is resolved, or `NOT_IN_401` for a
+   the official citation. Each run also writes `export_media.csv`: one line per document, laid out like the input records of the VAT media
+   filing file (進項媒體申報檔), with the format code (格式代號 21 / 22 / 25), the deduction code (扣抵代號 1, or 3 when Art. 19 applies; 2 and 4 for fixed assets are
+   set by hand), the ROC date and a status (`READY`, `HOLD` until an exception is resolved, or `NOT_IN_FILE` for a
    voucher without input tax). It is a CSV for review and import mapping, not the fixed-width .TXT file itself, and it
    has not been imported into any accounting software yet. Every read and every exception goes into an append-only
    JSONL log (see [Access control and the audit log](#access-control-and-the-audit-log)).
@@ -125,7 +142,7 @@ alternatives are in the results block below.
 
 **Intel Arc Pro B70 path (planned, not measured).** No B70 was used for any number in this repository. What the
 laptop shows (held-out set, see [Results](#results)): the 2B reader is fast enough even on the laptop iGPU, and after
-OCR snapping it gets every identifier right, but it misreads amounts (net, tax), which a 401 export line needs. The
+OCR snapping it gets every identifier right, but it misreads amounts (net, tax), which a media-file line needs; the amount rule holds those lines. The
 9B reader (`OpenVINO/Qwen3.5-9B-int4-ov`, same code, thinking mode off) roughly halves the key-field errors, but on the
 laptop it only ran on the CPU (compiling it for the iGPU ran out of memory, since the iGPU shares system RAM), at more
 than a minute per document. That is why the B70 is in the plan: 32 GB of dedicated memory holds the 9B (5.9 GB) or a
@@ -138,7 +155,7 @@ Stage II targets on the B70, set now so they can be checked:
 |---|---|---|
 | Key fields wrong, held-out | no worse than the laptop 9B plus 1 point | below the 9B |
 | Ledger Room micro F1, held-out | at least 0.95 | at least 0.95 |
-| Documents per hour, whole pipeline | at least 600; goal 1,200 (12,000 documents in one night) | at least 300 |
+| Read time per document, whole pipeline (not yet verified) | pass 6 s, goal 3 s (600 / 1,200 per hour; goal: 12,000 documents in one night) | at most 12 s |
 | Pure-model baseline with the same model | reported next to Ledger Room | reported next to Ledger Room |
 
 **Offline.** The only step that needs the internet is the one-time model download. At run time nothing is sent out:
@@ -166,7 +183,7 @@ address. Stage II should repeat this with the network adapter disabled.
    `--set main` runs the other inbox.
 5. **Open the web app.** `.venv\Scripts\python -m web.server`, then browse to http://127.0.0.1:8780, pick the
    `heldout` inbox and press **Run live** (re-reads with the model) or, after a first run, **Replay batch** (cached reads).
-   **Export CSV** downloads the 401-coded lines of the run shown. To share it on the office LAN, first add accounts
+   **Export CSV** downloads the media-file lines of the run shown. To share it on the office LAN, first add accounts
    (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with `--host 0.0.0.0`; the documents still
    stay on this machine.
 
@@ -230,18 +247,20 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 
 **Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
 
+**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: net 23/40, tax 11/36, total 5/47 wrong). The amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) holds 19 of the 19 documents with a materially wrong or missing amount, and 0 documents whose amounts were right. Routing flags on held-out: AMOUNT_MISMATCH 19, BUYER_NOT_CLIENT 4, BUYER_PRESUMED 0, SMALL_RECEIPT_CAP 0, READ_REVIEW 0.
+
 **Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, Qwen3.5-9B-int4-ov on CPU:
 
 | Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |
 |---|---|---|---|---|---|
 | Qwen3.5-2B-int4-ov | 1.00 | 0.15 | 12% (39/331) | 19/47 | 15.1 s |
-| Qwen3.5-9B-int4-ov | 1.00 | 0.17 | 6% (20/337) | 28/47 | 78.4 s |
+| Qwen3.5-9B-int4-ov | 1.00 | 0.18 | 6% (20/337) | 28/47 | 78.4 s |
 
 Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
 
 **Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF platform (3 months; not a bookkeeping firm's client data; aggregates only). 30 invoices / 95 line items imported (7 with discount lines, 7 with zero-price lines). Seller UBNs passing the 2023 checksum: 23/23 (4 of them would fail an outdated mod-10 checker). Duplicates: 0. Art. 19 keyword hits: 2 invoices (alcohol); meal invoices: 12. Import plus rules: 0.085 ms per invoice.
 
-Positive control: 7/7 planted changes detected, 0 false flags after, 0 flags before. Gate (stop if pure model >= 95% of Ledger Room): max ratio 0.17, pass. Details: [eval/RESULTS.md](eval/RESULTS.md).
+Positive control: 7/7 planted changes detected, 0 false flags after, 0 flags before. Gate (stop if pure model >= 95% of Ledger Room): max ratio 0.18, pass. Details: [eval/RESULTS.md](eval/RESULTS.md).
 
 Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD Graphics (iGPU), 32 GB RAM; same triplicate-invoice test image):
 
@@ -261,7 +280,7 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
   only real data so far is one person's own consumer e-invoices through the import path (no OCR, no photos).
 - About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
   be lower.
-- The 401 CSV follows the media-file fields but has not been imported into any accounting software; deduction codes
+- The export CSV follows the 進項媒體申報檔 fields but has not been imported into any accounting software; deduction codes
   2 and 4 (fixed assets) are left to the bookkeeper.
 - The planted issue types were designed by the author. The held-out set changes seed, clients and layouts, not the
   definitions of the issues.

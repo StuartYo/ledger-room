@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-10-14T19:21:00+08:00",
- "code_rev": "c725cbf",
+ "generated_at": "2026-10-14T19:44:02+08:00",
+ "code_rev": "c445b35",
  "set": "heldout",
  "model": "Qwen3.5-9B-int4-ov",
  "device": "CPU",
@@ -166,12 +166,17 @@
    "net": "16/47",
    "tax": "3/35",
    "total": "1/47"
+  },
+  "amount_check": {
+   "docs_with_amount_error": 3,
+   "held_by_amount_rule": 3,
+   "held_with_correct_amounts": 0
   }
  },
  "docs_per_hour": 46,
- "wall_s_ledger_room": 0.2,
  "memory": {
   "peak_working_set_gb": 0.0,
   "peak_commit_gb": 0.0
- }
+ },
+ "thinking": "off"
 }

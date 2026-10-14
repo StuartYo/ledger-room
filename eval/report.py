@@ -22,7 +22,11 @@ def pct(x):
 
 
 def f2(x):
-    return "n/a" if x is None else f"{x:.2f}"
+    """Two decimals, half up (0.175 -> 0.18), so README, deck and video round the same way."""
+    if x is None:
+        return "n/a"
+    from decimal import ROUND_HALF_UP, Decimal
+    return str(Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def load() -> dict:
@@ -76,6 +80,21 @@ def larger_lines(R: dict) -> list[str]:
     ]
 
 
+def amount_lines(R: dict) -> list[str]:
+    h = R["sets"].get("heldout", {}).get("ledger_room", {})
+    rd, rf = h.get("reading"), h.get("routing_flags")
+    if not rd or "amount_check" not in rd:
+        return []
+    a = rd["amount_check"]
+    pf = rd["per_field"]
+    return [f"**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: "
+            f"net {pf['net']}, tax {pf['tax']}, total {pf['total']} wrong). The amount rule (net + tax = total, tax = 5% "
+            f"of net, both read on a deductible voucher) holds {a['held_by_amount_rule']} of the "
+            f"{a['docs_with_amount_error']} documents with a materially wrong or missing amount, and "
+            f"{a['held_with_correct_amounts']} documents whose amounts were right. Routing flags on held-out: "
+            + ", ".join(f"{k} {v}" for k, v in rf.items()) + ".", ""]
+
+
 def einvoice_lines(R: dict) -> list[str]:
     E = R.get("einvoice_check")
     if not E:
@@ -115,6 +134,7 @@ def readme_block(R: dict) -> str:
         *rows,
         "",
         *blind_lines(R),
+        *amount_lines(R),
         *larger_lines(R),
         *einvoice_lines(R),
         f"Positive control: {pc['after_detected']}/{pc['after_planted']} planted changes detected, "

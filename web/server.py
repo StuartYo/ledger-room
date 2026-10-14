@@ -210,9 +210,9 @@ class H(BaseHTTPRequestHandler):
             oplog("view_result", user=s["user"], run_id=q.get("run", ""), ip=self._ip())
             return self._file(OUT / "runs" / q.get("run", "") / "result.json", OUT / "runs")
         if path == "/api/export":
-            oplog("export_401_csv", user=s["user"], run_id=q.get("run", ""), ip=self._ip())
-            return self._file(OUT / "runs" / q.get("run", "") / "export_401.csv", OUT / "runs",
-                              download=f"ledger_room_{q.get('run', 'run')}_401.csv")
+            oplog("export_media_csv", user=s["user"], run_id=q.get("run", ""), ip=self._ip())
+            return self._file(OUT / "runs" / q.get("run", "") / "export_media.csv", OUT / "runs",
+                              download=f"ledger_room_{q.get('run', 'run')}_media.csv")
         if path in ("/api/audit-log", "/api/oplog"):
             if path == "/api/oplog":
                 p = OUT / "oplog.jsonl"

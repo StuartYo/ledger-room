@@ -89,7 +89,7 @@ async function loadRun(runId) {
   if (S.tab === "log") renderLog();
 }
 
-const SEV_ORDER = { high: 0, medium: 1, warning: 2, review: 3 };
+const SEV_ORDER = { high: 0, hold: 1, medium: 2, warning: 3, review: 4 };
 function exceptions() {
   if (!S.run) return [];
   return S.run.exceptions

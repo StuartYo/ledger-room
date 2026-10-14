@@ -121,7 +121,13 @@ def main():
             "ledger_room": {**score(lr_pred, expd), "sec_per_doc": secs(lr_time), "rules_ms_total": rules_ms,
                             "unreadable_fields": run["summary"]["unreadable_fields"],
                             "review_items": run["summary"]["n_review"],
-                            "reading": score_reads({d["doc_id"]: d for d in run["docs"]}, exp)},
+                            "reading": score_reads({d["doc_id"]: d for d in run["docs"]}, exp,
+                                                   held={e["doc_id"] for e in run["exceptions"] if e["rule_id"] == "AMOUNT_MISMATCH"}),
+                            "routing_flags": {k: sum(1 for e in run["exceptions"] if e["rule_id"] == k)
+                                              for k in ("AMOUNT_MISMATCH", "BUYER_NOT_CLIENT", "BUYER_PRESUMED",
+                                                        "SMALL_RECEIPT_CAP", "READ_REVIEW")},
+                            "warnings_among_issues": sum(1 for e in run["exceptions"] if e["rule_id"] in rules.ISSUE_TYPES
+                                                         and e["severity"] == "warning")},
             "oracle_fields": oracle(s)["micro"],
         }
         if not args.skip_baseline:
