@@ -1,7 +1,7 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T21:40:16+08:00",
- "code_rev": "48ac4c1",
+ "generated_at": "2026-10-14T21:41:42+08:00",
+ "code_rev": "b726294",
  "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
@@ -889,8 +889,8 @@
   }
  },
  "ocr_only": {
-  "generated_at": "2026-10-14T21:39:03+08:00",
-  "code_rev": "48ac4c1",
+  "generated_at": "2026-10-14T21:41:39+08:00",
+  "code_rev": "b726294",
   "reader": "OCR only (PP-OCRv4 on OpenVINO, CPU) + the same reconciliation code and rules; no vision-language model",
   "zoom": "a boxed buyer UBN is re-read once from the enlarged crop and accepted without a vote (no model to vote with)",
   "sets": {

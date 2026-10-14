@@ -273,7 +273,7 @@ Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the sli
 
 Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
 
-**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; code 48ac4c1):
+**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; code b726294):
 
 | Set | Reader | Ledger Room F1 | Clean docs wrongly flagged | Key fields wrong | Docs held for a person | Read time per document |
 |---|---|---|---|---|---|---|
