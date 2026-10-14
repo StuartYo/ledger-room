@@ -10,9 +10,9 @@ Fiscal Information Agency; it lists businesses currently operating) and points L
 
     $env:LEDGER_REGISTRY = "D:\\registry\\BGMOPEN1.zip"
 
-The loader only needs two columns, found by header name: 統一編號 (UBN) and 營業人名稱 (business name). These column
-names are assumed (they are the names MOF uses in its other business lists) and have not yet been checked against a
-downloaded copy; the loader stops with an error if no 統一編號 column is found.
+The loader only needs two columns, found by header name: 統一編號 (UBN) and 營業人名稱 (business name). Both names
+are listed as main fields on the dataset page (checked 2026-10-14); the loader has not yet been run on a downloaded
+copy, and it stops with an error if no 統一編號 column is found.
 The evaluation never loads a register: the synthetic UBNs are random numbers.
 """
 from __future__ import annotations

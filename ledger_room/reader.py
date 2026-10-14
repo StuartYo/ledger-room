@@ -42,6 +42,10 @@ OCR text lines of the photo (OCR may show simplified characters; its digits are 
 Transcribe the document. Reply with ONE line of JSON only, no markdown, numbers without commas:
 {{"type":"e_invoice|triplicate_invoice|receipt","no":"invoice number: 2 letters + 8 digits, or null for a receipt","date":"the transaction date as printed","period":"e-invoice period header such as 115年09-10月, else null","seller":"seller name","seller_ubn":"seller 統一編號: after 賣方, or inside the red seller stamp","buyer":"buyer name or null","buyer_ubn":"buyer 統一編號: after 買方 or 買受人統一編號, else null","items":[{{"d":"item","q":1,"a":100}}],"net":null,"tax":null,"total":0,"note":"text on a yellow sticky note or a handwritten remark; printed footers and amounts in words are NOT notes; else null","category":"one of: {cats}"}}"""
 
+# Same turn format the Qwen3.5-2B chat template produces (user turn with the image first, empty think block).
+WRAP = "<|im_start|>user" + chr(10) + "<ov_genai_image_0>{prompt}<|im_end|>" + chr(10) + "<|im_start|>assistant" + chr(10) \
+    + "<think>" + chr(10) * 2 + "</think>" + chr(10) * 2
+
 ZOOM_PROMPT = ("This crop shows a Taiwanese Unified Business Number (統一編號): 8 digits, possibly one digit per box. "
                "Reply with the 8 digits only.")
 
@@ -357,6 +361,16 @@ class Reader:
         self.pipe = g.VLMPipeline(model_dir, self.device)
         self.load_s = round(time.time() - t, 1)
         self.lock = threading.Lock()
+        # Qwen3.5-2B answers directly by default; the 9B chat template opens a <think> block unless told not to.
+        # Ledger Room wants a transcription, not reasoning, so every reader runs with thinking off (the 2B default).
+        # This pipeline cannot swap its chat template, so for such models the prompt is wrapped here in the same
+        # format the 2B template produces, with an empty think block.
+        self.thinking = "off"
+        self.wrap = False
+        tp = Path(model_dir) / "chat_template.jinja"
+        if tp.exists() and "enable_thinking is defined and enable_thinking is false" in tp.read_text(encoding="utf-8"):
+            self.wrap = True
+            self.thinking = "off (template default was on; prompt wrapped by Ledger Room)"
 
     def generate(self, prompt: str, image: Image.Image, max_new_tokens: int = 360) -> tuple[str, dict]:
         im = image.convert("RGB")
@@ -366,6 +380,9 @@ class Reader:
         cfg = self._g.GenerationConfig()
         cfg.max_new_tokens = max_new_tokens
         cfg.do_sample = False
+        if self.wrap:
+            cfg.apply_chat_template = False
+            prompt = WRAP.format(prompt=prompt)
         t = time.time()
         with self.lock:
             r = self.pipe.generate(prompt, image=self._ov.Tensor(np.array(im)[None]), generation_config=cfg)

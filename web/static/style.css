@@ -180,3 +180,5 @@ dialog::backdrop { background: rgba(10, 14, 25, .55); }
 .loginbox .btn { margin-top: 10px; }
 .err { color: var(--stamp); font-size: 13px; margin: 4px 0 0; }
 .ophead { margin: 22px 0 6px; font-size: 15px; }
+
+[hidden] { display: none !important; }

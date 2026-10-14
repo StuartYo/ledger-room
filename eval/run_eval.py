@@ -182,6 +182,9 @@ def main():
             results["larger_model"]["pure_over_ledger_f1"] = (
                 round(results["larger_model"]["pure_model"]["micro"]["f1"] / h["ledger_room"]["micro"]["f1"], 3)
                 if h["ledger_room"]["micro"]["f1"] else None)
+    rm = ROOT / "eval" / "reader_memory.json"
+    if rm.exists():   # written by eval.measure_reader (peak memory, a few fresh reads)
+        results["reader_memory"] = json.loads(rm.read_text(encoding="utf-8"))
     ec = ROOT / "eval" / "results_einvoice_check.json"
     if ec.exists():   # aggregates only, from eval.einvoice_check on a private platform export
         results["einvoice_check"] = json.loads(ec.read_text(encoding="utf-8"))

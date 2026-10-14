@@ -1,0 +1,38 @@
+{
+ "label": "One person's own consumer e-invoices (3 months, MOF platform export). Used to test the import and rule path; not a bookkeeping firm's client data. Aggregates only.",
+ "privacy": "aggregates only; no invoice numbers, sellers, items or single transactions",
+ "months": 3,
+ "files": 3,
+ "csv_rows": 101,
+ "footnote_or_blank_rows_skipped": 6,
+ "line_items": 95,
+ "invoices": 30,
+ "voided": 0,
+ "invoices_with_buyer_ubn": 1,
+ "invoices_with_discount_lines": 7,
+ "invoices_with_zero_price_lines": 7,
+ "negative_invoice_amounts": 0,
+ "non_integer_amounts": 2,
+ "invoice_amount_basis": {
+  "per-line": 30
+ },
+ "distinct_sellers": 23,
+ "seller_ubn_pass_2023_rule": "23/23",
+ "invoices_seller_ubn_pass": "30/30",
+ "sellers_failing_old_mod10_rule": 4,
+ "rule_exceptions_as_consumer": {},
+ "duplicates_found": 0,
+ "rule_exceptions_as_if_issued_to_a_company": {
+  "S19_NONDEDUCTIBLE": 2
+ },
+ "art19_keyword_category": {
+  "none": 28,
+  "entertainment": 2
+ },
+ "expense_category": {
+  "none": 18,
+  "meal": 12
+ },
+ "seconds_import_total": 0.002,
+ "ms_per_invoice_import_plus_rules": 0.085
+}

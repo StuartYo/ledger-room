@@ -5,9 +5,9 @@ and uniform invoices (統一發票) into `client/month/` folders on one office m
 (Qwen3.5-2B INT4 on OpenVINO, Intel GPU) read every document. Deterministic code then checks Unified Business Number
 (統一編號, UBN) checksums under the 2023 rule, duplicates within a client and across clients, VAT Act Art. 19
 non-deductible items, client expense limits and filing periods. The bookkeeper gets a per-client exception list with
-evidence crops, law citations and a hash-chained audit log, and nothing leaves the office network. On the held-out
-synthetic set, first blind run, Ledger Room scored micro F1 0.96; the same model auditing on its own scored 0.15
-(details under [Results](#results)).
+evidence crops, law citations, a CSV with the 401 format and deduction codes, and an HMAC-chained audit log, and
+nothing leaves the office network. On the held-out synthetic set, first blind run, Ledger Room scored micro F1 0.96;
+the same model auditing on its own scored 0.15 (details under [Results](#results)).
 
 Entry for the ASUS UGen AI League (Thunderstorm track, Workplace AI), Stage I. Every number here was measured on a
 laptop (Intel Core i7-13620H, Intel UHD iGPU). No Arc Pro B70 has been used yet.
@@ -20,10 +20,14 @@ laptop (Intel Core i7-13620H, Intel UHD iGPU). No Arc Pro B70 has been used yet.
 
 - Taiwan has about 8,600 bookkeeping firms, and the Ministry of Finance inspects their personal-data safeguards
   every year (703 firms in 2025) ([news, 2025-11-26](https://www.ctee.com.tw/news/20251126701522-430104)).
-- The safeguard regulation for bookkeepers requires supervising any outsourced processing (Art. 10), restricts and
-  conditions international transfers of client data (Art. 11), and asks for usage records and system logs (Art. 19)
-  ([regulation](https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0340165)). Sending client receipts to an
-  overseas cloud model is exactly the kind of transfer that needs that paperwork. A local model avoids it.
+- The bookkeepers' personal-data safeguard regulation
+  ([記帳士與記帳及報稅代理人個人資料檔案安全維護管理辦法](https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0340165))
+  asks a firm to supervise outsourced processing (Art. 10), to check MOF restrictions and tell clients before any
+  international transfer (Art. 11), to give staff different permissions (Art. 15), and to keep usage records and
+  system trail data for at least five years (Art. 19). A firm whose systems hold 10,000 or more personal-data records
+  must also have user identity checks, display masking, access control and monitoring of abnormal use (Art. 17).
+  Sending client receipts to an overseas cloud model is exactly the kind of transfer that needs that paperwork. A
+  local model avoids it, and the controls below map to Arts. 15, 17 and 19.
 - The UBN check-digit rule changed in 2023 (divisible by 10 became divisible by 5), so older checking code wrongly
   rejects newly issued numbers ([MOF Fiscal Information Agency](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283)).
 - A firm sees all of its clients' vouchers. Only a firm-level system can notice the same receipt claimed by two
@@ -36,23 +40,31 @@ The model only reads. Every decision below is made by code in `ledger_room/rules
 | Rule id | What it catches | Source |
 |---|---|---|
 | `UBN_CHECKSUM` | A seller or buyer UBN that fails the 2023 mod-5 rule (with the 7th-digit-is-7 case). Also explains when a number passes the new rule but would fail the old one. | [FIA notice](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283) |
-| `DUP_CROSS_MONTH` | The same voucher submitted again by the same client (same invoice number, or same seller + date + total) | [VAT Act Art. 51](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
-| `DUP_CROSS_CLIENT` | The same voucher filed under two different clients | [Art. 51](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51), [Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) |
+| `DUP_CROSS_MONTH` | The same voucher submitted again by the same client (same invoice number, or same seller + date + total) | With input tax for this client: [VAT Act Art. 51](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51). Without (e.g. a taxi receipt): [Income Tax Act Art. 24](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340003&flno=24) and [Audit Regulations Art. 67](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
+| `DUP_CROSS_CLIENT` | The same voucher filed under two different clients | As above, plus [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) when input tax is claimed |
 | `S19_NONDEDUCTIBLE` | Input tax claimed on entertainment or gifts, employee personal benefits, a passenger car for own use, or non-business items | [VAT Act Art. 19](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19) |
 | `OVER_LIMIT` | A document above the client's own expense policy (meal, taxi, lodging, approval threshold) | client policy in `clients.json` |
-| `PERIOD_MISMATCH` | A date outside the two-month filing period, or an e-invoice period header that does not contain its own date | [Art. 35](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=35), [Enforcement Rules Art. 29](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=29) |
+| `PERIOD_MISMATCH` | A date after the filing period, or an e-invoice period header that does not contain its own date. A date **before** the period is only a warning: input tax may be claimed in a later period (from the second period on, with a stated reason, up to ten years) | [Art. 35](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=35), [Enforcement Rules Art. 29](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=29) |
+
+Optional, off in the evaluation: `UBN_NOT_REGISTERED` (warning). With a local copy of the MOF business-registration
+open data ([data.gov.tw dataset 9400](https://data.gov.tw/dataset/9400), set `LEDGER_REGISTRY` to the .zip or .csv),
+a checksum failure one digit away from a registered business is reported as a likely misread, and a well-formed
+number that is not registered gets a warning. `ledger_room/registry.py`; tested on a small fixture only, not yet on
+the downloaded file.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  A[Firm inbox<br/>client/month/photo.jpg] --> B[OCR lines + boxes<br/>PP-OCRv4 on OpenVINO, CPU]
+  A[Firm inbox<br/>client/month/photo.jpg<br/>LINE photos, scans] --> B[OCR lines + boxes<br/>PP-OCRv4 on OpenVINO, CPU]
   A --> C[Vision-language model<br/>Qwen3.5-2B INT4, OpenVINO GenAI, Intel GPU]
   B --> D[Reconcile in code<br/>snap digits to OCR, UBN roles,<br/>zoom re-read, doc type]
   C --> D
+  H[MOF e-invoice platform CSV<br/>no OCR] --> E
   D --> E[Rule engine<br/>6 deterministic rules,<br/>firm-wide duplicate index]
   E --> F[Per-client exceptions<br/>evidence crops + citations]
-  E --> G[Hash-chained audit log<br/>SHA-256 per document]
+  E --> I[CSV with 401 format<br/>and deduction codes]
+  E --> G[Audit log<br/>SHA-256 chain + HMAC]
 ```
 
 1. **Read.** OCR finds text lines, exact digits and their positions. The vision-language model sees the photo plus the
@@ -63,9 +75,41 @@ flowchart LR
    crops the area next to the label, enlarges it and reads it again. Every field keeps its provenance
    (`ocr-confirmed`, `snapped`, `ocr-zoom`, `model-only`, ...).
 3. **Check (code).** The six rules run across the whole firm at once, which is what makes cross-client duplicates visible.
-4. **Show and log.** The web app lists exceptions per client with the evidence crop, the field provenance and the
-   official citation. Every read and every exception goes into an append-only JSONL log where each entry carries the
-   SHA-256 of the previous one.
+4. **Show, export and log.** The web app lists exceptions per client with the evidence crop, the field provenance and
+   the official citation. Each run also writes `export_401.csv`: one line per document with the 401 media-file format
+   code (格式代號 21 / 22 / 25), the deduction code (扣抵代號 1, or 3 when Art. 19 applies; 2 and 4 for fixed assets are
+   set by hand), the ROC date and a status (`READY`, `HOLD` until an exception is resolved, or `NOT_IN_401` for a
+   voucher without input tax). It is a CSV for review and import mapping, not the fixed-width .TXT file itself, and it
+   has not been imported into any accounting software yet. Every read and every exception goes into an append-only
+   JSONL log (see [Access control and the audit log](#access-control-and-the-audit-log)).
+5. **E-invoices without OCR.** Most input vouchers already exist on the MOF e-invoice platform. `ledger_room/einvoice.py`
+   imports the platform's CSV export (UTF-8 or Big5, footnote lines skipped, line items grouped into invoices, discount
+   and zero-price lines kept) and hands the invoices to the same rules. It is tested on a synthetic fixture and was run
+   once on one person's own consumer e-invoices (aggregates under [Results](#results)); wiring it into the web inbox is
+   Stage II work.
+
+## Access control and the audit log
+
+What is in place, and what it does not do:
+
+- **Binds to 127.0.0.1.** Without user accounts the web app is a single local user and refuses any other address.
+- **Accounts and roles** (regulation Arts. 15 and 17(1)(1)): `python -m web.users add NAME --role admin|staff` stores
+  PBKDF2-SHA256 password hashes in `%LOCALAPPDATA%\LedgerRoom\users.json`. With accounts, every request except the
+  sign-in page needs a session (8 hours, HttpOnly, SameSite=Strict); five wrong passwords lock that name for five
+  minutes. Staff can read exceptions and documents, replay runs and export; only an admin can run the model live and
+  read the logs. Only then may `--host 0.0.0.0` share it on the office LAN.
+- **Operation log** (Arts. 17(1)(4), 17(1)(6) and 19): sign-ins, failed sign-ins, runs, result views, log views and
+  exports are appended to `data/out/oplog.jsonl` with the user and IP address.
+- **Tamper evidence, not tamper proof.** Each log entry carries the SHA-256 of the previous entry and an HMAC-SHA256
+  under an operator key (`%LOCALAPPDATA%\LedgerRoom\audit.key`, created on first use, outside the data folder). The
+  plain hash chain alone only shows accidental damage, because anyone who can write the disk can recompute it. The
+  HMAC lets whoever holds the key detect an edited, inserted or removed entry (`tests/test_audit_log.py` forges a
+  re-chained log and the HMAC catches it). It does not stop someone who holds both the disk and the key, so for real
+  use the key belongs on a separate USB key or Windows account (`LEDGER_AUDIT_KEY_FILE`). Signing with a hardware key
+  is Stage II work.
+- **Not done:** display masking (Art. 17(1)(2)), encryption of the data folder, and network intrusion defence
+  (Art. 17(1)(5)) are left to the firm's Windows and network setup today. Usage records must be kept five years
+  (Art. 19); Ledger Room never deletes logs, but retention is the firm's backup policy.
 
 ## Model and runtime
 
@@ -110,7 +154,9 @@ address. Stage II should repeat this with the network adapter disabled.
    `--set main` runs the other inbox.
 5. **Open the web app.** `.venv\Scripts\python -m web.server`, then browse to http://127.0.0.1:8780, pick the
    `heldout` inbox and press **Run live** (re-reads with the model) or, after a first run, **Replay batch** (cached reads).
-   `--host 0.0.0.0` shares it on the office LAN; the documents still stay on this machine.
+   **Export CSV** downloads the 401-coded lines of the run shown. To share it on the office LAN, first add accounts
+   (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with `--host 0.0.0.0`; the documents still
+   stay on this machine.
 
 No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU). Other environment variables:
 `LEDGER_MODEL_DIR` (model folder), `LEDGER_OCR_DEVICE` (default `CPU`), `LEDGER_VLM_MAX_SIDE` (default 896 px).
@@ -136,9 +182,19 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
 - Planted issues per set: bad UBN checksums, re-submitted vouchers across months, one voucher under two clients,
   Art. 19 items, over-limit documents, wrong-period documents, plus clean documents. Some clean documents carry
   UBNs that pass the 2023 rule but fail the old one, to catch checkers that still use mod 10.
+- **Planted rate.** 24 of the 52 main documents and 24 of the 47 held-out documents carry a planted issue, about
+  half. Nobody knows that rate for real client folders; it is probably much lower, so precision and F1 on real data
+  will differ from the numbers below.
 - `eval/run_eval.py` compares Ledger Room with a **pure-model baseline**: the same model, same photo, same OCR lines,
   with the rules, the client's policy and the filing period in the prompt, plus a running list of the documents it
-  already reviewed (built from its own answers). No code checks.
+  already reviewed (built from its own answers). No code checks. `eval/run_larger.py` repeats both on the held-out
+  set with a larger reader (Qwen3.5-9B), so the gap is not just a small-model effect.
+- **Reading accuracy** (`eval/read_accuracy.py`): the fields Ledger Room ends up with, compared with the answer key,
+  over eight key fields (type, invoice number, date, seller and buyer UBN, net, tax, total), plus whether every item
+  line in the key was read.
+- **Read time per document** means one thing everywhere (README, RESULTS.md, deck, video): OCR + model + zoomed
+  re-reads for one document, averaged over a whole set. The held-out figure comes from the live run recorded for the
+  video (screen capture was running on the same machine); its reads are the ones scored here.
 - Controls: an **oracle** run (rules on the ground-truth fields, must be 100%) and a **positive control** (a clean
   batch, then the same batch with one planted change per issue type).
 - Every number below is generated from `eval/results.json` by `python -m eval.report`; a test fails if they differ.
@@ -148,12 +204,14 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
 <!-- RESULTS:START (generated by eval/report.py from eval/results.json) -->
 Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo + OCR text in both columns; the pure model gets the rules in its prompt but no code checks.
 
-| Set | Ledger Room micro F1 | Pure model micro F1 | Ledger Room s/doc (laptop iGPU) |
+| Set | Ledger Room micro F1 | Pure model micro F1 | Read time per document (laptop iGPU) |
 |---|---|---|---|
 | main (52 docs, layout A) | 1.00 (P 100%, R 100%) | 0.17 (P 10%, R 50%) | 16.7 s |
-| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 12.2 s |
+| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 15.1 s |
 
 **Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
+
+**Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF platform (3 months; not a bookkeeping firm's client data; aggregates only). 30 invoices / 95 line items imported (7 with discount lines, 7 with zero-price lines). Seller UBNs passing the 2023 checksum: 23/23 (4 of them would fail an outdated mod-10 checker). Duplicates: 0. Art. 19 keyword hits: 2 invoices (alcohol); meal invoices: 12. Import plus rules: 0.085 ms per invoice.
 
 Positive control: 7/7 planted changes detected, 0 false flags after, 0 flags before. Gate (stop if pure model >= 95% of Ledger Room): max ratio 0.17, pass. Details: [eval/RESULTS.md](eval/RESULTS.md).
 
@@ -171,13 +229,18 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
 
 ## Limits
 
-- Synthetic documents only. Real phone photos, handwriting and faded thermal paper will be harder.
+- Synthetic photos only. Real phone photos sent over LINE, handwriting and faded thermal paper will be harder. The
+  only real data so far is one person's own consumer e-invoices through the import path (no OCR, no photos).
+- About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
+  be lower.
+- The 401 CSV follows the media-file fields but has not been imported into any accounting software; deduction codes
+  2 and 4 (fixed assets) are left to the bookkeeper.
 - The planted issue types were designed by the author. The held-out set changes seed, clients and layouts, not the
   definitions of the issues.
 - Art. 19 categories are decided by an auditable keyword table first and by the model's suggested category only as a
   fallback (marked "medium" confidence). A real deployment needs the firm to review that table.
-- Synthetic UBNs are random numbers that satisfy the checksum; they were not checked against the national business
-  register.
+- Synthetic UBNs are random numbers that satisfy the checksum; the evaluation never loads the business register.
+  The register lookup is tested on a small fixture only.
 - Laptop timings use an Intel UHD iGPU. B70 performance is a plan until it is measured.
 
 ## Licenses

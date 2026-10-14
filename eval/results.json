@@ -1,7 +1,7 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T12:43:02+08:00",
- "code_rev": "249e076",
+ "generated_at": "2026-10-14T14:41:50+08:00",
+ "code_rev": "686f7af",
  "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
@@ -142,9 +142,27 @@
      "max": 26.9,
      "n": 52
     },
-    "rules_ms_total": 2.0,
+    "rules_ms_total": 1.0,
     "unreadable_fields": 3,
-    "review_items": 0
+    "review_items": 0,
+    "reading": {
+     "docs": 52,
+     "field_error_rate": 0.117,
+     "fields_wrong": 42,
+     "fields_compared": 359,
+     "docs_all_key_fields_right": 24,
+     "docs_items_right": 31,
+     "per_field": {
+      "doc_type": "0/52",
+      "invoice_no": "0/38",
+      "date": "0/52",
+      "seller_ubn": "0/52",
+      "buyer_ubn": "0/33",
+      "net": "28/44",
+      "tax": "14/36",
+      "total": "0/52"
+     }
+    }
    },
    "oracle_fields": {
     "tp": 24,
@@ -304,14 +322,32 @@
     "clean_docs": 23,
     "clean_docs_flagged": 0,
     "sec_per_doc": {
-     "mean": 12.2,
-     "median": 12.2,
-     "max": 16.4,
+     "mean": 15.1,
+     "median": 13.5,
+     "max": 30.0,
      "n": 47
     },
     "rules_ms_total": 1.0,
     "unreadable_fields": 0,
-    "review_items": 0
+    "review_items": 0,
+    "reading": {
+     "docs": 47,
+     "field_error_rate": 0.118,
+     "fields_wrong": 39,
+     "fields_compared": 331,
+     "docs_all_key_fields_right": 23,
+     "docs_items_right": 19,
+     "per_field": {
+      "doc_type": "0/47",
+      "invoice_no": "0/35",
+      "date": "0/47",
+      "seller_ubn": "0/47",
+      "buyer_ubn": "0/32",
+      "net": "23/40",
+      "tax": "11/36",
+      "total": "5/47"
+     }
+    }
    },
    "oracle_fields": {
     "tp": 24,
@@ -606,6 +642,44 @@
   "Seller name: take the stamp's name line when the stamp is rotated. (seen in the web app)",
   "Expense category: seller names now match only multi-character terms (餐廳, 咖啡, 商旅...). Fix 3 exposed this on the main set, where OCR read a garage stamp 保養廠 as 保餐廠. (main)"
  ],
+ "einvoice_check": {
+  "label": "One person's own consumer e-invoices (3 months, MOF platform export). Used to test the import and rule path; not a bookkeeping firm's client data. Aggregates only.",
+  "privacy": "aggregates only; no invoice numbers, sellers, items or single transactions",
+  "months": 3,
+  "files": 3,
+  "csv_rows": 101,
+  "footnote_or_blank_rows_skipped": 6,
+  "line_items": 95,
+  "invoices": 30,
+  "voided": 0,
+  "invoices_with_buyer_ubn": 1,
+  "invoices_with_discount_lines": 7,
+  "invoices_with_zero_price_lines": 7,
+  "negative_invoice_amounts": 0,
+  "non_integer_amounts": 2,
+  "invoice_amount_basis": {
+   "per-line": 30
+  },
+  "distinct_sellers": 23,
+  "seller_ubn_pass_2023_rule": "23/23",
+  "invoices_seller_ubn_pass": "30/30",
+  "sellers_failing_old_mod10_rule": 4,
+  "rule_exceptions_as_consumer": {},
+  "duplicates_found": 0,
+  "rule_exceptions_as_if_issued_to_a_company": {
+   "S19_NONDEDUCTIBLE": 2
+  },
+  "art19_keyword_category": {
+   "none": 28,
+   "entertainment": 2
+  },
+  "expense_category": {
+   "none": 18,
+   "meal": 12
+  },
+  "seconds_import_total": 0.002,
+  "ms_per_invoice_import_plus_rules": 0.085
+ },
  "gate": {
   "rule": "stop if pure-model micro F1 >= 95% of Ledger Room on any set",
   "max_ratio": 0.169,
