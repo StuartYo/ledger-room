@@ -1,6 +1,6 @@
 """Real-photo check against a ground truth written by hand before any model saw the photos.
 
-python -m eval.real_check --set private_real --truth TRUTH.json --model-dir DIR [--device GPU|CPU] --out PRIVATE.json
+python -m eval.real_check --set private_real --truth TRUTH.json (--model-dir DIR [--device GPU|CPU] | --ocr-only) --out PRIVATE.json
     [--aggregate EVAL.json] [--skip-baseline]
 
 The photos and truth stay outside the repository (data/private_* is gitignored). --aggregate writes counts and rates
@@ -23,7 +23,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", required=True)
     ap.add_argument("--truth", required=True)
-    ap.add_argument("--model-dir", required=True)
+    ap.add_argument("--model-dir")
+    ap.add_argument("--ocr-only", action="store_true", help="OCR + the same code and rules, no model (eval/ocr_only.py)")
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", required=True)
     ap.add_argument("--aggregate")
@@ -31,11 +32,17 @@ def main():
     ap.add_argument("--score-only", action="store_true")
     a = ap.parse_args()
     T = json.loads(Path(a.truth).read_text(encoding="utf-8"))
-    mid = Path(a.model_dir).name
     reader = None
-    if not a.score_only:
-        from ledger_room.reader import Reader
-        reader = Reader(a.model_dir, a.device)
+    if a.ocr_only:
+        from eval.ocr_only import MODEL_ID, OcrOnlyReader
+        mid, a.skip_baseline = MODEL_ID, True
+        if not a.score_only:
+            reader = OcrOnlyReader()
+    else:
+        mid = Path(a.model_dir).name
+        if not a.score_only:
+            from ledger_room.reader import Reader
+            reader = Reader(a.model_dir, a.device)
     run = pipeline.audit(a.set, reader, run_id=f"real-{mid}", model_id=mid,
                          progress=lambda i, n, did, r: print(f"[{i}/{n}] {did}", flush=True))
     by_file = {Path(d["doc_id"]).name: d for d in run["docs"]}
@@ -84,6 +91,11 @@ def main():
         "ubn_checksum_false_alarms": ubn_false,
         "sec_per_doc": round(statistics.mean(times), 1) if times else None,
         "exceptions_by_rule": dict(Counter(e["rule_id"] for e in run["exceptions"])),
+        # documents a person has to open before anything is filed: held or flagged for review by a routing rule
+        "captures_held_for_review": f"{sum(1 for f in by_file if any(e['severity'] in ('hold', 'review') for e in ex_by_file.get(f, [])))}/{len(by_file)}",
+        "totals_wrong_not_held": sum(1 for t in T["docs"] if t.get("total") is not None
+                                     and by_file[t["file"]]["fields"].get("total") != t["total"]
+                                     and not any(e["severity"] in ("hold", "review") for e in ex_by_file.get(t["file"], []))),
     }
     if not a.skip_baseline:
         from eval.baseline import run_baseline
@@ -116,6 +128,11 @@ def main():
     if a.aggregate:
         p = Path(a.aggregate)
         allr = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+        prev = allr.get(mid, {})
+        if a.score_only:   # re-scored from cached reads: keep where the reads ran, and the baseline if it was skipped
+            res["device"] = prev.get("device", res["device"])
+            if "pure_model" not in res and "pure_model" in prev:
+                res["pure_model"] = prev["pure_model"]
         allr[mid] = res
         p.write_text(json.dumps(allr, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(res, ensure_ascii=False, indent=1))

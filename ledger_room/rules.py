@@ -28,7 +28,7 @@ RULES: dict[str, dict] = {
         "title": "Duplicate voucher: same client already submitted this document",
         "severity": "high",
         "citations": [
-            {"label": "VAT Act Art. 51(1)(5): over-claimed input tax is penalised up to 5x",
+            {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax (虛報進項稅額), fined up to 5x the tax evaded",
              "url": LAW + "G0340080&flno=51"},
         ],
     },
@@ -36,7 +36,7 @@ RULES: dict[str, dict] = {
         "title": "Duplicate voucher: the same document appears under two different clients",
         "severity": "high",
         "citations": [
-            {"label": "VAT Act Art. 51(1)(5): over-claimed input tax is penalised up to 5x",
+            {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax (虛報進項稅額), fined up to 5x the tax evaded",
              "url": LAW + "G0340080&flno=51"},
             {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
              "url": LAW + "G0340080&flno=33"},
@@ -75,7 +75,7 @@ RULES: dict[str, dict] = {
 # risks over-claimed VAT (Art. 51). A voucher without input tax (e.g. a taxi receipt) cannot over-claim VAT; there the
 # risk is the same expense being counted twice for income tax.
 CITE_DUP_VAT = [
-    {"label": "VAT Act Art. 51(1)(5): over-claimed input tax is penalised up to 5x", "url": LAW + "G0340080&flno=51"},
+    {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax (虛報進項稅額), fined up to 5x the tax evaded", "url": LAW + "G0340080&flno=51"},
 ]
 CITE_DUP_VAT_CROSS = CITE_DUP_VAT + [
     {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
@@ -84,9 +84,15 @@ CITE_DUP_VAT_CROSS = CITE_DUP_VAT + [
 CITE_DUP_INCOME = [
     {"label": "Income Tax Act Art. 24: taxable income is revenue minus the costs and expenses of the year",
      "url": LAW + "G0340003&flno=24"},
-    {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67: an expense without its own original "
-              "voucher is not recognised",
+    {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(1): an expense without an original "
+              "voucher, or whose voucher does not match, is in principle not recognised",
      "url": LAW + "G0340051&flno=67"},
+]
+CITE_TWO_PART = [
+    {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
+     "url": LAW + "G0340080&flno=33"},
+    {"label": "VAT Enforcement Rules Art. 38(1): a two-part cash-register invoice counts only when it carries the "
+              "buyer's UBN", "url": LAW + "G0340081&flno=38"},
 ]
 CITE_PERIOD_EARLY = [
     {"label": "VAT Enforcement Rules Art. 29: input tax not claimed in its period may be claimed in the next; "
@@ -130,16 +136,18 @@ RULES["BUYER_PRESUMED"] = {
 RULES["NOT_A_VOUCHER"] = {
     "title": "Not a tax voucher on its own: transaction detail or payment slip without an invoice number",
     "severity": "hold",
-    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67: an expense needs its original "
-                            "voucher; a payment slip or an order detail without an invoice number is not one. Ask the client "
-                            "for the invoice (or find it on their e-invoice carrier).", "url": LAW + "G0340051&flno=67"}],
+    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(1): an expense without an "
+                            "original voucher is in principle not recognised. A payment slip or an order detail without an "
+                            "invoice number is supporting paper, not the voucher: ask the client for the invoice (or find it "
+                            "on their e-invoice carrier).", "url": LAW + "G0340051&flno=67"}],
 }
 RULES["SMALL_RECEIPT_CAP"] = {
-    "title": "Plain receipts from small businesses above 3% of the year's expenses",
+    "title": "Plain receipts from small businesses above 3% of manufacturing + operating expenses",
     "severity": "warning",
-    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(3): plain receipts (普通收據) from "
-                            "small businesses count only up to 3% (千分之三十) of the year's manufacturing and operating "
-                            "expenses", "url": LAW + "G0340051&flno=67"}],
+    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(3): plain receipts (普通收據) issued "
+                            "by small businesses count, per year, only up to 3% (千分之三十) of the year's manufacturing "
+                            "expenses plus operating expenses as assessed by the tax office; the excess is not recognised. "
+                            "Applies to small-business plain receipts only.", "url": LAW + "G0340051&flno=67"}],
 }
 
 # Optional, only when the firm keeps a local copy of the MOF business-registration open data (see registry.py).
@@ -207,6 +215,7 @@ class Doc:
     note: str | None = None
     model_category: str | None = None   # category proposed by the model (fallback only)
     doc_kind: str | None = None          # transaction_detail | payment_slip | None, from printed keywords (voucher_kind)
+    small_business_receipt: bool = False   # a plain receipt that prints 免用統一發票 (issuer exempt from uniform invoices)
     uncertain: dict = field(default_factory=dict)   # field -> why it is not confirmed on the page
 
 
@@ -313,6 +322,12 @@ def expense_category(d: Doc, client_name: str | None = None) -> tuple[str | None
 
 
 TAX_VOUCHERS = ("e_invoice", "triplicate_invoice", "two_part_register")
+SMALL_RECEIPT_KW = ("免用統一發票", "免用统一發票", "免用統一发票", "免用统一发票")
+
+
+def small_business_receipt(ocr_text: str) -> bool:
+    """A receipt printed 免用統一發票: its issuer does not issue uniform invoices (a small business). Art. 67(3) caps these."""
+    return any(k in ocr_text.replace(" ", "") for k in SMALL_RECEIPT_KW)
 
 
 def buyer_presumed(d: Doc, client: dict) -> bool:
@@ -417,6 +432,11 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                 out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "medium",
                                       f"Buyer UBN {d.buyer_ubn} is not this client's ({c['ubn']}): its input tax cannot be "
                                       "deducted by this client.", ["buyer_ubn"]))
+            elif not d.buyer_ubn and d.doc_type == "two_part_register":
+                out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "medium",
+                                      "Two-part invoice (二聯式) without the buyer's UBN: its input tax cannot be deducted. "
+                                      "Only a two-part cash-register invoice that carries the buyer's UBN is a deductible "
+                                      "voucher (format code 22).", ["buyer_ubn"], citations=CITE_TWO_PART))
             elif not d.buyer_ubn:
                 out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "warning",
                                       "No buyer UBN on the voucher (consumer-style invoice): an expense voucher only, "
@@ -476,21 +496,26 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                                           f"Printed invoice period {d.invoice_period} does not contain the printed date "
                                           f"{d.date.isoformat()} (internal inconsistency).", ["date", "invoice_period"]))
 
-    # 9. Audit Regulations Art. 67(3): plain receipts from small businesses, cumulative per client (only when the
-    #    client's yearly manufacturing + operating expenses are configured as "annual_expenses")
+    # 9. Audit Regulations Art. 67(3): plain receipts issued by small businesses (printed 免用統一發票), cumulative per
+    #    client, capped at 3% of the year's manufacturing expenses + operating expenses. Off unless both figures are
+    #    configured per client ("annual_manufacturing_expenses", "annual_operating_expenses"; a trading or service
+    #    company with no manufacturing sets the first to 0).
     run_sum: dict[str, int] = defaultdict(int)
     for d in sorted(docs, key=lambda x: (x.client_id, x.date or date.min, x.doc_id)):
         c = clients[d.client_id]
-        cap_base = c.get("annual_expenses")
-        if not cap_base or d.doc_type != "receipt" or d.tax or d.total is None:
+        mfg, opx = c.get("annual_manufacturing_expenses"), c.get("annual_operating_expenses")
+        if mfg is None or opx is None or not (mfg + opx):
+            continue
+        if d.doc_type != "receipt" or not d.small_business_receipt or d.tax or d.total is None:
             continue
         run_sum[d.client_id] += d.total
-        cap = round(cap_base * 0.03)
+        cap = round((mfg + opx) * 0.03)
         if run_sum[d.client_id] > cap:
             out.append(Exception_(d.doc_id, d.client_id, "SMALL_RECEIPT_CAP", "warning",
-                                  f"Plain receipts so far NT${run_sum[d.client_id]:,} exceed 3% of the client's yearly "
-                                  f"expenses (NT${cap:,}); the excess is not recognised as an expense. Assumes the "
-                                  "seller is a small business issuing plain receipts.", ["total"]))
+                                  f"Small-business plain receipts so far NT${run_sum[d.client_id]:,} exceed 3% of the "
+                                  f"client's manufacturing + operating expenses (NT${mfg:,} + NT${opx:,}, cap "
+                                  f"NT${cap:,}); the excess is not recognised as an expense. The base should be the "
+                                  "amounts the tax office assesses; the configured figures are estimates.", ["total"]))
 
     # 2/3. duplicates: union-find over invoice number, or seller+date+total
     parent = list(range(len(docs)))
@@ -547,7 +572,7 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             others = [docs[j] for j in ms if docs[j].client_id != d.client_id]
             tax = claimable_input_tax(d, clients[d.client_id], allow_presumed=True)
             same_no = lambda o: bool(d.invoice_no) and d.invoice_no == o.invoice_no   # noqa: E731
-            why = (" This client would deduct its input tax twice." if tax > 0 else
+            why = (" If this client deducts its input tax twice, that may constitute over-claimed input tax (VAT Act Art. 51(1)(5))." if tax > 0 else
                    " It carries no input tax for this client, so the risk is the same expense counted twice "
                    "(income tax), not over-claimed VAT.")
             slip = d.doc_kind or any(docs[j].doc_kind for j in ms if j != i)

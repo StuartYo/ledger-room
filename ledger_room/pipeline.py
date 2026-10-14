@@ -70,6 +70,7 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | No
     ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
     return rules.Doc(
         doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
+        small_business_receipt=rules.small_business_receipt(ocr_text),
         uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn") if prov.get(k) in UNCONFIRMED},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),

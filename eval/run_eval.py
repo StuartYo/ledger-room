@@ -64,6 +64,12 @@ def secs(vals):
             "max": round(max(vals), 1), "n": len(vals)}
 
 
+def held_docs(run: dict) -> int:
+    """Documents a person must open before anything is filed: any hold or review routing flag (misread amounts,
+    unreadable buyer UBN, slips that are not vouchers, unconfirmed reads)."""
+    return len({e["doc_id"] for e in run["exceptions"] if e["severity"] in ("hold", "review")})
+
+
 def oracle(set_name: str) -> dict:
     exp = load_expected(set_name)
     clients = {c["id"]: c for c in json.loads((ROOT / "data" / set_name / "clients.json").read_text(encoding="utf-8"))["clients"]}
@@ -127,7 +133,8 @@ def main():
                                               for k in ("AMOUNT_MISMATCH", "BUYER_NOT_CLIENT", "BUYER_PRESUMED", "NOT_A_VOUCHER",
                                                         "SMALL_RECEIPT_CAP", "READ_REVIEW")},
                             "warnings_among_issues": sum(1 for e in run["exceptions"] if e["rule_id"] in rules.ISSUE_TYPES
-                                                         and e["severity"] == "warning")},
+                                                         and e["severity"] == "warning"),
+                            "docs_held_for_review": held_docs(run)},
             "oracle_fields": oracle(s)["micro"],
         }
         if not args.skip_baseline:
@@ -191,6 +198,20 @@ def main():
     rm = ROOT / "eval" / "reader_memory.json"
     if rm.exists():   # written by eval.measure_reader (peak memory, a few fresh reads)
         results["reader_memory"] = json.loads(rm.read_text(encoding="utf-8"))
+    lm = results.get("larger_model")
+    if lm:
+        # one memory figure per reader: eval.measure_reader's. The in-run sampler of run_larger returned 0.0 (not a
+        # measurement), so it is replaced here rather than shown next to the real one.
+        m = results.get("reader_memory", {}).get(lm["model"])
+        lm["memory"] = ({"peak_working_set_gb": m["peak_working_set_gb"], "peak_commit_gb": m["peak_commit_gb"],
+                         "source": f"eval/measure_reader.py, {m['docs']} fresh reads on {m['device']}"} if m else
+                        {"note": "not measured"})
+        lr = ROOT / "data" / "out" / "runs" / f"eval-heldout-{lm['model']}" / "result.json"
+        if lr.exists():
+            lm["ledger_room"]["docs_held_for_review"] = held_docs(json.loads(lr.read_text(encoding="utf-8")))
+    oo = ROOT / "eval" / "results_ocr_only.json"
+    if oo.exists():   # eval.ocr_only: the same OCR, code and rules with no vision-language model
+        results["ocr_only"] = json.loads(oo.read_text(encoding="utf-8"))
     rp = ROOT / "eval" / "results_real_photos.json"
     if rp.exists():   # eval.real_check on the owner's own receipt photos (aggregates only; photos never committed)
         results["real_photos"] = json.loads(rp.read_text(encoding="utf-8"))

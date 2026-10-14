@@ -97,7 +97,39 @@ def test_possible_duplicate_and_alcohol_to_confirm():
 
 
 def test_small_business_receipt_cap():
-    cl = {"A": dict(CL["A"], annual_expenses=100000)}               # 3% = NT$3,000
-    docs = [rules.Doc(f"r{i}", "A", "2026-09", doc_type="receipt", date=date(2026, 9, i + 1), total=1000) for i in range(4)]
+    # Art. 67(3): base = manufacturing + operating expenses; 3% of (40,000 + 60,000) = NT$3,000
+    cl = {"A": dict(CL["A"], annual_manufacturing_expenses=40000, annual_operating_expenses=60000)}
+    docs = [rules.Doc(f"r{i}", "A", "2026-09", doc_type="receipt", date=date(2026, 9, i + 1), total=1000,
+                      small_business_receipt=True) for i in range(4)]
     flagged = [e.doc_id for e in rules.run_rules(docs, cl) if e.rule_id == "SMALL_RECEIPT_CAP"]
     assert flagged == ["r3"]
+    # only small-business plain receipts (printed 免用統一發票) count toward the cap
+    other = [rules.Doc(f"o{i}", "A", "2026-09", doc_type="receipt", date=date(2026, 9, i + 1), total=1000) for i in range(4)]
+    assert not [e for e in rules.run_rules(other, cl) if e.rule_id == "SMALL_RECEIPT_CAP"]
+    # off unless both parts of the base are configured
+    assert not [e for e in rules.run_rules(docs, {"A": dict(CL["A"], annual_operating_expenses=60000)})
+                if e.rule_id == "SMALL_RECEIPT_CAP"]
+    assert rules.small_business_receipt("收據 RECEIPT 免用统一發票") and not rules.small_business_receipt("電子發票證明聯")
+
+
+def test_two_part_invoice_needs_buyer_ubn():
+    no_buyer = rules.Doc("n", "A", "2026-09", doc_type="two_part_register", seller_ubn="85927754",
+                         date=date(2026, 9, 3), net=1000, tax=50, total=1050)
+    with_buyer = rules.Doc("w", "A", "2026-09", doc_type="two_part_register", seller_ubn="85927754", buyer_ubn="00501503",
+                           date=date(2026, 9, 4), net=1000, tax=50, total=1050)
+    ex = {(e.doc_id, e.rule_id): e for e in rules.run_rules([no_buyer, with_buyer], CL)}
+    e = ex[("n", "BUYER_NOT_CLIENT")]
+    assert e.severity == "medium" and "flno=38" in " ".join(c["url"] for c in e.to_dict()["citations"])
+    assert ("w", "BUYER_NOT_CLIENT") not in ex
+    assert rules.claimable_input_tax(with_buyer, CL["A"]) == 50 and rules.claimable_input_tax(no_buyer, CL["A"]) == 0
+    res = {"clients": [CL["A"]], "docs": [
+        {"doc_id": "n", "client_id": "A", "fields": {"doc_type": "two_part_register", "date": "2026-09-03", "tax": 50, "total": 1050}},
+        {"doc_id": "w", "client_id": "A", "fields": {"doc_type": "two_part_register", "buyer_ubn": "00501503",
+                                                      "date": "2026-09-04", "tax": 50, "total": 1050}}], "exceptions": []}
+    rows = {r["doc_id"]: r for r in export.rows(res)}
+    assert rows["n"]["status"] == "NOT_IN_FILE" and rows["w"]["format_code_格式代號"] == "22"
+
+
+def test_duplicate_citation_is_not_a_verdict():
+    lab = rules.CITE_DUP_VAT[0]["label"]
+    assert "may constitute" in lab and "虛報進項稅額" in lab

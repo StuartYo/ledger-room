@@ -143,6 +143,8 @@ def doc_type_from_ocr(lines: list[Line]) -> str | None:
     text = "".join(l.text for l in lines)
     if any(k in text for k in ("三聯", "三联", "扣抵", "三式")):
         return "triplicate_invoice"
+    if any(k in text for k in ("二聯式", "二联式", "收銀機統一發票", "收银机统一发票", "收銀機統一发票")):
+        return "two_part_register"
     if any(k in text for k in ("電子發票", "电子发票", "電子發", "证明联", "證明聯", "證明联")):
         return "e_invoice"
     if any(k in text for k in ("收據", "收据", "免用")) or "RECEIPT" in text.upper():

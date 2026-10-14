@@ -12,6 +12,7 @@ import os
 import threading
 from dataclasses import dataclass
 
+import cv2  # noqa: F401  loaded before OpenVINO: with opencv-python 5.0 the other order crashes cvtColor on Windows
 import numpy as np
 import openvino as ov
 
@@ -36,7 +37,9 @@ class _OVSession:
         import onnxruntime as ort  # only used to read the model's metadata (character list)
         path = str(config["model_path"])
         self._meta = ort.InferenceSession(path, providers=["CPUExecutionProvider"]).get_modelmeta().custom_metadata_map
-        self.cm = _core.compile_model(_core.read_model(path), self.device)
+        n = os.environ.get("LEDGER_CPU_THREADS")   # optional cap, e.g. on a shared office PC
+        cfg = {"INFERENCE_NUM_THREADS": int(n)} if n and self.device == "CPU" else {}
+        self.cm = _core.compile_model(_core.read_model(path), self.device, cfg)
         self.req = self.cm.create_infer_request()
 
     def __call__(self, x):

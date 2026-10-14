@@ -122,6 +122,52 @@ def real_lines(R: dict) -> list[str]:
     return out + [""]
 
 
+def ocr_only_lines(R: dict) -> list[str]:
+    """Ablation: the same OCR, code and rules with no vision-language model."""
+    O = R.get("ocr_only")
+    if not O:
+        return []
+    out = ["**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; "
+           f"code {O['code_rev']}):", "",
+           "| Set | Reader | Ledger Room F1 | Clean docs wrongly flagged | Key fields wrong | Docs held for a person | Read time per document |",
+           "|---|---|---|---|---|---|---|"]
+    for s in ("heldout", "main"):
+        v, o = R["sets"].get(s), O["sets"].get(s)
+        if not v or not o:
+            continue
+        lr, rd = v["ledger_room"], v["ledger_room"]["reading"]
+        out.append(f"| {s} | Qwen3.5-2B + OCR | {f2(lr['micro']['f1'])} | {lr['clean_docs_flagged']}/{lr['clean_docs']} | "
+                   f"{pct(rd['field_error_rate'])} ({rd['fields_wrong']}/{rd['fields_compared']}) | "
+                   f"{lr.get('docs_held_for_review', 'n/a')}/{lr['n_docs']} | {lr['sec_per_doc']['mean']} s |")
+        out.append(f"| {s} | OCR only | {f2(o['micro']['f1'])} | {o['clean_docs_flagged']}/{o['clean_docs']} | "
+                   f"{pct(o['reading']['field_error_rate'])} ({o['reading']['fields_wrong']}/{o['reading']['fields_compared']}) | "
+                   f"{o['docs_held_for_review']}/{o['n_docs']} | {o['sec_per_doc']['mean']} s |")
+    L9 = R.get("larger_model")
+    if L9:
+        out.append(f"| heldout | Qwen3.5-9B + OCR | {f2(L9['ledger_room']['micro']['f1'])} | "
+                   f"{L9['ledger_room']['clean_docs_flagged']}/{L9['ledger_room']['clean_docs']} | "
+                   f"{pct(L9['reading']['field_error_rate'])} ({L9['reading']['fields_wrong']}/{L9['reading']['fields_compared']}) | "
+                   f"{L9['ledger_room'].get('docs_held_for_review', 'n/a')}/{L9['ledger_room']['n_docs']} | "
+                   f"{L9['ledger_room']['sec_per_doc']['mean']} s |")
+    RP = R.get("real_photos") or {}
+    ro = RP.get("ocr-only")
+    if ro:
+        out += ["", "Real photos (10 receipts, 5 repeat captures), key fields right / totals right / dates right / "
+                "detail + payment slip paired / documents held for a person: " + "; ".join(
+                    f"{m} {v['fields_right']} / {v['field_accuracy']['total']} / {v['field_accuracy']['date']} / "
+                    f"{v['detail_and_payment_slip_flagged_as_possible_duplicate']} / {v.get('captures_held_for_review', 'n/a')}"
+                    for m, v in RP.items() if not m.startswith("_")) + "."]
+    out += ["", "The vision model adds little to the decisions. On both synthetic sets the six rules score the same "
+            "without it, because they run on OCR digits and code. On clean synthetic print the 2B even reads amounts "
+            "worse than OCR row parsing (main set: 12% against 1% of key fields wrong, 20 documents held against 1); "
+            "on the harder held-out layouts the two are level. The 9B is the only reader clearly better than OCR "
+            "(6% wrong, 3 held). On the real photos the model reads two more dates and pairs the meal detail with its "
+            "payment slip, which OCR alone misses (it needs the date). The OCR-only parser was written for this "
+            "comparison against the synthetic label words and changed once after its first held-out run (folding "
+            "simplified and traditional characters in the 銷售額 / 稅額 labels), so its held-out numbers are not blind.", ""]
+    return out
+
+
 def einvoice_lines(R: dict) -> list[str]:
     E = R.get("einvoice_check")
     if not E:
@@ -164,6 +210,7 @@ def readme_block(R: dict) -> str:
         *amount_lines(R),
         *real_lines(R),
         *larger_lines(R),
+        *ocr_only_lines(R),
         *einvoice_lines(R),
         f"Positive control: {pc['after_detected']}/{pc['after_planted']} planted changes detected, "
         f"{pc['after_false_flags']} false flags after, {pc['before_flags']} flags before. "
@@ -266,6 +313,9 @@ def results_md(R: dict) -> str:
               "Reading errors per field (wrong / compared): 2B " +
               ", ".join(f"{k} {v}" for k, v in R["sets"]["heldout"]["ledger_room"]["reading"]["per_field"].items()) +
               f"; {LM['model']} " + ", ".join(f"{k} {v}" for k, v in LM["reading"]["per_field"].items()) + ".", ""]
+    OL = ocr_only_lines(R)
+    if OL:
+        L += ["## OCR only, no vision-language model", "", *OL]
     EL = einvoice_lines(R)
     if EL:
         L += ["## Real e-invoice import check", "", *EL]

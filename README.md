@@ -40,7 +40,7 @@ The model only reads. Every decision below is made by code in `ledger_room/rules
 | Rule id | What it catches | Source |
 |---|---|---|
 | `UBN_CHECKSUM` | A seller or buyer UBN that fails the 2023 mod-5 rule (with the 7th-digit-is-7 case). Also explains when a number passes the new rule but would fail the old one. | [FIA notice](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283) |
-| `DUP_CROSS_MONTH` | The same voucher submitted again by the same client (same invoice number, or same seller + date + total) | With input tax for this client: [VAT Act Art. 51](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51). Without (e.g. a taxi receipt): [Income Tax Act Art. 24](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340003&flno=24) and [Audit Regulations Art. 67](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
+| `DUP_CROSS_MONTH` | The same voucher submitted again by the same client (same invoice number, or same seller + date + total) | With input tax for this client: deducting it twice may constitute over-claimed input tax (虛報進項稅額), [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51); the bookkeeper decides. Without (e.g. a taxi receipt): [Income Tax Act Art. 24](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340003&flno=24) and [Audit Regulations Art. 67(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) (an expense without an original voucher is in principle not recognised) |
 | `DUP_CROSS_CLIENT` | The same voucher filed under two different clients | As above, plus [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) when input tax is claimed |
 | `S19_NONDEDUCTIBLE` | Input tax claimed on entertainment or gifts, employee personal benefits, a passenger car for own use, or non-business items | [VAT Act Art. 19](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19) |
 | `OVER_LIMIT` | A document above the client's own expense policy (meal, taxi, lodging, approval threshold) | client policy in `clients.json` |
@@ -57,10 +57,10 @@ Routing rules, outside the six evaluated types (the answer keys were frozen befo
 | Rule id | What it does | Source |
 |---|---|---|
 | `AMOUNT_MISMATCH` (hold) | net + tax must equal the total and tax must be 5% of net (NT$1 rounding); a voucher the client would deduct also needs both amounts read. Held until corrected. | arithmetic, 5% standard rate |
-| `BUYER_NOT_CLIENT` | buyer UBN missing (consumer-style invoice: expense only) or another company's: no deductible input tax | [VAT Act Art. 19(1)(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19), [Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) |
+| `BUYER_NOT_CLIENT` | buyer UBN missing (consumer-style invoice: expense only) or another company's: no deductible input tax. A two-part invoice (二聯式) without the buyer's UBN is never deductible; a two-part cash-register invoice that carries this client's UBN is (format code 22, [Enforcement Rules Art. 38](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=38)) | [VAT Act Art. 19(1)(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19), [Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) |
 | `BUYER_PRESUMED` (hold) | buyer UBN unreadable but the buyer name looks like the client: never deducted on a guess | Art. 33 |
 | `NOT_A_VOUCHER` (hold) | a payment slip or a transaction / order detail (printed keywords, traditional or simplified), or a slip with neither seller UBN nor invoice number: not a voucher on its own; ask the client for the invoice | [Audit Regulations Art. 67](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
-| `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) assumed to come from small businesses, cumulative per client, above 3% (千分之三十) of the yearly expenses set as `annual_expenses` in `clients.json`; off when that is not set | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
+| `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) from small businesses (printed 免用統一發票), cumulative per client, above 3% (千分之三十) of the year's manufacturing expenses plus operating expenses (`annual_manufacturing_expenses` + `annual_operating_expenses` in `clients.json`, ideally the amounts the tax office assesses); off unless both are set. Other receipts are not capped by this rule | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
 
 Deduction codes: the export sets 1 (deductible purchases and expenses) or 3 (non-deductible, Art. 19). Codes 2 and 4
 (fixed assets) are not detected; the 記帳士 sets them.
@@ -206,6 +206,9 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
   `.venv\Scripts\python -m eval.run_larger --model-dir E:\models\Qwen3.5-9B-int4-ov --device CPU` writes
   `eval/results_larger.json` (Ledger Room and the pure-model baseline with the 9B, reading accuracy, memory);
   `eval.measure_reader` records a reader's peak memory on a few documents; `run_eval --score-only` then merges both.
+- **OCR only, no model (about a minute).** `.venv\Scripts\python -m eval.ocr_only` runs both synthetic sets with the
+  same OCR, reconciliation code and rules but no vision-language model, and writes `eval/results_ocr_only.json`
+  (merged by `run_eval`). `eval.real_check --ocr-only` does the same on private photos.
 - **Real e-invoice check.** `.venv\Scripts\python -m eval.einvoice_check EXPORT.csv ... --out DIR` runs the import and
   the rules on MOF platform exports and writes aggregates only. Keep the exports and `DIR` outside the repository;
   `eval/results_einvoice_check.json` holds the aggregates of the one run reported here.
@@ -257,6 +260,7 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 |---|---|---|---|---|---|---|---|---|
 | Qwen3.5-2B-int4-ov | 10 (+5 repeats) | 37/49 | 5/9 (8/9) | 0/10 | 5/5 (0/5) | 1/1 | 3/3 | 0 (2) |
 | Qwen3.5-9B-int4-ov | 10 (+5 repeats) | 40/49 | 7/9 (9/9) | 0/10 | 5/5 (3/5) | 1/1 | 3/3 | 0 (5) |
+| ocr-only | 10 (+5 repeats) | 35/49 | 5/9 (n/a) | 0/10 | 5/5 (n/a) | 0/1 | 3/3 | 0 (n/a) |
 
 Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the slip fix) caught the detail + payment slip pair 0/1, held 1/3 non-vouchers and raised 1 false UBN alarm (a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged.
 
@@ -268,6 +272,20 @@ Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the sli
 | Qwen3.5-9B-int4-ov | 1.00 | 0.18 | 6% (20/337) | 28/47 | 78.4 s |
 
 Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
+
+**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; code 48ac4c1):
+
+| Set | Reader | Ledger Room F1 | Clean docs wrongly flagged | Key fields wrong | Docs held for a person | Read time per document |
+|---|---|---|---|---|---|---|
+| heldout | Qwen3.5-2B + OCR | 1.00 | 0/23 | 13% (42/331) | 20/47 | 11.2 s |
+| heldout | OCR only | 1.00 | 0/23 | 13% (41/319) | 21/47 | 0.8 s |
+| main | Qwen3.5-2B + OCR | 1.00 | 0/28 | 12% (42/359) | 20/52 | 16.7 s |
+| main | OCR only | 1.00 | 0/28 | 1% (4/345) | 1/52 | 0.8 s |
+| heldout | Qwen3.5-9B + OCR | 1.00 | 0/23 | 6% (20/337) | 3/47 | 78.4 s |
+
+Real photos (10 receipts, 5 repeat captures), key fields right / totals right / dates right / detail + payment slip paired / documents held for a person: Qwen3.5-2B-int4-ov 37/49 / 5/9 / 9/10 / 1/1 / 6/15; Qwen3.5-9B-int4-ov 40/49 / 7/9 / 9/10 / 1/1 / 3/15; ocr-only 35/49 / 5/9 / 7/10 / 0/1 / 3/15.
+
+The vision model adds little to the decisions. On both synthetic sets the six rules score the same without it, because they run on OCR digits and code. On clean synthetic print the 2B even reads amounts worse than OCR row parsing (main set: 12% against 1% of key fields wrong, 20 documents held against 1); on the harder held-out layouts the two are level. The 9B is the only reader clearly better than OCR (6% wrong, 3 held). On the real photos the model reads two more dates and pairs the meal detail with its payment slip, which OCR alone misses (it needs the date). The OCR-only parser was written for this comparison against the synthetic label words and changed once after its first held-out run (folding simplified and traditional characters in the 銷售額 / 稅額 labels), so its held-out numbers are not blind.
 
 **Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF platform (3 months; not a bookkeeping firm's client data; aggregates only). 30 invoices / 95 line items imported (7 with discount lines, 7 with zero-price lines). Seller UBNs passing the 2023 checksum: 23/23 (4 of them would fail an outdated mod-10 checker). Duplicates: 0. Art. 19 keyword hits: 2 invoices (alcohol); meal invoices: 12. Import plus rules: 0.085 ms per invoice.
 
@@ -295,7 +313,12 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
 - About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
   be lower.
 - The export CSV follows the 進項媒體申報檔 fields but has not been imported into any accounting software; deduction codes
-  2 and 4 (fixed assets) are left to the bookkeeper.
+  2 and 4 (fixed assets) are left to the bookkeeper. Stage II plan (week 1): write the fixed-width file to the layout in
+  the MOF 營業稅電子資料申報繳稅作業要點, import it into two common accounting packages, and have a bookkeeper compare 20
+  imported lines field by field against the paper vouchers (pass: no field differs). Until then it is a review list.
+- The vision model adds little to the decisions: with OCR and the same code and rules but no model, both synthetic
+  sets score the same (see Results). Its measurable value so far is reading real photos (dates, pairing a detail with
+  its payment slip) and, for the 9B, fewer misread amounts.
 - The planted issue types were designed by the author. The held-out set changes seed, clients and layouts, not the
   definitions of the issues.
 - Art. 19 categories are decided by an auditable keyword table first and by the model's suggested category only as a

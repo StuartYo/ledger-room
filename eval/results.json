@@ -1,7 +1,7 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T21:12:53+08:00",
- "code_rev": "192ccfd",
+ "generated_at": "2026-10-14T21:40:16+08:00",
+ "code_rev": "48ac4c1",
  "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
@@ -142,7 +142,7 @@
      "max": 26.9,
      "n": 52
     },
-    "rules_ms_total": 1.0,
+    "rules_ms_total": 2.0,
     "unreadable_fields": 3,
     "review_items": 0,
     "reading": {
@@ -176,7 +176,8 @@
      "SMALL_RECEIPT_CAP": 0,
      "READ_REVIEW": 0
     },
-    "warnings_among_issues": 5
+    "warnings_among_issues": 5,
+    "docs_held_for_review": 20
    },
    "oracle_fields": {
     "tp": 24,
@@ -375,7 +376,8 @@
      "SMALL_RECEIPT_CAP": 0,
      "READ_REVIEW": 0
     },
-    "warnings_among_issues": 7
+    "warnings_among_issues": 7,
+    "docs_held_for_review": 20
    },
    "oracle_fields": {
     "tp": 24,
@@ -749,7 +751,8 @@
     "n": 47
    },
    "unreadable_fields": 0,
-   "review_items": 0
+   "review_items": 0,
+   "docs_held_for_review": 3
   },
   "pure_model": {
    "per_type": {
@@ -847,8 +850,9 @@
   },
   "docs_per_hour": 46,
   "memory": {
-   "peak_working_set_gb": 0.0,
-   "peak_commit_gb": 0.0
+   "peak_working_set_gb": 11.6,
+   "peak_commit_gb": 8.0,
+   "source": "eval/measure_reader.py, 2 fresh reads on CPU"
   },
   "thinking": "off",
   "pure_over_ledger_f1": 0.175
@@ -882,6 +886,214 @@
    "peak_working_set_gb": 11.6,
    "peak_commit_gb": 8.0,
    "measured_on": "2026-10-14"
+  }
+ },
+ "ocr_only": {
+  "generated_at": "2026-10-14T21:39:03+08:00",
+  "code_rev": "48ac4c1",
+  "reader": "OCR only (PP-OCRv4 on OpenVINO, CPU) + the same reconciliation code and rules; no vision-language model",
+  "zoom": "a boxed buyer UBN is re-read once from the enlarged crop and accepted without a vote (no model to vote with)",
+  "sets": {
+   "heldout": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "docs_exact": 47,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 0.8,
+     "median": 0.8,
+     "max": 3.3,
+     "n": 47
+    },
+    "reading": {
+     "docs": 47,
+     "field_error_rate": 0.129,
+     "fields_wrong": 41,
+     "fields_compared": 319,
+     "docs_all_key_fields_right": 26,
+     "docs_items_right": 17,
+     "per_field": {
+      "doc_type": "0/47",
+      "invoice_no": "0/35",
+      "date": "0/47",
+      "seller_ubn": "0/47",
+      "buyer_ubn": "0/32",
+      "net": "21/32",
+      "tax": "10/32",
+      "total": "10/47"
+     },
+     "amount_check": {
+      "docs_with_amount_error": 21,
+      "held_by_amount_rule": 21,
+      "held_with_correct_amounts": 0
+     }
+    },
+    "routing_flags": {
+     "AMOUNT_MISMATCH": 21,
+     "BUYER_PRESUMED": 0,
+     "NOT_A_VOUCHER": 0,
+     "READ_REVIEW": 0
+    },
+    "docs_held_for_review": 21
+   },
+   "main": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "docs_exact": 52,
+    "n_docs": 52,
+    "clean_docs": 28,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 0.8,
+     "median": 0.7,
+     "max": 3.6,
+     "n": 52
+    },
+    "reading": {
+     "docs": 52,
+     "field_error_rate": 0.012,
+     "fields_wrong": 4,
+     "fields_compared": 345,
+     "docs_all_key_fields_right": 48,
+     "docs_items_right": 28,
+     "per_field": {
+      "doc_type": "0/52",
+      "invoice_no": "0/38",
+      "date": "3/52",
+      "seller_ubn": "0/52",
+      "buyer_ubn": "0/33",
+      "net": "1/33",
+      "tax": "0/33",
+      "total": "0/52"
+     },
+     "amount_check": {
+      "docs_with_amount_error": 1,
+      "held_by_amount_rule": 1,
+      "held_with_correct_amounts": 0
+     }
+    },
+    "routing_flags": {
+     "AMOUNT_MISMATCH": 1,
+     "BUYER_PRESUMED": 0,
+     "NOT_A_VOUCHER": 0,
+     "READ_REVIEW": 0
+    },
+    "docs_held_for_review": 1
+   }
   }
  },
  "real_photos": {
@@ -922,6 +1134,8 @@
     "READ_REVIEW": 1,
     "DUP_CROSS_MONTH": 6
    },
+   "captures_held_for_review": "6/15",
+   "totals_wrong_not_held": 4,
    "pure_model": {
     "field_accuracy": {
      "invoice_no": "3/10",
@@ -977,6 +1191,8 @@
     "PERIOD_MISMATCH": 7,
     "DUP_CROSS_MONTH": 6
    },
+   "captures_held_for_review": "3/15",
+   "totals_wrong_not_held": 2,
    "pure_model": {
     "field_accuracy": {
      "invoice_no": "10/10",
@@ -1007,6 +1223,44 @@
     "ubn_checksum_false_alarms": 1,
     "other_documents_flagged_as_duplicate": 0
    }
+  },
+  "ocr-only": {
+   "model": "ocr-only",
+   "device": "CPU (OCR only)",
+   "photos": 2,
+   "receipts": 10,
+   "repeat_captures": 5,
+   "kinds": {
+    "電子發票證明聯": 5,
+    "銷貨明細": 2,
+    "交易明細": 2,
+    "支付憑證": 1
+   },
+   "field_accuracy": {
+    "doc_type": "5/10",
+    "invoice_no": "10/10",
+    "date": "7/10",
+    "seller_ubn": "8/10",
+    "total": "5/9"
+   },
+   "fields_right": "35/49",
+   "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
+   "not_a_voucher_held": "3/3",
+   "not_a_voucher_false": 0,
+   "detail_and_payment_slip_flagged_as_possible_duplicate": "0/1",
+   "repeat_captures_flagged_as_duplicate": "5/5",
+   "other_documents_flagged_as_duplicate": 0,
+   "ubn_checksum_false_alarms": 0,
+   "sec_per_doc": 1.0,
+   "exceptions_by_rule": {
+    "BUYER_NOT_CLIENT": 10,
+    "NOT_A_VOUCHER": 3,
+    "PERIOD_MISMATCH": 6,
+    "OVER_LIMIT": 2,
+    "DUP_CROSS_MONTH": 5
+   },
+   "captures_held_for_review": "3/15",
+   "totals_wrong_not_held": 4
   }
  },
  "einvoice_check": {

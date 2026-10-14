@@ -36,6 +36,8 @@
    "READ_REVIEW": 1,
    "DUP_CROSS_MONTH": 6
   },
+  "captures_held_for_review": "6/15",
+  "totals_wrong_not_held": 4,
   "pure_model": {
    "field_accuracy": {
     "invoice_no": "3/10",
@@ -91,6 +93,8 @@
    "PERIOD_MISMATCH": 7,
    "DUP_CROSS_MONTH": 6
   },
+  "captures_held_for_review": "3/15",
+  "totals_wrong_not_held": 2,
   "pure_model": {
    "field_accuracy": {
     "invoice_no": "10/10",
@@ -121,5 +125,43 @@
    "ubn_checksum_false_alarms": 1,
    "other_documents_flagged_as_duplicate": 0
   }
+ },
+ "ocr-only": {
+  "model": "ocr-only",
+  "device": "CPU (OCR only)",
+  "photos": 2,
+  "receipts": 10,
+  "repeat_captures": 5,
+  "kinds": {
+   "電子發票證明聯": 5,
+   "銷貨明細": 2,
+   "交易明細": 2,
+   "支付憑證": 1
+  },
+  "field_accuracy": {
+   "doc_type": "5/10",
+   "invoice_no": "10/10",
+   "date": "7/10",
+   "seller_ubn": "8/10",
+   "total": "5/9"
+  },
+  "fields_right": "35/49",
+  "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
+  "not_a_voucher_held": "3/3",
+  "not_a_voucher_false": 0,
+  "detail_and_payment_slip_flagged_as_possible_duplicate": "0/1",
+  "repeat_captures_flagged_as_duplicate": "5/5",
+  "other_documents_flagged_as_duplicate": 0,
+  "ubn_checksum_false_alarms": 0,
+  "sec_per_doc": 1.0,
+  "exceptions_by_rule": {
+   "BUYER_NOT_CLIENT": 10,
+   "NOT_A_VOUCHER": 3,
+   "PERIOD_MISMATCH": 6,
+   "OVER_LIMIT": 2,
+   "DUP_CROSS_MONTH": 5
+  },
+  "captures_held_for_review": "3/15",
+  "totals_wrong_not_held": 4
  }
 }
