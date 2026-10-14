@@ -1,0 +1,414 @@
+{
+ "synthetic": true,
+ "set": "control_after",
+ "seed": 4242,
+ "layout_family": "A",
+ "frozen_at": "2026-10-14T11:34:28+08:00",
+ "n_docs": 12,
+ "n_clean": 5,
+ "issue_counts": {
+  "UBN_CHECKSUM": 1,
+  "DUP_CROSS_MONTH": 1,
+  "DUP_CROSS_CLIENT": 2,
+  "S19_NONDEDUCTIBLE": 1,
+  "OVER_LIMIT": 1,
+  "PERIOD_MISMATCH": 1
+ },
+ "purpose": "positive control (generated after reader development started; not an accuracy test set)",
+ "docs": [
+  {
+   "doc_id": "K01/2026-09/IMG_2822.jpg",
+   "client_id": "K01",
+   "month": "2026-09",
+   "sha256": "41767c2a25d572f7a217bbc5886c7c661cfe0703fff5d6719c0cb133bbb04722",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": "K02/2026-09/IMG_6769.jpg",
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "DX24972347",
+    "date": "2026-09-15",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "30171888",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 200
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 200,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-09/IMG_7689.jpg",
+   "client_id": "K01",
+   "month": "2026-09",
+   "sha256": "11484725e34943c6bf2e7b8098c81447f34b80417ee83264712cf4d427357f0e",
+   "issues": [
+    "PERIOD_MISMATCH"
+   ],
+   "duplicate_of": null,
+   "mutant_of": "K01/2026-09/IMG_8733.jpg",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "GY74527755",
+    "date": "2026-08-20",
+    "invoice_period": "2026-07/2026-08",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "04016481",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1390
+     }
+    ],
+    "net": 1324,
+    "tax": 66,
+    "total": 1390,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-09/IMG_8219.jpg",
+   "client_id": "K01",
+   "month": "2026-09",
+   "sha256": "267fc4f2c1c1a9df66f7eff38efca486e9ef820b800be9e15e1026b3b154718e",
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "CZ64187391",
+    "date": "2026-09-13",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "63577255",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 480
+     },
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 2,
+      "amount": 1380
+     }
+    ],
+    "net": 1860,
+    "tax": 93,
+    "total": 1953,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-09/IMG_8621.jpg",
+   "client_id": "K01",
+   "month": "2026-09",
+   "sha256": "dc08530c699e440f72207884070f4eea3a7187d3eebd48ea1e5e3fd8907ffaa9",
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "EG29965169",
+    "date": "2026-09-20",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "46156526",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1940
+     }
+    ],
+    "net": 1940,
+    "tax": 97,
+    "total": 2037,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-09/IMG_8733.jpg",
+   "client_id": "K01",
+   "month": "2026-09",
+   "sha256": "755c0d3107c9e1584dd0c1f834d98ac2bb7696b6962ad280a587639e59e16ce3",
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "HR30074271",
+    "date": "2026-09-03",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "04016481",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1390
+     }
+    ],
+    "net": 1324,
+    "tax": 66,
+    "total": 1390,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-10/IMG_1424.jpg",
+   "client_id": "K01",
+   "month": "2026-10",
+   "sha256": "28bf09e2ca4d9100f204f9223192aa79216662e137b2107438cee051a066832a",
+   "issues": [
+    "UBN_CHECKSUM"
+   ],
+   "duplicate_of": null,
+   "mutant_of": "K01/2026-09/IMG_8219.jpg",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "ZQ24941419",
+    "date": "2026-10-06",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "63577455",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 480
+     },
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 2,
+      "amount": 1380
+     }
+    ],
+    "net": 1860,
+    "tax": 93,
+    "total": 1953,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K01/2026-10/IMG_8829.jpg",
+   "client_id": "K01",
+   "month": "2026-10",
+   "sha256": "a817249bfb2dc573475cc1dfeecaa1ec833c74411f96def969140eb417efb833",
+   "issues": [
+    "DUP_CROSS_MONTH"
+   ],
+   "duplicate_of": "K01/2026-09/IMG_8621.jpg",
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "EG29965169",
+    "date": "2026-09-20",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "46156526",
+    "buyer_name": "松岡包裝材料有限公司",
+    "buyer_ubn": "69741839",
+    "items": [
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1940
+     }
+    ],
+    "net": 1940,
+    "tax": 97,
+    "total": 2037,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K02/2026-09/IMG_1990.jpg",
+   "client_id": "K02",
+   "month": "2026-09",
+   "sha256": "10f0ca9688549ab1599143756fd0b2e888108cce64f308644d26f09e669d8c3f",
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-08",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "20115901",
+    "buyer_name": "鹿港紙品有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "酸梅湯",
+      "qty": 2,
+      "amount": 60
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 2,
+      "amount": 440
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 500,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K02/2026-09/IMG_5002.jpg",
+   "client_id": "K02",
+   "month": "2026-09",
+   "sha256": "574d759b65cd500d938a87808b6e78b96f3edcc918953b9c54071c25249b14f9",
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "FP67196724",
+    "date": "2026-09-20",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "26404294",
+    "buyer_name": "鹿港紙品有限公司",
+    "buyer_ubn": "04773344",
+    "items": [
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 2520
+     },
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 4500
+     }
+    ],
+    "net": 7020,
+    "tax": 351,
+    "total": 7371,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K02/2026-09/IMG_6769.jpg",
+   "client_id": "K02",
+   "month": "2026-09",
+   "sha256": "5356e797d0a3d5a1d5516ac635c8a26c029a466d670d6c5cb12846bc8262f8b7",
+   "issues": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "DX24972347",
+    "date": "2026-09-15",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "30171888",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 200
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 200,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K02/2026-10/IMG_3795.jpg",
+   "client_id": "K02",
+   "month": "2026-10",
+   "sha256": "31cbaf8b6f5cf851d61a10682de32bae86522fc17be795a00c13f845612882aa",
+   "issues": [
+    "OVER_LIMIT"
+   ],
+   "duplicate_of": null,
+   "mutant_of": "K02/2026-09/IMG_1990.jpg",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-08",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "20115901",
+    "buyer_name": "鹿港紙品有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 12,
+      "amount": 2400
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 2400,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "K02/2026-10/IMG_9826.jpg",
+   "client_id": "K02",
+   "month": "2026-10",
+   "sha256": "1b7de492d1e4247276f9441190da55a180c6e4bdfd3076e7fe91384c13d8f347",
+   "issues": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "duplicate_of": null,
+   "mutant_of": "K02/2026-09/IMG_5002.jpg",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "UQ54104782",
+    "date": "2026-10-12",
+    "invoice_period": null,
+    "seller_name": "好禮伴手禮專賣店",
+    "seller_ubn": "74754117",
+    "buyer_name": "鹿港紙品有限公司",
+    "buyer_ubn": "04773344",
+    "items": [
+     {
+      "desc": "精緻禮盒",
+      "qty": 1,
+      "amount": 7020
+     }
+    ],
+    "net": 7020,
+    "tax": 351,
+    "total": 7371,
+    "note": null
+   }
+  }
+ ]
+}

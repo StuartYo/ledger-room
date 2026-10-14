@@ -1,0 +1,19 @@
+{
+ "measured_on": "2026-10-14",
+ "hardware": "Intel Core i7-13620H laptop, Intel UHD Graphics (iGPU), 32 GB RAM; same triplicate-invoice test image",
+ "note": "One-off measurements taken while choosing the runtime (scratch scripts, two runs each). Final per-document times come from the evaluation runs.",
+ "vlm": [
+  {"config": "Qwen3.5-2B INT4, OpenVINO GenAI, CPU, full-size image (1144x844)", "sec_per_doc": "43-48", "prefill_s": "21-23", "tokens_per_s": "8-9", "used": false},
+  {"config": "Qwen3.5-2B INT4, OpenVINO GenAI, Intel iGPU, full-size image", "sec_per_doc": "22-28", "prefill_s": "8-16", "tokens_per_s": "16-17", "used": false},
+  {"config": "Qwen3.5-2B INT4, OpenVINO GenAI, Intel iGPU, image max side 896 px", "sec_per_doc": "14-16", "prefill_s": "3.6-5", "tokens_per_s": "18-19", "used": true},
+  {"config": "Same + built-in MTP speculative decoding (2 draft tokens)", "sec_per_doc": "14.5 then 38", "prefill_s": "5.5-5.8", "tokens_per_s": "21 then 6", "used": false}
+ ],
+ "ocr": [
+  {"config": "PP-OCRv4 det+rec .onnx via ONNX Runtime 1.31, CPU", "sec_per_page": "17-28", "used": false},
+  {"config": "Same .onnx files compiled by OpenVINO 2026.4, CPU", "sec_per_page": "0.3-1.1", "used": true}
+ ],
+ "not_used": [
+  "NVIDIA RTX 4050 through the OpenVINO GPU plugin (listed via OpenCL): not a supported OpenVINO target; the test did not complete.",
+  "Ollama / CUDA on the NVIDIA GPU: not tried (not measured). It might be faster on this laptop, but it leaves the Intel toolchain that the B70 build will use."
+ ]
+}
