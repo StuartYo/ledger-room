@@ -1,8 +1,8 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T12:05:50+08:00",
- "code_rev": "5d02c9b",
- "reader_version": "r6",
+ "generated_at": "2026-10-14T12:42:39+08:00",
+ "code_rev": "ec5528c",
+ "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
  "hardware": "Dev laptop: Intel Core i7-13620H, Intel UHD Graphics (iGPU, device 'GPU') for the model, CPU for OCR, 32 GB RAM. No Arc Pro B70 used; B70 figures elsewhere are plans, not measurements.",
@@ -137,12 +137,12 @@
     "clean_docs": 28,
     "clean_docs_flagged": 0,
     "sec_per_doc": {
-     "mean": 16.8,
+     "mean": 16.7,
      "median": 16.0,
      "max": 26.9,
      "n": 52
     },
-    "rules_ms_total": 5.6,
+    "rules_ms_total": 2.5,
     "unreadable_fields": 3,
     "review_items": 0
    },
@@ -243,12 +243,12 @@
    "ledger_room": {
     "per_type": {
      "UBN_CHECKSUM": {
-      "tp": 4,
+      "tp": 5,
       "fp": 0,
-      "fn": 1,
+      "fn": 0,
       "precision": 1.0,
-      "recall": 0.8,
-      "f1": 0.889
+      "recall": 1.0,
+      "f1": 1.0
      },
      "DUP_CROSS_MONTH": {
       "tp": 2,
@@ -267,12 +267,12 @@
       "f1": 1.0
      },
      "S19_NONDEDUCTIBLE": {
-      "tp": 4,
+      "tp": 5,
       "fp": 0,
-      "fn": 1,
+      "fn": 0,
       "precision": 1.0,
-      "recall": 0.8,
-      "f1": 0.889
+      "recall": 1.0,
+      "f1": 1.0
      },
      "OVER_LIMIT": {
       "tp": 4,
@@ -292,14 +292,14 @@
      }
     },
     "micro": {
-     "tp": 22,
+     "tp": 24,
      "fp": 0,
-     "fn": 2,
+     "fn": 0,
      "precision": 1.0,
-     "recall": 0.917,
-     "f1": 0.957
+     "recall": 1.0,
+     "f1": 1.0
     },
-    "docs_exact": 45,
+    "docs_exact": 47,
     "n_docs": 47,
     "clean_docs": 23,
     "clean_docs_flagged": 0,
@@ -309,7 +309,7 @@
      "max": 16.4,
      "n": 47
     },
-    "rules_ms_total": 1.5,
+    "rules_ms_total": 2.0,
     "unreadable_fields": 0,
     "review_items": 0
    },
@@ -392,14 +392,14 @@
     },
     "unparsed_replies": 0
    },
-   "pure_over_ledger_f1": 0.153
+   "pure_over_ledger_f1": 0.146
   }
  },
  "positive_control": {
   "before_flags": 0,
   "after_planted": 7,
   "after_detected": 7,
-  "after_false_flags": 1,
+  "after_false_flags": 0,
   "detail": {
    "control_before": {
     "per_type": {
@@ -502,11 +502,11 @@
      },
      "OVER_LIMIT": {
       "tp": 1,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.5,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.667
+      "f1": 1.0
      },
      "PERIOD_MISMATCH": {
       "tp": 1,
@@ -519,19 +519,18 @@
     },
     "micro": {
      "tp": 7,
-     "fp": 1,
+     "fp": 0,
      "fn": 0,
-     "precision": 0.875,
+     "precision": 1.0,
      "recall": 1.0,
-     "f1": 0.933
+     "f1": 1.0
     },
-    "docs_exact": 11,
+    "docs_exact": 12,
     "n_docs": 12,
     "clean_docs": 5,
     "clean_docs_flagged": 0,
     "flags": [
      "K01/2026-09/IMG_2822.jpg:DUP_CROSS_CLIENT",
-     "K01/2026-09/IMG_2822.jpg:OVER_LIMIT",
      "K01/2026-09/IMG_7689.jpg:PERIOD_MISMATCH",
      "K01/2026-10/IMG_1424.jpg:UBN_CHECKSUM",
      "K01/2026-10/IMG_8829.jpg:DUP_CROSS_MONTH",
@@ -542,6 +541,71 @@
    }
   }
  },
+ "blind_first_run": {
+  "note": "First evaluation; the held-out set had never been looked at. Fixes made after reading its errors are in later code revisions, so later held-out numbers are not blind.",
+  "generated_at": "2026-10-14T12:05:50+08:00",
+  "code_rev": "5d02c9b",
+  "reader_version": "r6",
+  "sets": {
+   "main": {
+    "ledger_room": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "pure_model": {
+     "tp": 12,
+     "fp": 106,
+     "fn": 12,
+     "precision": 0.102,
+     "recall": 0.5,
+     "f1": 0.169
+    },
+    "ledger_docs_exact": 52,
+    "n_docs": 52,
+    "ledger_clean_flagged": 0,
+    "clean_docs": 28
+   },
+   "heldout": {
+    "ledger_room": {
+     "tp": 22,
+     "fp": 0,
+     "fn": 2,
+     "precision": 1.0,
+     "recall": 0.917,
+     "f1": 0.957
+    },
+    "pure_model": {
+     "tp": 10,
+     "fp": 103,
+     "fn": 14,
+     "precision": 0.088,
+     "recall": 0.417,
+     "f1": 0.146
+    },
+    "ledger_docs_exact": 45,
+    "n_docs": 47,
+    "ledger_clean_flagged": 0,
+    "clean_docs": 23
+   }
+  },
+  "positive_control": {
+   "before_flags": 0,
+   "after_planted": 7,
+   "after_detected": 7,
+   "after_false_flags": 1
+  }
+ },
+ "fixes_after_blind": "four",
+ "fixes_after_blind_detail": [
+  "UBN roles: a 買方 label owns one number; a line OCR reads as '方：12345678' (the 賣 dropped) is the seller's. (held-out)",
+  "Totals: skip the e-invoice random code when OCR prints it in mixed characters (随機码), and prefer the number on the 總計 / 合計 row over the largest number on the page. (positive control)",
+  "Seller name: take the stamp's name line when the stamp is rotated. (seen in the web app)",
+  "Expense category: seller names now match only multi-character terms (餐廳, 咖啡, 商旅...). Fix 3 exposed this on the main set, where OCR read a garage stamp 保養廠 as 保餐廠. (main)"
+ ],
  "gate": {
   "rule": "stop if pure-model micro F1 >= 95% of Ledger Room on any set",
   "max_ratio": 0.169,

@@ -37,8 +37,8 @@ def blind_lines(R: dict) -> list[str]:
     return [f"**Held-out, first blind run** (code {B['code_rev']}, before any change made after seeing held-out errors): "
             f"Ledger Room F1 {f2(h['ledger_room']['f1'])} (P {pct(h['ledger_room']['precision'])}, "
             f"R {pct(h['ledger_room']['recall'])}), pure model F1 {f2(h['pure_model']['f1'])}. "
-            f"The table above uses later code that fixes {R.get('fixes_after_blind', 'some')} reading bugs found on the "
-            "held-out set, so its held-out row is no longer blind.", ""]
+            f"The table above uses later code with {R.get('fixes_after_blind', 'some')} fixes made after that run "
+            "(listed in eval/RESULTS.md), so its held-out row is no longer blind.", ""]
 
 
 def readme_block(R: dict) -> str:

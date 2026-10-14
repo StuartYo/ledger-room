@@ -163,12 +163,14 @@ def main():
                      for s, v in B["sets"].items()},
             "positive_control": {k: B["positive_control"][k] for k in ("before_flags", "after_planted", "after_detected", "after_false_flags")},
         }
-        results["fixes_after_blind"] = "three"
+        results["fixes_after_blind"] = "four"
         results["fixes_after_blind_detail"] = [
-            "UBN roles: a 買方 label owns one number; a line OCR reads as '方：12345678' (the 賣 dropped) is the seller's.",
+            "UBN roles: a 買方 label owns one number; a line OCR reads as '方：12345678' (the 賣 dropped) is the seller's. (held-out)",
             "Totals: skip the e-invoice random code when OCR prints it in mixed characters (随機码), and prefer the number "
-            "on the 總計 / 合計 row over the largest number on the page.",
-            "Seller name: take the stamp's name line when the stamp is rotated (display only; no rule uses it).",
+            "on the 總計 / 合計 row over the largest number on the page. (positive control)",
+            "Seller name: take the stamp's name line when the stamp is rotated. (seen in the web app)",
+            "Expense category: seller names now match only multi-character terms (餐廳, 咖啡, 商旅...). Fix 3 exposed this "
+            "on the main set, where OCR read a garage stamp 保養廠 as 保餐廠. (main)",
         ]
     ratios = [v.get("pure_over_ledger_f1") for v in results["sets"].values() if v.get("pure_over_ledger_f1") is not None]
     results["gate"] = {"rule": f"stop if pure-model micro F1 >= {GATE:.0%} of Ledger Room on any set",

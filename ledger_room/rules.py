@@ -183,17 +183,29 @@ def s19_category(d: Doc) -> tuple[str | None, str | None, str]:
     return None, None, ""
 
 
+# Seller names only count with multi-character terms: a single misread character in a shop name
+# (e.g. OCR reading 保養廠 as 保餐廠) must not turn a garage into a restaurant.
+SELLER_LEXICON: list[tuple[str, list[str]]] = [
+    ("taxi", ["計程車", "車隊", "衛星"]),
+    ("lodging", ["商旅", "飯店", "旅館", "民宿", "酒店"]),
+    ("meal", ["餐廳", "餐館", "餐飲", "麵館", "牛肉麵", "咖啡", "小吃", "火鍋", "食堂", "便當"]),
+]
+
+
 def expense_category(d: Doc, client_name: str | None = None) -> tuple[str | None, str | None]:
-    # the seller name is a legitimate signal here (e.g. "...餐廳"), unlike for Art. 19 -
-    # but never when it is really the client's own name copied into the seller field
-    seller = d.seller_name or ""
-    if client_name and name_sim(seller, client_name) >= 0.8:
-        seller = ""
-    text = doc_text(d) + " " + seller
+    text = doc_text(d)
     for cat, kws in EXPENSE_LEXICON:
         for kw in kws:
             if kw in text:
                 return cat, kw
+    # the seller name is a legitimate signal here (e.g. "...餐廳"), unlike for Art. 19 -
+    # but never when it is really the client's own name copied into the seller field
+    seller = d.seller_name or ""
+    if not (client_name and name_sim(seller, client_name) >= 0.8):
+        for cat, kws in SELLER_LEXICON:
+            for kw in kws:
+                if kw in seller:
+                    return cat, kw
     if d.model_category in {c for c, _ in EXPENSE_LEXICON}:
         return d.model_category, None
     return None, None
