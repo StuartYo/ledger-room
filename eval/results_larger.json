@@ -1,0 +1,177 @@
+{
+ "generated_at": "2026-10-14T19:21:00+08:00",
+ "code_rev": "c725cbf",
+ "set": "heldout",
+ "model": "Qwen3.5-9B-int4-ov",
+ "device": "CPU",
+ "load_s": 4.3,
+ "model_on_disk_gb": 5.85,
+ "hardware": "same laptop: Intel Core i7-13620H, Intel UHD iGPU (shared memory), 32 GB RAM",
+ "ledger_room": {
+  "per_type": {
+   "UBN_CHECKSUM": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "DUP_CROSS_MONTH": {
+    "tp": 2,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "DUP_CROSS_CLIENT": {
+    "tp": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "S19_NONDEDUCTIBLE": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "OVER_LIMIT": {
+    "tp": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "PERIOD_MISMATCH": {
+    "tp": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   }
+  },
+  "micro": {
+   "tp": 24,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "docs_exact": 47,
+  "n_docs": 47,
+  "clean_docs": 23,
+  "clean_docs_flagged": 0,
+  "sec_per_doc": {
+   "mean": 78.4,
+   "median": 78.7,
+   "max": 97.5,
+   "n": 47
+  },
+  "unreadable_fields": 0,
+  "review_items": 0
+ },
+ "pure_model": {
+  "per_type": {
+   "UBN_CHECKSUM": {
+    "tp": 5,
+    "fp": 38,
+    "fn": 0,
+    "precision": 0.116,
+    "recall": 1.0,
+    "f1": 0.208
+   },
+   "DUP_CROSS_MONTH": {
+    "tp": 1,
+    "fp": 19,
+    "fn": 1,
+    "precision": 0.05,
+    "recall": 0.5,
+    "f1": 0.091
+   },
+   "DUP_CROSS_CLIENT": {
+    "tp": 0,
+    "fp": 2,
+    "fn": 4,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0
+   },
+   "S19_NONDEDUCTIBLE": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 4,
+    "precision": 1.0,
+    "recall": 0.2,
+    "f1": 0.333
+   },
+   "OVER_LIMIT": {
+    "tp": 0,
+    "fp": 1,
+    "fn": 4,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0
+   },
+   "PERIOD_MISMATCH": {
+    "tp": 3,
+    "fp": 20,
+    "fn": 1,
+    "precision": 0.13,
+    "recall": 0.75,
+    "f1": 0.222
+   }
+  },
+  "micro": {
+   "tp": 10,
+   "fp": 80,
+   "fn": 14,
+   "precision": 0.111,
+   "recall": 0.417,
+   "f1": 0.175
+  },
+  "docs_exact": 3,
+  "n_docs": 47,
+  "clean_docs": 23,
+  "clean_docs_flagged": 23,
+  "sec_per_doc": {
+   "mean": 90.6,
+   "median": 89.1,
+   "max": 128.4,
+   "n": 47
+  },
+  "unparsed_replies": 0
+ },
+ "reading": {
+  "docs": 47,
+  "field_error_rate": 0.059,
+  "fields_wrong": 20,
+  "fields_compared": 337,
+  "docs_all_key_fields_right": 30,
+  "docs_items_right": 28,
+  "per_field": {
+   "doc_type": "0/47",
+   "invoice_no": "0/35",
+   "date": "0/47",
+   "seller_ubn": "0/47",
+   "buyer_ubn": "0/32",
+   "net": "16/47",
+   "tax": "3/35",
+   "total": "1/47"
+  }
+ },
+ "docs_per_hour": 46,
+ "wall_s_ledger_room": 0.2,
+ "memory": {
+  "peak_working_set_gb": 0.0,
+  "peak_commit_gb": 0.0
+ }
+}

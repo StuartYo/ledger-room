@@ -54,7 +54,9 @@ def larger_lines(R: dict) -> list[str]:
         return (f"| {name} | {f2(lr['micro']['f1'])} | {f2(pm['micro']['f1']) if pm else 'n/a'} | "
                 f"{pct(rd['field_error_rate']) if rd else 'n/a'} ({rd['fields_wrong']}/{rd['fields_compared']}) | "
                 f"{rd['docs_items_right']}/{rd['docs']} | {sp} s |")
-    mem = L.get("memory", {})
+    RM = R.get("reader_memory", {})
+    mem = RM.get(L["model"]) or L.get("memory", {})
+    mem2 = RM.get(R["model"].split(" ")[0], {})
     cpu = L.get("cpu_sample")
     return [
         f"**Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, "
@@ -65,10 +67,11 @@ def larger_lines(R: dict) -> list[str]:
         row(R["model"].split(" ")[0], lr2, pm2, rd2, lr2["sec_per_doc"]["mean"]),
         row(L["model"], lr9, pm9, rd9, lr9["sec_per_doc"]["mean"]),
         "",
-        f"Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Larger reader: "
-        f"{L['model_on_disk_gb']} GB on disk, peak process memory {mem.get('peak_commit_gb', 'n/a')} GB "
-        f"(iGPU shares system RAM), about {L['docs_per_hour']} documents per hour"
-        + (f"; on the CPU {cpu['mean']} s per document ({cpu['docs']} documents)." if cpu else "."),
+        f"Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. "
+        f"The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). "
+        f"On disk: 2B {mem2.get('disk_gb', 'n/a')} GB, 9B {L['model_on_disk_gb']} GB. Peak RAM in use (working set, "
+        f"eval/measure_reader.py): 2B on the iGPU {mem2.get('peak_working_set_gb', 'n/a')} GB, 9B on the CPU "
+        f"{mem.get('peak_working_set_gb', 'n/a')} GB. 9B on the laptop CPU: about {L['docs_per_hour']} documents per hour.",
         "",
     ]
 

@@ -1,7 +1,7 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T14:41:50+08:00",
- "code_rev": "686f7af",
+ "generated_at": "2026-10-14T19:25:39+08:00",
+ "code_rev": "c725cbf",
  "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
@@ -642,6 +642,215 @@
   "Seller name: take the stamp's name line when the stamp is rotated. (seen in the web app)",
   "Expense category: seller names now match only multi-character terms (餐廳, 咖啡, 商旅...). Fix 3 exposed this on the main set, where OCR read a garage stamp 保養廠 as 保餐廠. (main)"
  ],
+ "larger_model": {
+  "generated_at": "2026-10-14T19:21:00+08:00",
+  "code_rev": "c725cbf",
+  "set": "heldout",
+  "model": "Qwen3.5-9B-int4-ov",
+  "device": "CPU",
+  "load_s": 4.3,
+  "model_on_disk_gb": 5.85,
+  "hardware": "same laptop: Intel Core i7-13620H, Intel UHD iGPU (shared memory), 32 GB RAM",
+  "ledger_room": {
+   "per_type": {
+    "UBN_CHECKSUM": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "DUP_CROSS_MONTH": {
+     "tp": 2,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "DUP_CROSS_CLIENT": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "S19_NONDEDUCTIBLE": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "OVER_LIMIT": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "PERIOD_MISMATCH": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    }
+   },
+   "micro": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "docs_exact": 47,
+   "n_docs": 47,
+   "clean_docs": 23,
+   "clean_docs_flagged": 0,
+   "sec_per_doc": {
+    "mean": 78.4,
+    "median": 78.7,
+    "max": 97.5,
+    "n": 47
+   },
+   "unreadable_fields": 0,
+   "review_items": 0
+  },
+  "pure_model": {
+   "per_type": {
+    "UBN_CHECKSUM": {
+     "tp": 5,
+     "fp": 38,
+     "fn": 0,
+     "precision": 0.116,
+     "recall": 1.0,
+     "f1": 0.208
+    },
+    "DUP_CROSS_MONTH": {
+     "tp": 1,
+     "fp": 19,
+     "fn": 1,
+     "precision": 0.05,
+     "recall": 0.5,
+     "f1": 0.091
+    },
+    "DUP_CROSS_CLIENT": {
+     "tp": 0,
+     "fp": 2,
+     "fn": 4,
+     "precision": 0.0,
+     "recall": 0.0,
+     "f1": 0.0
+    },
+    "S19_NONDEDUCTIBLE": {
+     "tp": 1,
+     "fp": 0,
+     "fn": 4,
+     "precision": 1.0,
+     "recall": 0.2,
+     "f1": 0.333
+    },
+    "OVER_LIMIT": {
+     "tp": 0,
+     "fp": 1,
+     "fn": 4,
+     "precision": 0.0,
+     "recall": 0.0,
+     "f1": 0.0
+    },
+    "PERIOD_MISMATCH": {
+     "tp": 3,
+     "fp": 20,
+     "fn": 1,
+     "precision": 0.13,
+     "recall": 0.75,
+     "f1": 0.222
+    }
+   },
+   "micro": {
+    "tp": 10,
+    "fp": 80,
+    "fn": 14,
+    "precision": 0.111,
+    "recall": 0.417,
+    "f1": 0.175
+   },
+   "docs_exact": 3,
+   "n_docs": 47,
+   "clean_docs": 23,
+   "clean_docs_flagged": 23,
+   "sec_per_doc": {
+    "mean": 90.6,
+    "median": 89.1,
+    "max": 128.4,
+    "n": 47
+   },
+   "unparsed_replies": 0
+  },
+  "reading": {
+   "docs": 47,
+   "field_error_rate": 0.059,
+   "fields_wrong": 20,
+   "fields_compared": 337,
+   "docs_all_key_fields_right": 30,
+   "docs_items_right": 28,
+   "per_field": {
+    "doc_type": "0/47",
+    "invoice_no": "0/35",
+    "date": "0/47",
+    "seller_ubn": "0/47",
+    "buyer_ubn": "0/32",
+    "net": "16/47",
+    "tax": "3/35",
+    "total": "1/47"
+   }
+  },
+  "docs_per_hour": 46,
+  "wall_s_ledger_room": 0.2,
+  "memory": {
+   "peak_working_set_gb": 0.0,
+   "peak_commit_gb": 0.0
+  },
+  "pure_over_ledger_f1": 0.175
+ },
+ "reader_memory": {
+  "Qwen3.5-2B-int4-ov": {
+   "model": "Qwen3.5-2B-int4-ov",
+   "device": "GPU",
+   "docs": 3,
+   "sec_per_doc": [
+    15.7,
+    12.6,
+    10.7
+   ],
+   "disk_gb": 1.99,
+   "load_s": 9.1,
+   "peak_working_set_gb": 3.9,
+   "peak_commit_gb": 4.3,
+   "measured_on": "2026-10-14"
+  },
+  "Qwen3.5-9B-int4-ov": {
+   "model": "Qwen3.5-9B-int4-ov",
+   "device": "CPU",
+   "docs": 2,
+   "sec_per_doc": [
+    91.4,
+    84.5
+   ],
+   "disk_gb": 5.85,
+   "load_s": 3.9,
+   "peak_working_set_gb": 11.6,
+   "peak_commit_gb": 8.0,
+   "measured_on": "2026-10-14"
+  }
+ },
  "einvoice_check": {
   "label": "One person's own consumer e-invoices (3 months, MOF platform export). Used to test the import and rule path; not a bookkeeping firm's client data. Aggregates only.",
   "privacy": "aggregates only; no invoice numbers, sellers, items or single transactions",
@@ -682,7 +891,7 @@
  },
  "gate": {
   "rule": "stop if pure-model micro F1 >= 95% of Ledger Room on any set",
-  "max_ratio": 0.169,
+  "max_ratio": 0.175,
   "stop": false
  }
 }

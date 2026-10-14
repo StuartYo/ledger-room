@@ -123,11 +123,23 @@ Why this path: it runs on the laptop's Intel UHD iGPU today through the same Ope
 and it follows the toolchain of ASUS's own Arc Pro B70 sample (OpenVINO + Qwen3.5 vision models). The measured
 alternatives are in the results block below.
 
-**Intel Arc Pro B70 path (planned, not measured).** No B70 was used for any number in this repository.
-On the B70 (32 GB) the same code is meant to run with `LEDGER_DEVICE=GPU` and a larger reader such as
-`OpenVINO/Qwen3.5-9B-int4-ov` or the INT8 build, set with `LEDGER_MODEL_DIR`. The memory headroom is what lets one
-office machine keep the reader resident while it works through a whole month of vouchers for dozens of clients.
-Stage II will measure this on the organisers' Thunderstorm environment.
+**Intel Arc Pro B70 path (planned, not measured).** No B70 was used for any number in this repository. What the
+laptop shows (held-out set, see [Results](#results)): the 2B reader is fast enough even on the laptop iGPU, and after
+OCR snapping it gets every identifier right, but it misreads amounts (net, tax), which a 401 export line needs. The
+9B reader (`OpenVINO/Qwen3.5-9B-int4-ov`, same code, thinking mode off) roughly halves the key-field errors, but on the
+laptop it only ran on the CPU (compiling it for the iGPU ran out of memory, since the iGPU shares system RAM), at more
+than a minute per document. That is why the B70 is in the plan: 32 GB of dedicated memory holds the 9B (5.9 GB) or a
+27B INT4 reader (16 GB) next to the KV cache, so the better reader can get through a firm's month in one night. The
+code switches with `LEDGER_MODEL_DIR` and `LEDGER_DEVICE=GPU`.
+
+Stage II targets on the B70, set now so they can be checked:
+
+| Target | 9B INT4 reader | 27B INT4 reader |
+|---|---|---|
+| Key fields wrong, held-out | no worse than the laptop 9B plus 1 point | below the 9B |
+| Ledger Room micro F1, held-out | at least 0.95 | at least 0.95 |
+| Documents per hour, whole pipeline | at least 600; goal 1,200 (12,000 documents in one night) | at least 300 |
+| Pure-model baseline with the same model | reported next to Ledger Room | reported next to Ledger Room |
 
 **Offline.** The only step that needs the internet is the one-time model download. At run time nothing is sent out:
 OCR, the model and the rules run in-process, and the web app loads no external scripts, fonts or images. OpenVINO's
@@ -158,7 +170,7 @@ address. Stage II should repeat this with the network adapter disabled.
    (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with `--host 0.0.0.0`; the documents still
    stay on this machine.
 
-No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU). Other environment variables:
+No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU). For the larger reader, download `--repo OpenVINO/Qwen3.5-9B-int4-ov --dir E:\models\Qwen3.5-9B-int4-ov` with the same `get_model` command and point `LEDGER_MODEL_DIR` at it. Other environment variables:
 `LEDGER_MODEL_DIR` (model folder), `LEDGER_OCR_DEVICE` (default `CPU`), `LEDGER_VLM_MAX_SIDE` (default 896 px).
 
 ## Reproduce the evaluation
@@ -171,6 +183,13 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
   the cached reads (`data/out/cache`) and pure-model answers (`data/out/baseline`). Delete those two folders to force
   fresh reads. Reads on the Intel GPU are not bit-identical between runs: in one repeat of the held-out set, two
   documents came back with different item lines or totals, while all 24 exceptions stayed the same.
+- **Larger reader (held-out only, about 2 hours on the laptop CPU).**
+  `.venv\Scripts\python -m eval.run_larger --model-dir E:\models\Qwen3.5-9B-int4-ov --device CPU` writes
+  `eval/results_larger.json` (Ledger Room and the pure-model baseline with the 9B, reading accuracy, memory);
+  `eval.measure_reader` records a reader's peak memory on a few documents; `run_eval --score-only` then merges both.
+- **Real e-invoice check.** `.venv\Scripts\python -m eval.einvoice_check EXPORT.csv ... --out DIR` runs the import and
+  the rules on MOF platform exports and writes aggregates only. Keep the exports and `DIR` outside the repository;
+  `eval/results_einvoice_check.json` holds the aggregates of the one run reported here.
 - The first blind held-out run is stored in `eval/results_blind_first_run.json`; `run_eval` merges it into
   `results.json` so the blind numbers are never overwritten by later runs.
 
@@ -210,6 +229,15 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 | heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 15.1 s |
 
 **Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
+
+**Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, Qwen3.5-9B-int4-ov on CPU:
+
+| Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |
+|---|---|---|---|---|---|
+| Qwen3.5-2B-int4-ov | 1.00 | 0.15 | 12% (39/331) | 19/47 | 15.1 s |
+| Qwen3.5-9B-int4-ov | 1.00 | 0.17 | 6% (20/337) | 28/47 | 78.4 s |
+
+Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
 
 **Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF platform (3 months; not a bookkeeping firm's client data; aggregates only). 30 invoices / 95 line items imported (7 with discount lines, 7 with zero-price lines). Seller UBNs passing the 2023 checksum: 23/23 (4 of them would fail an outdated mod-10 checker). Duplicates: 0. Art. 19 keyword hits: 2 invoices (alcohol); meal invoices: 12. Import plus rules: 0.085 ms per invoice.
 

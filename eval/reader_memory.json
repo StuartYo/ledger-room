@@ -1,0 +1,31 @@
+{
+ "Qwen3.5-2B-int4-ov": {
+  "model": "Qwen3.5-2B-int4-ov",
+  "device": "GPU",
+  "docs": 3,
+  "sec_per_doc": [
+   15.7,
+   12.6,
+   10.7
+  ],
+  "disk_gb": 1.99,
+  "load_s": 9.1,
+  "peak_working_set_gb": 3.9,
+  "peak_commit_gb": 4.3,
+  "measured_on": "2026-10-14"
+ },
+ "Qwen3.5-9B-int4-ov": {
+  "model": "Qwen3.5-9B-int4-ov",
+  "device": "CPU",
+  "docs": 2,
+  "sec_per_doc": [
+   91.4,
+   84.5
+  ],
+  "disk_gb": 5.85,
+  "load_s": 3.9,
+  "peak_working_set_gb": 11.6,
+  "peak_commit_gb": 8.0,
+  "measured_on": "2026-10-14"
+ }
+}

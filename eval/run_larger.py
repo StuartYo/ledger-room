@@ -40,8 +40,11 @@ def peak_memory_gb() -> dict:
     try:
         c = PMC()
         c.cb = ctypes.sizeof(PMC)
-        h = ctypes.windll.kernel32.GetCurrentProcess()
-        ctypes.windll.psapi.GetProcessMemoryInfo(h, ctypes.byref(c), c.cb)
+        k = ctypes.windll.kernel32
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.POINTER(PMC), ctypes.c_ulong]
+        if not k.K32GetProcessMemoryInfo(k.GetCurrentProcess(), ctypes.byref(c), c.cb):
+            return {}
         return {"peak_working_set_gb": round(c.PeakWorkingSetSize / 2**30, 1),
                 "peak_commit_gb": round(c.PeakPagefileUsage / 2**30, 1)}
     except Exception:
