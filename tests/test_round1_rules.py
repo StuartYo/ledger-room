@@ -1,4 +1,4 @@
-"""Citations follow the voucher, prior-period vouchers are warnings, registry lookup, 401 export codes."""
+"""Citations follow the voucher, prior-period vouchers are warnings, registry lookup, media-file export codes."""
 from datetime import date
 
 from ledger_room import export, rules

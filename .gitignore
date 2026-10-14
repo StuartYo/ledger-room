@@ -21,3 +21,6 @@ eval/runs/
 .env.*
 *.log
 .claude/
+
+# private real-data inboxes (never committed)
+data/private_*/

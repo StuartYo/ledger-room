@@ -127,6 +127,13 @@ RULES["BUYER_PRESUMED"] = {
     "citations": [{"label": "Not deducted on a guess: VAT Act Art. 33 requires the buyer UBN on the voucher. "
                             "Check the paper before deducting.", "url": LAW + "G0340080&flno=33"}],
 }
+RULES["NOT_A_VOUCHER"] = {
+    "title": "Not a tax voucher on its own: transaction detail or payment slip without an invoice number",
+    "severity": "hold",
+    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67: an expense needs its original "
+                            "voucher; a payment slip or an order detail without an invoice number is not one. Ask the client "
+                            "for the invoice (or find it on their e-invoice carrier).", "url": LAW + "G0340051&flno=67"}],
+}
 RULES["SMALL_RECEIPT_CAP"] = {
     "title": "Plain receipts from small businesses above 3% of the year's expenses",
     "severity": "warning",
@@ -199,6 +206,7 @@ class Doc:
     total: int | None = None
     note: str | None = None
     model_category: str | None = None   # category proposed by the model (fallback only)
+    doc_kind: str | None = None          # transaction_detail | payment_slip | None, from printed keywords (voucher_kind)
     uncertain: dict = field(default_factory=dict)   # field -> why it is not confirmed on the page
 
 
@@ -237,6 +245,27 @@ def norm_invoice_no(s: str | None) -> str | None:
         return None
     t = re.sub(r"[^A-Za-z0-9]", "", s).upper()
     return t if re.fullmatch(r"[A-Z]{2}\d{8}", t) else None
+
+
+# OCR often returns simplified characters (交易明细, 交易类别), so both forms are listed.
+PAYMENT_SLIP_KW = ("多元支付", "支付服務", "支付服务", "交易類別", "交易类别", "交易類别", "付款類別", "付款类别", "簽帳單",
+                   "签帐单", "簽單", "端末代號", "端末代号")
+DETAIL_KW = ("交易明細", "交易明细", "消費明細", "消费明细", "點餐明細", "点餐明细", "結帳單", "结帐单")
+INVOICE_PROOF_KW = ("證明聯", "证明联", "發票證明", "发票证明", "發票证明", "统一發票", "統一發票", "统一发票")
+
+
+def voucher_kind(ocr_text: str, invoice_no: str | None) -> str | None:
+    """Printed hints that a slip is not an invoice: a payment terminal slip, or an order / transaction detail.
+    A slip that prints the words of an invoice proof (證明聯, 統一發票) is never reclassified. A transaction detail
+    can print the number of the e-invoice that went to a carrier; it is still not the voucher, so a read invoice
+    number does not clear it."""
+    if any(k in ocr_text for k in INVOICE_PROOF_KW):
+        return None
+    if any(k in ocr_text for k in PAYMENT_SLIP_KW):
+        return "payment_slip"
+    if any(k in ocr_text for k in DETAIL_KW):
+        return "transaction_detail"
+    return None
 
 
 def doc_text(d: Doc) -> str:
@@ -332,6 +361,8 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
         c = clients[d.client_id]
         # 1. UBN checksum (+ optional registration lookup)
         for role in ("seller", "buyer"):
+            if d.doc_kind == "payment_slip":
+                break   # the 8 digits on a payment slip are a terminal or store id, not a UBN; the slip is held anyway
             v = getattr(d, f"{role}_ubn")
             why = d.uncertain.get(f"{role}_ubn")
             if why:
@@ -390,6 +421,14 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                 out.append(Exception_(d.doc_id, d.client_id, "BUYER_NOT_CLIENT", "warning",
                                       "No buyer UBN on the voucher (consumer-style invoice): an expense voucher only, "
                                       "no deductible input tax.", ["buyer_ubn"]))
+
+        # 7b. slips that are not vouchers
+        if d.doc_kind or (d.doc_type in (None, "receipt") and not d.invoice_no and not d.seller_ubn):
+            kind = {"payment_slip": "a payment slip", "transaction_detail": "a transaction detail"}.get(d.doc_kind,
+                                                                                                    "a slip without seller UBN or invoice number")
+            out.append(Exception_(d.doc_id, d.client_id, "NOT_A_VOUCHER", "hold",
+                                  f"This looks like {kind}, not an invoice or receipt with the seller's UBN. Held: ask the "
+                                  "client for the invoice before it is booked.", ["invoice_no", "seller_ubn"]))
 
         # 8. arithmetic: net + tax = total and tax = 5% of net; a deductible line also needs both amounts read
         if amounts_inconsistent(d.net, d.tax, d.total):
@@ -472,6 +511,20 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             by_no[d.invoice_no].append(i)
         if d.seller_ubn and d.date and d.total is not None:
             by_comp[(d.seller_ubn, d.date, d.total)].append(i)
+        elif not d.seller_ubn and not d.invoice_no and d.date and d.total and d.total >= 100:
+            # slips with neither seller UBN nor invoice number (a detail and its payment slip): date + amount only,
+            # always reported as a possible duplicate
+            by_comp[("no-ubn", d.date, d.total)].append(i)
+    # a payment slip or a transaction detail is paired on date + amount with any other document of that day
+    by_day: dict[tuple, list[int]] = defaultdict(list)
+    for i, d in enumerate(docs):
+        if d.date and d.total and d.total >= 100:
+            by_day[(d.date, d.total)].append(i)
+    for idx in by_day.values():
+        for a in range(len(idx)):
+            for b in range(a + 1, len(idx)):
+                if docs[idx[a]].doc_kind or docs[idx[b]].doc_kind:
+                    union(idx[a], idx[b])
     for idx in by_no.values():
         for j in idx[1:]:
             union(idx[0], j)
@@ -497,7 +550,10 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             why = (" This client would deduct its input tax twice." if tax > 0 else
                    " It carries no input tax for this client, so the risk is the same expense counted twice "
                    "(income tax), not over-claimed VAT.")
-            maybe = ("Possible duplicate (same seller, date and amount, no shared invoice number; two same-day "
+            slip = d.doc_kind or any(docs[j].doc_kind for j in ms if j != i)
+            maybe = ("Possible duplicate (same date and amount; one is a payment slip or transaction detail, which "
+                     "often travels with the invoice or detail for the same purchase): " if slip else
+                     "Possible duplicate (same seller, date and amount, no shared invoice number; two same-day "
                      "purchases at the same price are normal, so check with the client): ")
             if earlier_same:
                 e = earlier_same[0]

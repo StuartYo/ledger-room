@@ -65,9 +65,11 @@ def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
 UNCONFIRMED = {"model-only", "unconfirmed"}
 
 
-def to_rule_doc(d: dict, f: dict, prov: dict | None = None) -> rules.Doc:
+def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | None = None) -> rules.Doc:
     prov = prov or {}
+    ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
     return rules.Doc(
+        doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
         uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn") if prov.get(k) in UNCONFIRMED},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
@@ -209,7 +211,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"))
-    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"]) for d in docs]
+    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
+             for d in docs]
     excs = rules.run_rules(rdocs, clients, registry=registry)
     by_id = {d["doc_id"]: d for d in docs}
     out_ex = []

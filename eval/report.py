@@ -95,6 +95,33 @@ def amount_lines(R: dict) -> list[str]:
             + ", ".join(f"{k} {v}" for k, v in rf.items()) + ".", ""]
 
 
+def real_lines(R: dict) -> list[str]:
+    RP = R.get("real_photos")
+    if not RP:
+        return []
+    out = ["**Real photos** (the owner's own receipts, two phone photos; answer key written by eye and frozen before any "
+           "model ran; photos and key stay private, aggregates only):", "",
+           "| Reader | Receipts | Key fields right | Totals right (model alone) | Ready to deduct (expected 0) | Same receipt twice flagged (model alone) | Detail + payment slip flagged | Non-vouchers held | UBN false alarms (model alone) |",
+           "|---|---|---|---|---|---|---|---|---|"]
+    for m, v in RP.items():
+        if m.startswith("_"):
+            continue
+        pm = v.get("pure_model") or {}
+        out.append(f"| {m} | {v['receipts']} (+{v['repeat_captures']} repeats) | {v['fields_right']} | "
+                   f"{v['field_accuracy']['total']} ({(pm.get('field_accuracy') or {}).get('total', 'n/a')}) | "
+                   f"{v['lines_ready_to_deduct'].split(' ')[0]} | {v['repeat_captures_flagged_as_duplicate']} "
+                   f"({pm.get('repeat_captures_flagged_as_duplicate', 'n/a')}) | "
+                   f"{v['detail_and_payment_slip_flagged_as_possible_duplicate']} | {v['not_a_voucher_held']} | "
+                   f"{v['ubn_checksum_false_alarms']} ({pm.get('ubn_checksum_false_alarms', 'n/a')}) |")
+    for m, v in (RP.get("_first_run_before_slip_fix") or {}).items():
+        out += ["", f"Not blind for the slip columns: the first {m} run (before the slip fix) caught the detail + payment "
+                f"slip pair {v['detail_and_payment_slip_flagged_as_possible_duplicate']}, held "
+                f"{v['not_a_voucher_held']} non-vouchers and raised {v['ubn_checksum_false_alarms']} false UBN alarm "
+                "(a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any "
+                "document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged."]
+    return out + [""]
+
+
 def einvoice_lines(R: dict) -> list[str]:
     E = R.get("einvoice_check")
     if not E:
@@ -135,6 +162,7 @@ def readme_block(R: dict) -> str:
         "",
         *blind_lines(R),
         *amount_lines(R),
+        *real_lines(R),
         *larger_lines(R),
         *einvoice_lines(R),
         f"Positive control: {pc['after_detected']}/{pc['after_planted']} planted changes detected, "

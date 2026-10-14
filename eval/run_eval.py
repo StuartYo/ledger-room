@@ -124,7 +124,7 @@ def main():
                             "reading": score_reads({d["doc_id"]: d for d in run["docs"]}, exp,
                                                    held={e["doc_id"] for e in run["exceptions"] if e["rule_id"] == "AMOUNT_MISMATCH"}),
                             "routing_flags": {k: sum(1 for e in run["exceptions"] if e["rule_id"] == k)
-                                              for k in ("AMOUNT_MISMATCH", "BUYER_NOT_CLIENT", "BUYER_PRESUMED",
+                                              for k in ("AMOUNT_MISMATCH", "BUYER_NOT_CLIENT", "BUYER_PRESUMED", "NOT_A_VOUCHER",
                                                         "SMALL_RECEIPT_CAP", "READ_REVIEW")},
                             "warnings_among_issues": sum(1 for e in run["exceptions"] if e["rule_id"] in rules.ISSUE_TYPES
                                                          and e["severity"] == "warning")},
@@ -191,6 +191,12 @@ def main():
     rm = ROOT / "eval" / "reader_memory.json"
     if rm.exists():   # written by eval.measure_reader (peak memory, a few fresh reads)
         results["reader_memory"] = json.loads(rm.read_text(encoding="utf-8"))
+    rp = ROOT / "eval" / "results_real_photos.json"
+    if rp.exists():   # eval.real_check on the owner's own receipt photos (aggregates only; photos never committed)
+        results["real_photos"] = json.loads(rp.read_text(encoding="utf-8"))
+    r4 = ROOT / "eval" / "results_reader_4b.json"
+    if r4.exists():   # eval.run_larger --skip-baseline with Qwen3.5-4B (reading and Ledger Room only)
+        results["reader_4b"] = json.loads(r4.read_text(encoding="utf-8"))
     ec = ROOT / "eval" / "results_einvoice_check.json"
     if ec.exists():   # aggregates only, from eval.einvoice_check on a private platform export
         results["einvoice_check"] = json.loads(ec.read_text(encoding="utf-8"))

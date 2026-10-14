@@ -1,0 +1,125 @@
+{
+ "Qwen3.5-2B-int4-ov": {
+  "model": "Qwen3.5-2B-int4-ov",
+  "device": "GPU",
+  "photos": 2,
+  "receipts": 10,
+  "repeat_captures": 5,
+  "kinds": {
+   "電子發票證明聯": 5,
+   "銷貨明細": 2,
+   "交易明細": 2,
+   "支付憑證": 1
+  },
+  "field_accuracy": {
+   "doc_type": "6/10",
+   "invoice_no": "9/10",
+   "date": "9/10",
+   "seller_ubn": "8/10",
+   "total": "5/9"
+  },
+  "fields_right": "37/49",
+  "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
+  "not_a_voucher_held": "3/3",
+  "not_a_voucher_false": 0,
+  "detail_and_payment_slip_flagged_as_possible_duplicate": "1/1",
+  "repeat_captures_flagged_as_duplicate": "5/5",
+  "other_documents_flagged_as_duplicate": 0,
+  "ubn_checksum_false_alarms": 0,
+  "sec_per_doc": 9.8,
+  "exceptions_by_rule": {
+   "BUYER_NOT_CLIENT": 12,
+   "NOT_A_VOUCHER": 3,
+   "AMOUNT_MISMATCH": 3,
+   "OVER_LIMIT": 4,
+   "PERIOD_MISMATCH": 7,
+   "READ_REVIEW": 1,
+   "DUP_CROSS_MONTH": 6
+  },
+  "pure_model": {
+   "field_accuracy": {
+    "invoice_no": "3/10",
+    "date": "7/10",
+    "seller_ubn": "0/10",
+    "total": "8/9"
+   },
+   "lines_marked_with_no_issue": "0/10",
+   "documents_flagged": "15/15",
+   "repeat_captures_flagged_as_duplicate": "0/5",
+   "detail_and_payment_slip_flagged": "0/1",
+   "ubn_checksum_false_alarms": 2,
+   "issues_by_type": {
+    "OVER_LIMIT": 14,
+    "S19_NONDEDUCTIBLE": 13,
+    "PERIOD_MISMATCH": 3,
+    "UBN_CHECKSUM": 2
+   }
+  }
+ },
+ "Qwen3.5-9B-int4-ov": {
+  "model": "Qwen3.5-9B-int4-ov",
+  "device": "CPU",
+  "photos": 2,
+  "receipts": 10,
+  "repeat_captures": 5,
+  "kinds": {
+   "電子發票證明聯": 5,
+   "銷貨明細": 2,
+   "交易明細": 2,
+   "支付憑證": 1
+  },
+  "field_accuracy": {
+   "doc_type": "5/10",
+   "invoice_no": "10/10",
+   "date": "9/10",
+   "seller_ubn": "9/10",
+   "total": "7/9"
+  },
+  "fields_right": "40/49",
+  "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
+  "not_a_voucher_held": "3/3",
+  "not_a_voucher_false": 0,
+  "detail_and_payment_slip_flagged_as_possible_duplicate": "1/1",
+  "repeat_captures_flagged_as_duplicate": "5/5",
+  "other_documents_flagged_as_duplicate": 0,
+  "ubn_checksum_false_alarms": 0,
+  "sec_per_doc": 66.2,
+  "exceptions_by_rule": {
+   "BUYER_NOT_CLIENT": 12,
+   "NOT_A_VOUCHER": 3,
+   "OVER_LIMIT": 3,
+   "PERIOD_MISMATCH": 7,
+   "DUP_CROSS_MONTH": 6
+  },
+  "pure_model": {
+   "field_accuracy": {
+    "invoice_no": "10/10",
+    "date": "10/10",
+    "seller_ubn": "4/10",
+    "total": "9/9"
+   },
+   "lines_marked_with_no_issue": "0/10",
+   "documents_flagged": "15/15",
+   "repeat_captures_flagged_as_duplicate": "3/5",
+   "detail_and_payment_slip_flagged": "1/1",
+   "ubn_checksum_false_alarms": 5,
+   "issues_by_type": {
+    "UBN_CHECKSUM": 5,
+    "DUP_CROSS_MONTH": 5,
+    "OVER_LIMIT": 2,
+    "PERIOD_MISMATCH": 4,
+    "DUP_CROSS_CLIENT": 2
+   }
+  }
+ },
+ "_first_run_before_slip_fix": {
+  "Qwen3.5-2B-int4-ov": {
+   "detail_and_payment_slip_flagged_as_possible_duplicate": "0/1",
+   "not_a_voucher_held": "1/3",
+   "not_a_voucher_false": 0,
+   "repeat_captures_flagged_as_duplicate": "5/5",
+   "ubn_checksum_false_alarms": 1,
+   "other_documents_flagged_as_duplicate": 0
+  }
+ }
+}

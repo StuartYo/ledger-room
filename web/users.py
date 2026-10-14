@@ -7,7 +7,7 @@ python -m web.users remove ben
 
 Roles (the safeguard regulation, Art. 15, asks for different permissions per person):
   admin  everything: run the model live, read the audit log and the operation log, export
-  staff  read exceptions and documents, replay cached runs, export the 401 CSV
+  staff  read exceptions and documents, replay cached runs, export the media-file CSV (進項媒體申報檔 layout)
 
 Passwords are stored as PBKDF2-SHA256 (200,000 rounds, random salt). File: <secrets dir>/users.json (see keys.py),
 or LEDGER_USERS.

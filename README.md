@@ -49,7 +49,8 @@ The model only reads. Every decision below is made by code in `ledger_room/rules
 Severities: a match on seller + date + amount without a shared invoice number is a **possible duplicate** (warning:
 two same-day taxi rides at the same fare are normal); a shared invoice number is a duplicate (high). Art. 19 matches on
 alcohol and meal words are **to confirm** (warning: a restaurant buys beer to resell); gifts, staff trips and passenger
-cars stay findings.
+cars stay findings. A payment slip or transaction detail is paired with any document of the same date and amount and
+reported as a possible duplicate (a meal detail and its Line Pay slip are one purchase).
 
 Routing rules, outside the six evaluated types (the answer keys were frozen before them), reported separately:
 
@@ -58,6 +59,7 @@ Routing rules, outside the six evaluated types (the answer keys were frozen befo
 | `AMOUNT_MISMATCH` (hold) | net + tax must equal the total and tax must be 5% of net (NT$1 rounding); a voucher the client would deduct also needs both amounts read. Held until corrected. | arithmetic, 5% standard rate |
 | `BUYER_NOT_CLIENT` | buyer UBN missing (consumer-style invoice: expense only) or another company's: no deductible input tax | [VAT Act Art. 19(1)(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19), [Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) |
 | `BUYER_PRESUMED` (hold) | buyer UBN unreadable but the buyer name looks like the client: never deducted on a guess | Art. 33 |
+| `NOT_A_VOUCHER` (hold) | a payment slip or a transaction / order detail (printed keywords, traditional or simplified), or a slip with neither seller UBN nor invoice number: not a voucher on its own; ask the client for the invoice | [Audit Regulations Art. 67](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
 | `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) assumed to come from small businesses, cumulative per client, above 3% (千分之三十) of the yearly expenses set as `annual_expenses` in `clients.json`; off when that is not set | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
 
 Deduction codes: the export sets 1 (deductible purchases and expenses) or 3 (non-deductible, Art. 19). Codes 2 and 4
@@ -243,17 +245,26 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 | Set | Ledger Room micro F1 | Pure model micro F1 | Read time per document (laptop iGPU) |
 |---|---|---|---|
 | main (52 docs, layout A) | 1.00 (P 100%, R 100%) | 0.17 (P 10%, R 50%) | 16.7 s |
-| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 15.1 s |
+| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 11.2 s |
 
 **Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
 
-**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: net 23/40, tax 11/36, total 5/47 wrong). The amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) holds 19 of the 19 documents with a materially wrong or missing amount, and 0 documents whose amounts were right. Routing flags on held-out: AMOUNT_MISMATCH 19, BUYER_NOT_CLIENT 4, BUYER_PRESUMED 0, SMALL_RECEIPT_CAP 0, READ_REVIEW 0.
+**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: net 24/40, tax 12/36, total 6/47 wrong). The amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) holds 20 of the 20 documents with a materially wrong or missing amount, and 0 documents whose amounts were right. Routing flags on held-out: AMOUNT_MISMATCH 20, BUYER_NOT_CLIENT 4, BUYER_PRESUMED 0, NOT_A_VOUCHER 0, SMALL_RECEIPT_CAP 0, READ_REVIEW 0.
+
+**Real photos** (the owner's own receipts, two phone photos; answer key written by eye and frozen before any model ran; photos and key stay private, aggregates only):
+
+| Reader | Receipts | Key fields right | Totals right (model alone) | Ready to deduct (expected 0) | Same receipt twice flagged (model alone) | Detail + payment slip flagged | Non-vouchers held | UBN false alarms (model alone) |
+|---|---|---|---|---|---|---|---|---|
+| Qwen3.5-2B-int4-ov | 10 (+5 repeats) | 37/49 | 5/9 (8/9) | 0/10 | 5/5 (0/5) | 1/1 | 3/3 | 0 (2) |
+| Qwen3.5-9B-int4-ov | 10 (+5 repeats) | 40/49 | 7/9 (9/9) | 0/10 | 5/5 (3/5) | 1/1 | 3/3 | 0 (5) |
+
+Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the slip fix) caught the detail + payment slip pair 0/1, held 1/3 non-vouchers and raised 1 false UBN alarm (a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged.
 
 **Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, Qwen3.5-9B-int4-ov on CPU:
 
 | Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |
 |---|---|---|---|---|---|
-| Qwen3.5-2B-int4-ov | 1.00 | 0.15 | 12% (39/331) | 19/47 | 15.1 s |
+| Qwen3.5-2B-int4-ov | 1.00 | 0.15 | 13% (42/331) | 19/47 | 11.2 s |
 | Qwen3.5-9B-int4-ov | 1.00 | 0.18 | 6% (20/337) | 28/47 | 78.4 s |
 
 Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
@@ -276,8 +287,11 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
 
 ## Limits
 
-- Synthetic photos only. Real phone photos sent over LINE, handwriting and faded thermal paper will be harder. The
-  only real data so far is one person's own consumer e-invoices through the import path (no OCR, no photos).
+- Mostly synthetic photos. The real data so far: one person's own consumer e-invoices through the import path (no OCR)
+  and 10 of his own receipts in two phone photos (results under [Results](#results)). On those the reader picks the
+  wrong total too often (it takes cash paid or a nearby long number); the same model asked directly reads totals
+  better. The slip checks were fixed after the first run on these photos, so those columns are not blind. 10 receipts
+  say little; Stage II needs 150+ with a frozen key.
 - About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
   be lower.
 - The export CSV follows the 進項媒體申報檔 fields but has not been imported into any accounting software; deduction codes
