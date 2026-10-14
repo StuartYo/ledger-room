@@ -1,7 +1,7 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T21:12:33+08:00",
- "code_rev": "ebd26d8",
+ "generated_at": "2026-10-14T21:12:53+08:00",
+ "code_rev": "192ccfd",
  "reader_version": "r7",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
@@ -142,7 +142,7 @@
      "max": 26.9,
      "n": 52
     },
-    "rules_ms_total": 1.5,
+    "rules_ms_total": 1.0,
     "unreadable_fields": 3,
     "review_items": 0,
     "reading": {
@@ -341,7 +341,7 @@
      "max": 15.7,
      "n": 47
     },
-    "rules_ms_total": 2.0,
+    "rules_ms_total": 1.0,
     "unreadable_fields": 0,
     "review_items": 0,
     "reading": {
