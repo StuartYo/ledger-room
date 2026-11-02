@@ -134,7 +134,7 @@ def telemetry_status() -> dict:
     content = _try(lambda: f.read_text().strip()) if f.is_file() else None
     ci = os.environ.get("CI", "").lower() == "true"
     sends = not ci and content != "0"
-    return {"consent_file": str(f), "consent_file_content": content, "env_CI_true": ci, "sends_on_import": sends,
+    return {"consent_file": str(f).replace(str(Path.home()), "~"), "consent_file_content": content, "env_CI_true": ci, "sends_on_import": sends,
             "set_by_ledger_room": os.environ.get("CI") == "true" and "ledger_room" in sys.modules,
             "turn_off": "on by default: ledger_room/__init__.py sets CI=true before openvino is imported; "
                         "opt_in_out --opt_out also writes 0 to the per-user consent file"}

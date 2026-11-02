@@ -16,9 +16,9 @@
    "invoice_no": "9/10",
    "date": "9/10",
    "seller_ubn": "8/10",
-   "total": "5/9"
+   "total": "9/9"
   },
-  "fields_right": "37/49",
+  "fields_right": "41/49",
   "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
   "not_a_voucher_held": "3/3",
   "not_a_voucher_false": 0,
@@ -26,18 +26,17 @@
   "repeat_captures_flagged_as_duplicate": "5/5",
   "other_documents_flagged_as_duplicate": 0,
   "ubn_checksum_false_alarms": 0,
-  "sec_per_doc": 9.8,
+  "sec_per_doc": 12.6,
   "exceptions_by_rule": {
+   "READ_REVIEW": 4,
    "BUYER_NOT_CLIENT": 12,
    "NOT_A_VOUCHER": 3,
-   "AMOUNT_MISMATCH": 3,
-   "OVER_LIMIT": 4,
+   "OVER_LIMIT": 2,
    "PERIOD_MISMATCH": 7,
-   "READ_REVIEW": 1,
    "DUP_CROSS_MONTH": 6
   },
   "captures_held_for_review": "6/15",
-  "totals_wrong_not_held": 4,
+  "totals_wrong_not_held": 0,
   "pure_model": {
    "field_accuracy": {
     "invoice_no": "3/10",
@@ -75,9 +74,9 @@
    "invoice_no": "10/10",
    "date": "9/10",
    "seller_ubn": "9/10",
-   "total": "7/9"
+   "total": "9/9"
   },
-  "fields_right": "40/49",
+  "fields_right": "42/49",
   "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
   "not_a_voucher_held": "3/3",
   "not_a_voucher_false": 0,
@@ -85,16 +84,17 @@
   "repeat_captures_flagged_as_duplicate": "5/5",
   "other_documents_flagged_as_duplicate": 0,
   "ubn_checksum_false_alarms": 0,
-  "sec_per_doc": 66.2,
+  "sec_per_doc": 76.8,
   "exceptions_by_rule": {
    "BUYER_NOT_CLIENT": 12,
    "NOT_A_VOUCHER": 3,
-   "OVER_LIMIT": 3,
+   "OVER_LIMIT": 1,
    "PERIOD_MISMATCH": 7,
+   "READ_REVIEW": 2,
    "DUP_CROSS_MONTH": 6
   },
-  "captures_held_for_review": "3/15",
-  "totals_wrong_not_held": 2,
+  "captures_held_for_review": "4/15",
+  "totals_wrong_not_held": 0,
   "pure_model": {
    "field_accuracy": {
     "invoice_no": "10/10",
@@ -143,9 +143,9 @@
    "invoice_no": "10/10",
    "date": "7/10",
    "seller_ubn": "8/10",
-   "total": "5/9"
+   "total": "6/9"
   },
-  "fields_right": "35/49",
+  "fields_right": "36/49",
   "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
   "not_a_voucher_held": "3/3",
   "not_a_voucher_false": 0,
@@ -155,13 +155,13 @@
   "ubn_checksum_false_alarms": 0,
   "sec_per_doc": 1.0,
   "exceptions_by_rule": {
+   "READ_REVIEW": 14,
    "BUYER_NOT_CLIENT": 10,
    "NOT_A_VOUCHER": 3,
    "PERIOD_MISMATCH": 6,
-   "OVER_LIMIT": 2,
    "DUP_CROSS_MONTH": 5
   },
-  "captures_held_for_review": "3/15",
-  "totals_wrong_not_held": 4
+  "captures_held_for_review": "15/15",
+  "totals_wrong_not_held": 0
  }
 }

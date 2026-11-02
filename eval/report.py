@@ -58,6 +58,7 @@ def larger_lines(R: dict) -> list[str]:
         return (f"| {name} | {f2(lr['micro']['f1'])} | {f2(pm['micro']['f1']) if pm else 'n/a'} | "
                 f"{pct(rd['field_error_rate']) if rd else 'n/a'} ({rd['fields_wrong']}/{rd['fields_compared']}) | "
                 f"{rd['docs_items_right']}/{rd['docs']} | {sp} s |")
+    amt9 = sum(int(rd9["per_field"][k].split("/")[0]) for k in ("net", "tax", "total"))
     RM = R.get("reader_memory", {})
     mem = RM.get(L["model"]) or L.get("memory", {})
     mem2 = RM.get(R["model"].split(" ")[0], {})
@@ -68,8 +69,13 @@ def larger_lines(R: dict) -> list[str]:
         "",
         "| Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |",
         "|---|---|---|---|---|---|",
-        row(R["model"].split(" ")[0], lr2, pm2, rd2, lr2["sec_per_doc"]["mean"]),
-        row(L["model"], lr9, pm9, rd9, lr9["sec_per_doc"]["mean"]),
+        row(f"{R['model'].split(' ')[0]} (code {R['code_rev']})", lr2, pm2, rd2, lr2["sec_per_doc"]["mean"]),
+        row(f"{L['model']} (code {L['code_rev']})", lr9, pm9, rd9, lr9["sec_per_doc"]["mean"]),
+        "",
+        f"The 9B row is from {L['generated_at'][:10]} (code {L['code_rev']}), before totals, net and tax were picked "
+        "by code, and has not been rerun since; "
+        + (f"all {amt9} of its wrong fields are" if amt9 == rd9["fields_wrong"] else
+           f"{amt9} of its {rd9['fields_wrong']} wrong fields are") + " net, tax or total. The 2B row uses the current code, so the two reading error rates do not compare the readers fairly.",
         "",
         f"Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. "
         f"The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). "
@@ -87,12 +93,80 @@ def amount_lines(R: dict) -> list[str]:
         return []
     a = rd["amount_check"]
     pf = rd["per_field"]
-    return [f"**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: "
-            f"net {pf['net']}, tax {pf['tax']}, total {pf['total']} wrong). The amount rule (net + tax = total, tax = 5% "
-            f"of net, both read on a deductible voucher) holds {a['held_by_amount_rule']} of the "
-            f"{a['docs_with_amount_error']} documents with a materially wrong or missing amount, and "
-            f"{a['held_with_correct_amounts']} documents whose amounts were right. Routing flags on held-out: "
+    hold = (f"The amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) holds "
+            f"{a['held_by_amount_rule']} of the {a['docs_with_amount_error']} documents with a materially wrong or "
+            f"missing amount" if a["docs_with_amount_error"] else
+            "No document is left with a materially wrong or missing amount, so the amount rule (net + tax = total, "
+            "tax = 5% of net, both read on a deductible voucher) has nothing to hold")
+    return [f"**Amounts.** Code picks the total, net and tax from what is printed; the model's own reading is one "
+            f"vote (next paragraph). Held-out, fields wrong after reconciliation: "
+            f"net {pf['net']}, tax {pf['tax']}, total {pf['total']}. {hold}; documents held although their amounts "
+            f"were right: {a['held_with_correct_amounts']}. Routing flags on held-out: "
             + ", ".join(f"{k} {v}" for k, v in rf.items()) + ".", ""]
+
+
+def totals_lines(R: dict) -> list[str]:
+    """eval/totals_eval.py: totals picked by code (after) against the previous code (before), the model's own text
+    and the pure model, on the same reads."""
+    T = R.get("totals")
+    if not T:
+        return []
+    h2 = T.get("heldout2|Qwen3.5-2B-int4-ov")
+    out = ["**Totals picked by code** (eval/totals_eval.py). Code collects the "
+           "printed evidence for the total (the 總計 / 合計 / 應付 row, the e-invoice random-code line, a net + 5% tax = "
+           "total triple, the amount in Chinese numerals, the subtotal) and ignores numbers on cash, change, balance, "
+           "card, deposit, points and reference lines. The model's own total, and its answer to a follow-up question "
+           "asked only when the evidence is thin, count as one vote each, and only if that number is printed on the "
+           "page. A total needs two agreeing sources and no tie; otherwise it is marked unconfirmed and the document "
+           "goes to a person (READ_REVIEW). \"Before\" is the previous code on the same model replies.", ""]
+    if h2:
+        a, b, m, p = h2["after"], h2["before"], h2["model_text"], h2["pure_model"]
+        out += [f"Held-out set 2 ({h2['docs']} docs, layout family C: cash-register e-invoice details, receipts, "
+                "separate total boxes; cash, change, card balances, deposits and order numbers printed next to the "
+                f"total). Its key was frozen before the change. Run record: {h2.get('note', 'run once')}. It is not "
+                "run again:", "",
+                "| | After | Before | Model's own text | Pure model |", "|---|---|---|---|---|",
+                f"| Totals right | {a['total']} | {b['total']} | {m['total']} | {p['total']} |",
+                f"| Net right | {a['net']} | {b['net']} | {m['net']} | n/a |",
+                f"| Tax right | {a['tax']} | {b['tax']} | {m['tax']} | n/a |",
+                f"| Cash, change, balance or deposit taken as the total | {a['total_is_cash_change_balance_or_deposit']} | "
+                f"{b['total_is_cash_change_balance_or_deposit']} | {m['total_is_cash_change_balance_or_deposit']} | "
+                f"{p['total_is_cash_change_balance_or_deposit']} |",
+                f"| Amount wrong and not held | {a['amount_errors_not_held']} | {b['amount_errors_not_held']} | n/a | "
+                f"{p['total_wrong_all_unflagged']} (it holds nothing) |",
+                f"| Documents held for a person | {a['docs_held_for_a_person']} | {b['docs_held_for_a_person']} | n/a | n/a |",
+                f"| Over limit (right / false alarm / missed) | {a['over_limit']['tp']} / {a['over_limit']['fp']} / "
+                f"{a['over_limit']['fn']} | {b['over_limit']['tp']} / {b['over_limit']['fp']} / {b['over_limit']['fn']} | "
+                f"n/a | {p['over_limit']['tp']} / {p['over_limit']['fp']} / {p['over_limit']['fn']} |",
+                f"| Six issue types, micro F1 | {f2(a['micro_f1'])} | {f2(b['micro_f1'])} | n/a | {f2(p['micro_f1'])} |",
+                "",
+                f"Follow-up questions about the total: {h2['follow_up_total_questions']} of {h2['docs']} documents. "
+                "This set was drawn by the same author who wrote the fix, knowing what the fix had to handle, and its "
+                "print is clean, so these numbers overstate what to expect on real photos.", ""]
+    rows = []
+    for s in ("main", "heldout"):
+        v = T.get(f"{s}|Qwen3.5-2B-int4-ov")
+        if v:
+            a, b = v["after"], v["before"]
+            rows.append(f"| {s} (used while writing the fix) | {a['total']}, {a['net']}, {a['tax']} | "
+                        f"{b['total']}, {b['net']}, {b['tax']} | {v['model_text']['total']} | {v['pure_model']['total']} | "
+                        f"{a['docs_held_for_a_person']} (before {b['docs_held_for_a_person']}) |")
+    for k, v in T.items():
+        if k.startswith("private_real|"):
+            a, b = v["after"], v["before"]
+            rows.append(f"| real photos, {v['model']} (seen during development) | {a['total']} | {b['total']} | "
+                        f"{v['model_text']['total']} | {v.get('pure_model', {}).get('total', 'n/a')} | "
+                        f"{a['captures_held_for_a_person']} (before {b['captures_held_for_a_person']}) |")
+    if rows:
+        out += ["Sets that are not blind for this change:", "",
+                "| Set | After: totals, net, tax right | Before | Model's own total | Pure model total | Held for a person after the change |",
+                "|---|---|---|---|---|---|", *rows, ""]
+        rp = [v for k, v in T.items() if k.startswith("private_real|")]
+        if rp:
+            out += ["Real photos, totals wrong and not held, after the change (before): " + "; ".join(
+                f"{v['model']} {v['after']['total_wrong_not_held']} ({v['before']['total_wrong_not_held']})" for v in rp)
+                + ".", ""]
+    return out
 
 
 def real_lines(R: dict) -> list[str]:
@@ -118,7 +192,9 @@ def real_lines(R: dict) -> list[str]:
                 f"slip pair {v['detail_and_payment_slip_flagged_as_possible_duplicate']}, held "
                 f"{v['not_a_voucher_held']} non-vouchers and raised {v['ubn_checksum_false_alarms']} false UBN alarm "
                 "(a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any "
-                "document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged."]
+                "document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged. "
+                "The totals column is not blind either: the code that picks totals was written after these photos had "
+                "been read."]
     return out + [""]
 
 
@@ -144,7 +220,7 @@ def ocr_only_lines(R: dict) -> list[str]:
                    f"{o['docs_held_for_review']}/{o['n_docs']} | {o['sec_per_doc']['mean']} s |")
     L9 = R.get("larger_model")
     if L9:
-        out.append(f"| heldout | Qwen3.5-9B + OCR | {f2(L9['ledger_room']['micro']['f1'])} | "
+        out.append(f"| heldout | Qwen3.5-9B + OCR (code {L9['code_rev']}) | {f2(L9['ledger_room']['micro']['f1'])} | "
                    f"{L9['ledger_room']['clean_docs_flagged']}/{L9['ledger_room']['clean_docs']} | "
                    f"{pct(L9['reading']['field_error_rate'])} ({L9['reading']['fields_wrong']}/{L9['reading']['fields_compared']}) | "
                    f"{L9['ledger_room'].get('docs_held_for_review', 'n/a')}/{L9['ledger_room']['n_docs']} | "
@@ -157,14 +233,35 @@ def ocr_only_lines(R: dict) -> list[str]:
                     f"{m} {v['fields_right']} / {v['field_accuracy']['total']} / {v['field_accuracy']['date']} / "
                     f"{v['detail_and_payment_slip_flagged_as_possible_duplicate']} / {v.get('captures_held_for_review', 'n/a')}"
                     for m, v in RP.items() if not m.startswith("_")) + "."]
-    out += ["", "The vision model adds little to the decisions. On both synthetic sets the six rules score the same "
-            "without it, because they run on OCR digits and code. On clean synthetic print the 2B even reads amounts "
-            "worse than OCR row parsing (main set: 12% against 1% of key fields wrong, 20 documents held against 1); "
-            "on the harder held-out layouts the two are level. The 9B is the only reader clearly better than OCR "
-            "(6% wrong, 3 held). On the real photos the model reads two more dates and pairs the meal detail with its "
-            "payment slip, which OCR alone misses (it needs the date). The OCR-only parser was written for this "
-            "comparison against the synthetic label words and changed once after its first held-out run (folding "
-            "simplified and traditional characters in the 銷售額 / 稅額 labels), so its held-out numbers are not blind.", ""]
+    hv, ho = R["sets"]["heldout"]["ledger_room"], O["sets"]["heldout"]
+    mv, mo = R["sets"]["main"]["ledger_room"], O["sets"]["main"]
+
+    def err(x):
+        return f"{pct(x['field_error_rate'])} ({x['fields_wrong']}/{x['fields_compared']})"
+    same = all(f2(R["sets"][k]["ledger_room"]["micro"]["f1"]) == f2(O["sets"][k]["micro"]["f1"]) for k in ("heldout", "main"))
+    txt = [("The six rules score the same with or without the vision model on both synthetic sets, because they run on "
+            "OCR digits and code. " if same else
+            "The six rules do not score the same without the vision model (see the F1 column). ") +
+           "The model matters for the amounts: its reading is the second vote that lets code confirm a total, so "
+           f"without it more key fields stay wrong and more documents go to a person (held-out: {err(ho['reading'])} "
+           f"against {err(hv['reading'])} wrong, {ho['docs_held_for_review']} documents held against "
+           f"{hv.get('docs_held_for_review', 'n/a')}; main: {err(mo['reading'])} against {err(mv['reading'])}, "
+           f"{mo['docs_held_for_review']} held against {mv.get('docs_held_for_review', 'n/a')})."]
+    if ro:
+        m2 = RP.get("Qwen3.5-2B-int4-ov")
+        if m2:
+            txt.append(f"On the real photos the 2B reads dates {m2['field_accuracy']['date']} against "
+                       f"{ro['field_accuracy']['date']} and totals {m2['field_accuracy']['total']} against "
+                       f"{ro['field_accuracy']['total']}, and pairs the meal detail with its payment slip "
+                       f"({m2['detail_and_payment_slip_flagged_as_possible_duplicate']} against "
+                       f"{ro['detail_and_payment_slip_flagged_as_possible_duplicate']}; the pairing needs the date).")
+    if L9:
+        txt.append(f"The 9B row was measured with code {L9['code_rev']}, before totals were picked by code, so its "
+                   "reading error rate is not comparable with the rows above it.")
+    txt.append("The OCR-only parser was written for this comparison against the synthetic label words and changed once "
+               "after its first held-out run (folding simplified and traditional characters in the 銷售額 / 稅額 labels), "
+               "so its held-out numbers are not blind.")
+    out += ["", " ".join(txt), ""]
     return out
 
 
@@ -208,6 +305,7 @@ def readme_block(R: dict) -> str:
         "",
         *blind_lines(R),
         *amount_lines(R),
+        *totals_lines(R),
         *real_lines(R),
         *larger_lines(R),
         *ocr_only_lines(R),
@@ -313,6 +411,9 @@ def results_md(R: dict) -> str:
               "Reading errors per field (wrong / compared): 2B " +
               ", ".join(f"{k} {v}" for k, v in R["sets"]["heldout"]["ledger_room"]["reading"]["per_field"].items()) +
               f"; {LM['model']} " + ", ".join(f"{k} {v}" for k, v in LM["reading"]["per_field"].items()) + ".", ""]
+    TL = totals_lines(R)
+    if TL:
+        L += ["## Totals picked by code", "", *TL]
     OL = ocr_only_lines(R)
     if OL:
         L += ["## OCR only, no vision-language model", "", *OL]
@@ -332,6 +433,8 @@ def results_md(R: dict) -> str:
           "- The laptop timing uses the Intel UHD iGPU; Arc Pro B70 timings are not measured yet.",
           "- The planted issues were designed by the author; the held-out set changes seed, clients and layouts but "
           "not the issue definitions.",
+          "- Held-out set 2 was also designed by the author, after the total-reading weakness was known; its clean "
+          "synthetic print overstates real-photo accuracy.",
           ""]
     return "\n".join(L)
 

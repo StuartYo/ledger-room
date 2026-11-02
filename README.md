@@ -5,8 +5,8 @@ and uniform invoices (統一發票) into `client/month/` folders on one office m
 (Qwen3.5-2B INT4 on OpenVINO, Intel GPU) read every document. Deterministic code then checks Unified Business Number
 (統一編號, UBN) checksums under the 2023 rule, duplicates within a client and across clients, VAT Act Art. 19
 non-deductible items, client expense limits and filing periods. The bookkeeper gets a per-client exception list with
-evidence crops, law citations, a CSV laid out like the input records of the VAT media filing file (進項媒體申報檔) with format and deduction codes, and an HMAC-chained audit log, and
-nothing leaves the office network. On the held-out synthetic set, first blind run, Ledger Room scored micro F1 0.96;
+evidence crops, law citations, the input records for the VAT media filing file (進項媒體申報檔) as a review CSV and as
+the 81-character fixed-width file, and an HMAC-chained audit log, and nothing leaves the office network. On the held-out synthetic set, first blind run, Ledger Room scored micro F1 0.96;
 the same model auditing on its own scored 0.15 (details under [Results](#results)).
 
 Entry for the ASUS UGen AI League (Thunderstorm track, Workplace AI), Stage I. Every number here was measured on a
@@ -91,15 +91,17 @@ flowchart LR
 2. **Reconcile (code).** Model digits are snapped to the printed OCR digits when they differ by at most two places.
    UBN roles come from the words around each number (賣方 / 買方 / 買受人 / the red seller stamp), so a model that copies
    the seller's number into the buyer field is overruled. When the buyer UBN is printed in boxes that OCR misses, code
-   crops the area next to the label, enlarges it and reads it again. Every field keeps its provenance
+   crops the area next to the label, enlarges it and reads it again. The total, net and tax are picked by code from
+   the printed rows (cash, change, balance and deposit lines never count); the model's own reading is one vote, and a
+   total without two agreeing sources goes to a person. Every field keeps its provenance
    (`ocr-confirmed`, `snapped`, `ocr-zoom`, `model-only`, ...).
 3. **Check (code).** The six rules run across the whole firm at once, which is what makes cross-client duplicates visible.
 4. **Show, export and log.** The web app lists exceptions per client with the evidence crop, the field provenance and
    the official citation. Each run also writes `export_media.csv`: one line per document, laid out like the input records of the VAT media
    filing file (進項媒體申報檔), with the format code (格式代號 21 / 22 / 25), the deduction code (扣抵代號 1, or 3 when Art. 19 applies; 2 and 4 for fixed assets are
    set by hand), the ROC date and a status (`READY`, `HOLD` until an exception is resolved, or `NOT_IN_FILE` for a
-   voucher without input tax). It is a CSV for review and import mapping, not the fixed-width .TXT file itself, and it
-   has not been imported into any accounting software yet. Every read and every exception goes into an append-only
+   voucher without input tax). `python -m ledger_room.export` writes the fixed-width .TXT file from the `READY` lines
+   (see [Stage II progress](#stage-ii-progress)); neither file has been imported into accounting software yet. Every read and every exception goes into an append-only
    JSONL log (see [Access control and the audit log](#access-control-and-the-audit-log)).
 5. **E-invoices without OCR.** Most input vouchers already exist on the MOF e-invoice platform. `ledger_room/einvoice.py`
    imports the platform's CSV export (UTF-8 or Big5, footnote lines skipped, line items grouped into invoices, discount
@@ -143,12 +145,12 @@ and it follows the toolchain of ASUS's own Arc Pro B70 sample (OpenVINO + Qwen3.
 alternatives are in the results block below.
 
 **Intel Arc Pro B70 path (planned, not measured).** No B70 was used for any number in this repository. What the
-laptop shows (held-out set, see [Results](#results)): the 2B reader is fast enough even on the laptop iGPU, and after
-OCR snapping it gets every identifier right, but it misreads amounts (net, tax), which a media-file line needs; the amount rule holds those lines. The
-9B reader (`OpenVINO/Qwen3.5-9B-int4-ov`, same code, thinking mode off) roughly halves the key-field errors, but on the
-laptop it only ran on the CPU (compiling it for the iGPU ran out of memory, since the iGPU shares system RAM), at more
-than a minute per document. That is why the B70 is in the plan: 32 GB of dedicated memory holds the 9B (5.9 GB) or a
-27B INT4 reader (16 GB) next to the KV cache, so the better reader can get through a firm's month in one night. The
+laptop shows (see [Results](#results)): the 2B reader is fast enough even on the laptop iGPU, and since code picks
+the amounts it ends with every key field right on the synthetic held-out set. Real photos are harder: on the 10 real
+receipts the 2B still sends 6 of 15 captures to a person, the 9B (`OpenVINO/Qwen3.5-9B-int4-ov`, same code, thinking
+mode off) 4 of 15. On the laptop the 9B only ran on the CPU (compiling it for the iGPU ran out of memory, since the
+iGPU shares system RAM), at more than a minute per document. That is why the B70 is in the plan: 32 GB of dedicated memory holds the 9B (5.9 GB) or a
+27B INT4 reader (about 15 GB) next to the KV cache, so the better reader can get through a firm's month in one night. The
 code switches with `LEDGER_MODEL_DIR` and `LEDGER_DEVICE=GPU`.
 
 Stage II targets on the B70, set now so they can be checked:
@@ -160,12 +162,30 @@ Stage II targets on the B70, set now so they can be checked:
 | Read time per document, whole pipeline (not yet verified) | pass 6 s, goal 3 s (600 / 1,200 per hour; goal: 12,000 documents in one night) | at most 12 s |
 | Pure-model baseline with the same model | reported next to Ledger Room | reported next to Ledger Room |
 
-**Offline.** The only step that needs the internet is the one-time model download. At run time nothing is sent out:
-OCR, the model and the rules run in-process, and the web app loads no external scripts, fonts or images. OpenVINO's
-optional telemetry package is installed as a dependency, but it is only used by the `ovc` model-conversion tool,
-which Ledger Room does not call. Spot check on 2026-10-14: during a live run in the web app (model loading and
-reading), the server process's TCP connections were sampled every 6 seconds for a minute; none went to a non-local
-address. Stage II should repeat this with the network adapter disabled.
+**Offline.** The only step that needs the internet is the one-time model download. OCR, the model and the rules run
+in-process, and the web app loads no external scripts, fonts or images.
+
+An earlier version of this section said OpenVINO's telemetry was only used by the `ovc` model-conversion tool, which
+Ledger Room never calls. That was wrong. `import openvino` imports `ovc` as well, and `ovc` sends one anonymous
+"import" event to Google Analytics when the machine has no telemetry consent file. `eval/offline_check.py` caught it
+on 2026-11-02 (a DNS lookup of www.google-analytics.com and one HTTPS connection; `eval/results_offline_before_fix.json`).
+The event carries no document data. A spot check on 2026-10-14 had missed it because it sampled connections only
+every 6 seconds.
+
+The fix is in `ledger_room/__init__.py`: before any module imports OpenVINO, Ledger Room sets `CI=true` for its own
+process. The telemetry package treats that as "declined" (`OptInChecker._run_in_ci` in
+[openvinotoolkit/telemetry](https://github.com/openvinotoolkit/telemetry); `ovc` calls it with `disable_in_ci=True`).
+OpenVINO's [documented switch](https://docs.openvino.ai/2026/about-openvino/additional-resources/telemetry.html),
+`opt_in_out --opt_out`, writes a per-user setting instead; the host install scripts still run it, but Ledger Room
+does not depend on it. `tests/test_telemetry_off.py` imports the OCR module with `CI` unset and checks that no
+Python network call is made.
+
+Check after the fix, 2026-11-02, laptop with Wi-Fi on and no consent file: all 47 held-out documents read live
+(model load, OCR, model, rules, evidence crops, audit log, export). For 600.7 s, psutil sampled the process's
+connections every second (589 samples) and a Python audit hook logged every socket connect and DNS lookup: 0
+connections and 0 lookups to a non-local address (`eval/results_offline.json`). The audit hook only sees calls made
+from Python and the sampler can miss a native connection shorter than a second, so the run with the network adapter
+disabled is still on the Stage II list.
 
 ## Run it in five steps (Windows, Python 3.12)
 
@@ -212,6 +232,12 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
 - **Real e-invoice check.** `.venv\Scripts\python -m eval.einvoice_check EXPORT.csv ... --out DIR` runs the import and
   the rules on MOF platform exports and writes aggregates only. Keep the exports and `DIR` outside the repository;
   `eval/results_einvoice_check.json` holds the aggregates of the one run reported here.
+- **Totals before and after (cached reads).** `.venv\Scripts\python -m eval.totals_eval --set main` (or `heldout`)
+  compares the current amount code with the previous one, the model's own text and the pure model, and writes
+  `eval/results_totals.json` (merged by `run_eval`). The held-out set 2 entry is marked frozen: the script refuses to
+  run that set again.
+- **Offline check (about 10 to 20 minutes).** `.venv\Scripts\python -m eval.offline_check` reads the held-out set live
+  while it watches the process's network use, and writes `eval/results_offline.json`.
 - The first blind held-out run is stored in `eval/results_blind_first_run.json`; `run_eval` merges it into
   `results.json` so the blind numbers are never overwritten by later runs.
 
@@ -220,6 +246,10 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
 - `data/main`: 52 documents, 5 fictitious clients, layout family A. `data/heldout`: 47 documents, 5 other
   fictitious clients, layout family B (other fonts, column order, landscape receipts, rotation, uneven light).
   Both answer keys (`eval/expected_*.json`) were committed before any prompt or code tuning; tuning used `main` only.
+- `data/heldout2`: 55 documents, 5 new fictitious clients, layout family C (cash-register e-invoice details,
+  receipts, triplicate invoices with a separate total box; cash paid, change, card balances, deposits and order
+  numbers printed near the total), new seed. Its key was committed (862a875) before the total-reading change and the
+  set has been run once (see Results). The author designed it knowing what the change had to handle.
 - Planted issues per set: bad UBN checksums, re-submitted vouchers across months, one voucher under two clients,
   Art. 19 items, over-limit documents, wrong-period documents, plus clean documents. Some clean documents carry
   UBNs that pass the 2023 rule but fail the old one, to catch checkers that still use mod 10.
@@ -234,8 +264,9 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
   over eight key fields (type, invoice number, date, seller and buyer UBN, net, tax, total), plus whether every item
   line in the key was read.
 - **Read time per document** means one thing everywhere (README, RESULTS.md, deck, video): OCR + model + zoomed
-  re-reads for one document, averaged over a whole set. The held-out figure comes from the live run recorded for the
-  video (screen capture was running on the same machine); its reads are the ones scored here.
+  re-reads for one document, averaged over a whole set. The 2B figures add the OCR and model time of the cached live
+  reads (the held-out one was recorded for the video, with screen capture running on the same machine) to the time
+  of any follow-up question and zoomed re-read the current code made on them.
 - Controls: an **oracle** run (rules on the ground-truth fields, must be 100%) and a **positive control** (a clean
   batch, then the same batch with one planted change per issue type).
 - Every number below is generated from `eval/results.json` by `python -m eval.report`; a test fails if they differ.
@@ -247,45 +278,75 @@ Synthetic data. Same local model (Qwen3.5-2B INT4, OpenVINO) on the same photo +
 
 | Set | Ledger Room micro F1 | Pure model micro F1 | Read time per document (laptop iGPU) |
 |---|---|---|---|
-| main (52 docs, layout A) | 1.00 (P 100%, R 100%) | 0.17 (P 10%, R 50%) | 16.7 s |
-| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 11.2 s |
+| main (52 docs, layout A) | 1.00 (P 100%, R 100%) | 0.17 (P 10%, R 50%) | 16.9 s |
+| heldout (47 docs, layout B) | 1.00 (P 100%, R 100%) | 0.15 (P 9%, R 42%) | 11.6 s |
 
 **Held-out, first blind run** (code 5d02c9b, before any change made after seeing held-out errors): Ledger Room F1 0.96 (P 100%, R 92%), pure model F1 0.15. The table above uses later code with four fixes made after that run (listed in eval/RESULTS.md), so its held-out row is no longer blind.
 
-**Amounts.** The 2B reader gets every identifier right after OCR snapping but misreads amounts (held-out: net 24/40, tax 12/36, total 6/47 wrong). The amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) holds 20 of the 20 documents with a materially wrong or missing amount, and 0 documents whose amounts were right. Routing flags on held-out: AMOUNT_MISMATCH 20, BUYER_NOT_CLIENT 4, BUYER_PRESUMED 0, NOT_A_VOUCHER 0, SMALL_RECEIPT_CAP 0, READ_REVIEW 0.
+**Amounts.** Code picks the total, net and tax from what is printed; the model's own reading is one vote (next paragraph). Held-out, fields wrong after reconciliation: net 0/32, tax 0/32, total 0/47. No document is left with a materially wrong or missing amount, so the amount rule (net + tax = total, tax = 5% of net, both read on a deductible voucher) has nothing to hold; documents held although their amounts were right: 0. Routing flags on held-out: AMOUNT_MISMATCH 0, BUYER_NOT_CLIENT 4, BUYER_PRESUMED 0, NOT_A_VOUCHER 0, SMALL_RECEIPT_CAP 0, READ_REVIEW 0.
+
+**Totals picked by code** (eval/totals_eval.py). Code collects the printed evidence for the total (the 總計 / 合計 / 應付 row, the e-invoice random-code line, a net + 5% tax = total triple, the amount in Chinese numerals, the subtotal) and ignores numbers on cash, change, balance, card, deposit, points and reference lines. The model's own total, and its answer to a follow-up question asked only when the evidence is thin, count as one vote each, and only if that number is printed on the page. A total needs two agreeing sources and no tie; otherwise it is marked unconfirmed and the document goes to a person (READ_REVIEW). "Before" is the previous code on the same model replies.
+
+Held-out set 2 (55 docs, layout family C: cash-register e-invoice details, receipts, separate total boxes; cash, change, card balances, deposits and order numbers printed next to the total). Its key was frozen before the change. Run record: first and only run of heldout2 (frozen at 862a875), code 59372db. It is not run again:
+
+| | After | Before | Model's own text | Pure model |
+|---|---|---|---|---|
+| Totals right | 55/55 | 51/55 | 37/55 | 44/55 |
+| Net right | 35/35 | 16/39 | 16/39 | n/a |
+| Tax right | 35/35 | 23/39 | 23/39 | n/a |
+| Cash, change, balance or deposit taken as the total | 0 | 2 | 1 | 2 |
+| Amount wrong and not held | 0 | 2 | n/a | 11 (it holds nothing) |
+| Documents held for a person | 0 | 22 | n/a | n/a |
+| Over limit (right / false alarm / missed) | 5 / 1 / 0 | 5 / 1 / 0 | n/a | 2 / 17 / 3 |
+| Six issue types, micro F1 | 0.98 | 0.94 | n/a | 0.16 |
+
+Follow-up questions about the total: 3 of 55 documents. This set was drawn by the same author who wrote the fix, knowing what the fix had to handle, and its print is clean, so these numbers overstate what to expect on real photos.
+
+Sets that are not blind for this change:
+
+| Set | After: totals, net, tax right | Before | Model's own total | Pure model total | Held for a person after the change |
+|---|---|---|---|---|---|
+| main (used while writing the fix) | 52/52, 33/33, 33/33 | 52/52, 16/44, 22/36 | 46/52 | 43/52 | 0 (before 20) |
+| heldout (used while writing the fix) | 47/47, 32/32, 32/32 | 41/47, 16/40, 24/36 | 36/47 | 46/47 | 0 (before 20) |
+| real photos, Qwen3.5-2B-int4-ov (seen during development) | 9/9 | 5/9 | 4/9 | 8/9 | 6/15 (before 8/15) |
+| real photos, Qwen3.5-9B-int4-ov (seen during development) | 9/9 | 7/9 | 6/9 | 9/9 | 4/15 (before 6/15) |
+
+Real photos, totals wrong and not held, after the change (before): Qwen3.5-2B-int4-ov 0 (3); Qwen3.5-9B-int4-ov 0 (2).
 
 **Real photos** (the owner's own receipts, two phone photos; answer key written by eye and frozen before any model ran; photos and key stay private, aggregates only):
 
 | Reader | Receipts | Key fields right | Totals right (model alone) | Ready to deduct (expected 0) | Same receipt twice flagged (model alone) | Detail + payment slip flagged | Non-vouchers held | UBN false alarms (model alone) |
 |---|---|---|---|---|---|---|---|---|
-| Qwen3.5-2B-int4-ov | 10 (+5 repeats) | 37/49 | 5/9 (8/9) | 0/10 | 5/5 (0/5) | 1/1 | 3/3 | 0 (2) |
-| Qwen3.5-9B-int4-ov | 10 (+5 repeats) | 40/49 | 7/9 (9/9) | 0/10 | 5/5 (3/5) | 1/1 | 3/3 | 0 (5) |
-| ocr-only | 10 (+5 repeats) | 35/49 | 5/9 (n/a) | 0/10 | 5/5 (n/a) | 0/1 | 3/3 | 0 (n/a) |
+| Qwen3.5-2B-int4-ov | 10 (+5 repeats) | 41/49 | 9/9 (8/9) | 0/10 | 5/5 (0/5) | 1/1 | 3/3 | 0 (2) |
+| Qwen3.5-9B-int4-ov | 10 (+5 repeats) | 42/49 | 9/9 (9/9) | 0/10 | 5/5 (3/5) | 1/1 | 3/3 | 0 (5) |
+| ocr-only | 10 (+5 repeats) | 36/49 | 6/9 (n/a) | 0/10 | 5/5 (n/a) | 0/1 | 3/3 | 0 (n/a) |
 
-Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the slip fix) caught the detail + payment slip pair 0/1, held 1/3 non-vouchers and raised 1 false UBN alarm (a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged.
+Not blind for the slip columns: the first Qwen3.5-2B-int4-ov run (before the slip fix) caught the detail + payment slip pair 0/1, held 1/3 non-vouchers and raised 1 false UBN alarm (a payment terminal id read as a UBN). The fix (simplified-character keywords; slips paired with any document of the same date and amount; no UBN check on payment slips) left both synthetic sets unchanged. The totals column is not blind either: the code that picks totals was written after these photos had been read.
 
 **Does a bigger model alone close the gap?** Held-out set (frozen key, no tuning), same laptop, Qwen3.5-9B-int4-ov on CPU:
 
 | Reader | Ledger Room F1 | Pure model F1 | Reading error rate (key fields wrong) | Docs with all item lines right | Read time per document |
 |---|---|---|---|---|---|
-| Qwen3.5-2B-int4-ov | 1.00 | 0.15 | 13% (42/331) | 19/47 | 11.2 s |
-| Qwen3.5-9B-int4-ov | 1.00 | 0.18 | 6% (20/337) | 28/47 | 78.4 s |
+| Qwen3.5-2B-int4-ov (code c6c851c) | 1.00 | 0.15 | 0% (0/319) | 19/47 | 11.6 s |
+| Qwen3.5-9B-int4-ov (code c445b35) | 1.00 | 0.18 | 6% (20/337) | 28/47 | 78.4 s |
+
+The 9B row is from 2026-10-14 (code c445b35), before totals, net and tax were picked by code, and has not been rerun since; all 20 of its wrong fields are net, tax or total. The 2B row uses the current code, so the two reading error rates do not compare the readers fairly.
 
 Key fields: type, invoice number, date, seller and buyer UBN, net, tax, total. Thinking mode off for both. The 9B ran on the laptop CPU because compiling it for the iGPU ran out of memory (the iGPU shares system RAM). On disk: 2B 1.99 GB, 9B 5.85 GB. Peak RAM in use (working set, eval/measure_reader.py): 2B on the iGPU 3.9 GB, 9B on the CPU 11.6 GB. 9B on the laptop CPU: about 46 documents per hour.
 
-**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; code b726294):
+**What does the vision model add? OCR + the same code and rules, no model** (eval/ocr_only.py; code c6c851c):
 
 | Set | Reader | Ledger Room F1 | Clean docs wrongly flagged | Key fields wrong | Docs held for a person | Read time per document |
 |---|---|---|---|---|---|---|
-| heldout | Qwen3.5-2B + OCR | 1.00 | 0/23 | 13% (42/331) | 20/47 | 11.2 s |
-| heldout | OCR only | 1.00 | 0/23 | 13% (41/319) | 21/47 | 0.8 s |
-| main | Qwen3.5-2B + OCR | 1.00 | 0/28 | 12% (42/359) | 20/52 | 16.7 s |
-| main | OCR only | 1.00 | 0/28 | 1% (4/345) | 1/52 | 0.8 s |
-| heldout | Qwen3.5-9B + OCR | 1.00 | 0/23 | 6% (20/337) | 3/47 | 78.4 s |
+| heldout | Qwen3.5-2B + OCR | 1.00 | 0/23 | 0% (0/319) | 0/47 | 11.6 s |
+| heldout | OCR only | 1.00 | 0/23 | 10% (32/319) | 31/47 | 0.8 s |
+| main | Qwen3.5-2B + OCR | 1.00 | 0/28 | 0% (0/345) | 0/52 | 16.9 s |
+| main | OCR only | 1.00 | 0/28 | 1% (4/345) | 5/52 | 0.7 s |
+| heldout | Qwen3.5-9B + OCR (code c445b35) | 1.00 | 0/23 | 6% (20/337) | 3/47 | 78.4 s |
 
-Real photos (10 receipts, 5 repeat captures), key fields right / totals right / dates right / detail + payment slip paired / documents held for a person: Qwen3.5-2B-int4-ov 37/49 / 5/9 / 9/10 / 1/1 / 6/15; Qwen3.5-9B-int4-ov 40/49 / 7/9 / 9/10 / 1/1 / 3/15; ocr-only 35/49 / 5/9 / 7/10 / 0/1 / 3/15.
+Real photos (10 receipts, 5 repeat captures), key fields right / totals right / dates right / detail + payment slip paired / documents held for a person: Qwen3.5-2B-int4-ov 41/49 / 9/9 / 9/10 / 1/1 / 6/15; Qwen3.5-9B-int4-ov 42/49 / 9/9 / 9/10 / 1/1 / 4/15; ocr-only 36/49 / 6/9 / 7/10 / 0/1 / 15/15.
 
-The vision model adds little to the decisions. On both synthetic sets the six rules score the same without it, because they run on OCR digits and code. On clean synthetic print the 2B even reads amounts worse than OCR row parsing (main set: 12% against 1% of key fields wrong, 20 documents held against 1); on the harder held-out layouts the two are level. The 9B is the only reader clearly better than OCR (6% wrong, 3 held). On the real photos the model reads two more dates and pairs the meal detail with its payment slip, which OCR alone misses (it needs the date). The OCR-only parser was written for this comparison against the synthetic label words and changed once after its first held-out run (folding simplified and traditional characters in the 銷售額 / 稅額 labels), so its held-out numbers are not blind.
+The six rules score the same with or without the vision model on both synthetic sets, because they run on OCR digits and code. The model matters for the amounts: its reading is the second vote that lets code confirm a total, so without it more key fields stay wrong and more documents go to a person (held-out: 10% (32/319) against 0% (0/319) wrong, 31 documents held against 0; main: 1% (4/345) against 0% (0/345), 5 held against 0). On the real photos the 2B reads dates 9/10 against 7/10 and totals 9/9 against 6/9, and pairs the meal detail with its payment slip (1/1 against 0/1; the pairing needs the date). The 9B row was measured with code c445b35, before totals were picked by code, so its reading error rate is not comparable with the rows above it. The OCR-only parser was written for this comparison against the synthetic label words and changed once after its first held-out run (folding simplified and traditional characters in the 銷售額 / 稅額 labels), so its held-out numbers are not blind.
 
 **Real data, import path only (no OCR):** one person's own consumer e-invoices exported from the MOF platform (3 months; not a bookkeeping firm's client data; aggregates only). 30 invoices / 95 line items imported (7 with discount lines, 7 with zero-price lines). Seller UBNs passing the 2023 checksum: 23/23 (4 of them would fail an outdated mod-10 checker). Duplicates: 0. Art. 19 keyword hits: 2 invoices (alcohol); meal invoices: 12. Import plus rules: 0.085 ms per invoice.
 
@@ -303,23 +364,65 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
 | OCR: Same .onnx files compiled by OpenVINO 2026.4, CPU | 0.3-1.1 s | yes |
 <!-- RESULTS:END -->
 
+## Stage II progress
+
+Nothing in this section has run on an Arc Pro B70.
+
+**Fixed-width media filing file (進項媒體申報檔).** `python -m ledger_room.export data/out/runs/<run id> --tax-reg taxreg.json`
+writes one `<client UBN>.TXT` per client: 81-character ASCII input records, laid out from the MOF regulation
+[營業稅電子資料申報繳稅作業要點](https://law-out.mof.gov.tw/LawContent.aspx?id=GL009478) (amended 2024-04-12, 台財資字第1130001073號令):
+point 17 (ASCII), point 18(1) (81 characters a record, file name = UBN + .TXT), point 20 (field meanings and codes)
+and the position table in
+[Attachment 5](https://law-out.mof.gov.tw/Download.ashx?FileID=46520&id=GL009478&type=LAW).
+
+- Only `READY` lines are written. `HOLD` and `NOT_IN_FILE` lines stay out, and a line that cannot be written (no
+  date, amount or invoice number) is listed with the reason.
+- The 9-digit tax registration number (稅籍編號) is assigned by the tax office and is not the UBN, so the firm has to
+  supply it (`--tax-reg`, a JSON map of client UBN to number). Without it the export stops with an error.
+- `eval/media_file_check.py` checks a written file on its own: the layout is typed in again from Attachment 5 and
+  does not import the writer. It checks length, character type, code ranges, duplicate serial numbers, UBN checksums
+  and the file name. `tests/test_media_txt.py` compares records with ones assembled by hand from Attachment 5.
+
+Not verified yet:
+
+- The MOF checking program (檢核程式) has not been run on these files.
+- No accounting software has imported them, and no bookkeeper has compared lines with the paper vouchers.
+- Two choices the regulation does not spell out were made by us: CRLF between records, and text fields padded with
+  spaces on the right (zero padding for numbers is stated). The checking program should settle both.
+- Monthly summary records (formats 26 / 27), allocation (B), customs (28 / 29) and allowances (23 / 24) are not
+  written. Deduction codes 2 and 4 (fixed assets) are still set by hand.
+
+**B70 measurement script.** `python -m eval.bench_b70` is ready for the B70 host: device inventory, model download
+after a free-space check (the pre-converted `OpenVINO/Qwen3.5-9B-int4-ov` and `OpenVINO/Qwen3.5-27B-int4-ov`, both
+Apache-2.0), then Ledger Room and the pure-model baseline on the held-out set with fresh reads, judged against the
+targets frozen in the table above (`tests/test_bench_offline.py` fails if that table changes). It writes
+`eval/results_b70.json`. `scripts/setup_host.sh` (Linux) and `scripts/setup_host.ps1` (Windows) install it. On the
+laptop it has only run as a three-document dry run on the iGPU, to check that it works; those timings are not results.
+No B70 number exists yet, the install scripts have not run on the host, and reading GPU memory on Linux
+(`/proc/<pid>/fdinfo`) is untested.
+
 ## Limits
 
 - Mostly synthetic photos. The real data so far: one person's own consumer e-invoices through the import path (no OCR)
-  and 10 of his own receipts in two phone photos (results under [Results](#results)). On those the reader picks the
-  wrong total too often (it takes cash paid or a nearby long number); the same model asked directly reads totals
-  better. The slip checks were fixed after the first run on these photos, so those columns are not blind. 10 receipts
-  say little; Stage II needs 150+ with a frozen key.
+  and 10 of his own receipts in two phone photos (results under [Results](#results)). Those 10 receipts are not a
+  blind test: they were looked at while the slip checks and the total reading were written. 10 receipts say little;
+  Stage II needs 150+ with a frozen key.
+- Totals. Code now picks every total right on the synthetic sets and on the 10 real receipts, but held-out set 2,
+  the only blind check of that change, was designed by the author after the weakness was known and uses clean
+  synthetic print, so it overstates real accuracy. On the real photos the 2B reader still sends
+  6 of 15 captures to a person, mostly when OCR finds the total in only one place.
+- The expense category can come from the buyer's name. On held-out set 2 a receipt made out to a company named
+  穗田便當有限公司 was taken as a meal and reported over the meal limit. It is not fixed in this version, because
+  changing the rule after that run would leave held-out set 2 no longer blind.
 - About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
   be lower.
-- The export CSV follows the 進項媒體申報檔 fields but has not been imported into any accounting software; deduction codes
-  2 and 4 (fixed assets) are left to the bookkeeper. Stage II plan (week 1): write the fixed-width file to the layout in
-  the MOF 營業稅電子資料申報繳稅作業要點, import it into two common accounting packages, and have a bookkeeper compare 20
-  imported lines field by field against the paper vouchers (pass: no field differs). Until then it is a review list.
+- The fixed-width media file and the CSV have not been checked by the MOF checking program or imported into any
+  accounting software, and no bookkeeper has compared them with paper vouchers (see [Stage II progress](#stage-ii-progress)).
+  Deduction codes 2 and 4 (fixed assets) are left to the bookkeeper. Until then the export is a review list.
 - The vision model adds little to the decisions: with OCR and the same code and rules but no model, both synthetic
   sets score the same (see Results). Its measurable value so far is reading real photos (dates, pairing a detail with
-  its payment slip) and, for the 9B, fewer misread amounts.
-- The planted issue types were designed by the author. The held-out set changes seed, clients and layouts, not the
+  its payment slip) and, for the 9B, fewer misread fields.
+- The planted issue types were designed by the author. The held-out sets change seed, clients and layouts, not the
   definitions of the issues.
 - Art. 19 categories are decided by an auditable keyword table first and by the model's suggested category only as a
   fallback (marked "medium" confidence). A real deployment needs the firm to review that table.

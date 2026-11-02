@@ -1,8 +1,8 @@
 {
  "synthetic": true,
- "generated_at": "2026-10-14T21:41:42+08:00",
- "code_rev": "b726294",
- "reader_version": "r7",
+ "generated_at": "2026-11-02T23:13:51+08:00",
+ "code_rev": "c6c851c",
+ "reader_version": "r8",
  "model": "Qwen3.5-2B-int4-ov (OpenVINO IR, INT4 weights)",
  "runtime": "OpenVINO GenAI 2026.4 VLMPipeline (model) + OpenVINO 2026.4 (OCR: PP-OCRv4 det/rec)",
  "hardware": "Dev laptop: Intel Core i7-13620H, Intel UHD Graphics (iGPU, device 'GPU') for the model, CPU for OCR, 32 GB RAM. No Arc Pro B70 used; B70 figures elsewhere are plans, not measurements.",
@@ -137,8 +137,8 @@
     "clean_docs": 28,
     "clean_docs_flagged": 0,
     "sec_per_doc": {
-     "mean": 16.7,
-     "median": 16.0,
+     "mean": 16.9,
+     "median": 16.4,
      "max": 26.9,
      "n": 52
     },
@@ -147,10 +147,10 @@
     "review_items": 0,
     "reading": {
      "docs": 52,
-     "field_error_rate": 0.117,
-     "fields_wrong": 42,
-     "fields_compared": 359,
-     "docs_all_key_fields_right": 24,
+     "field_error_rate": 0.0,
+     "fields_wrong": 0,
+     "fields_compared": 345,
+     "docs_all_key_fields_right": 52,
      "docs_items_right": 31,
      "per_field": {
       "doc_type": "0/52",
@@ -158,18 +158,18 @@
       "date": "0/52",
       "seller_ubn": "0/52",
       "buyer_ubn": "0/33",
-      "net": "28/44",
-      "tax": "14/36",
+      "net": "0/33",
+      "tax": "0/33",
       "total": "0/52"
      },
      "amount_check": {
-      "docs_with_amount_error": 20,
-      "held_by_amount_rule": 20,
+      "docs_with_amount_error": 0,
+      "held_by_amount_rule": 0,
       "held_with_correct_amounts": 0
      }
     },
     "routing_flags": {
-     "AMOUNT_MISMATCH": 20,
+     "AMOUNT_MISMATCH": 0,
      "BUYER_NOT_CLIENT": 6,
      "BUYER_PRESUMED": 0,
      "NOT_A_VOUCHER": 0,
@@ -177,7 +177,7 @@
      "READ_REVIEW": 0
     },
     "warnings_among_issues": 5,
-    "docs_held_for_review": 20
+    "docs_held_for_review": 0
    },
    "oracle_fields": {
     "tp": 24,
@@ -337,20 +337,20 @@
     "clean_docs": 23,
     "clean_docs_flagged": 0,
     "sec_per_doc": {
-     "mean": 11.2,
-     "median": 11.5,
-     "max": 15.7,
+     "mean": 11.6,
+     "median": 11.7,
+     "max": 20.5,
      "n": 47
     },
-    "rules_ms_total": 1.0,
+    "rules_ms_total": 1.5,
     "unreadable_fields": 0,
     "review_items": 0,
     "reading": {
      "docs": 47,
-     "field_error_rate": 0.127,
-     "fields_wrong": 42,
-     "fields_compared": 331,
-     "docs_all_key_fields_right": 22,
+     "field_error_rate": 0.0,
+     "fields_wrong": 0,
+     "fields_compared": 319,
+     "docs_all_key_fields_right": 47,
      "docs_items_right": 19,
      "per_field": {
       "doc_type": "0/47",
@@ -358,18 +358,18 @@
       "date": "0/47",
       "seller_ubn": "0/47",
       "buyer_ubn": "0/32",
-      "net": "24/40",
-      "tax": "12/36",
-      "total": "6/47"
+      "net": "0/32",
+      "tax": "0/32",
+      "total": "0/47"
      },
      "amount_check": {
-      "docs_with_amount_error": 20,
-      "held_by_amount_rule": 20,
+      "docs_with_amount_error": 0,
+      "held_by_amount_rule": 0,
       "held_with_correct_amounts": 0
      }
     },
     "routing_flags": {
-     "AMOUNT_MISMATCH": 20,
+     "AMOUNT_MISMATCH": 0,
      "BUYER_NOT_CLIENT": 4,
      "BUYER_PRESUMED": 0,
      "NOT_A_VOUCHER": 0,
@@ -377,7 +377,7 @@
      "READ_REVIEW": 0
     },
     "warnings_among_issues": 7,
-    "docs_held_for_review": 20
+    "docs_held_for_review": 0
    },
    "oracle_fields": {
     "tp": 24,
@@ -889,8 +889,8 @@
   }
  },
  "ocr_only": {
-  "generated_at": "2026-10-14T21:41:39+08:00",
-  "code_rev": "b726294",
+  "generated_at": "2026-11-02T23:13:32+08:00",
+  "code_rev": "c6c851c",
   "reader": "OCR only (PP-OCRv4 on OpenVINO, CPU) + the same reconciliation code and rules; no vision-language model",
   "zoom": "a boxed buyer UBN is re-read once from the enlarged crop and accepted without a vote (no model to vote with)",
   "sets": {
@@ -965,8 +965,8 @@
     },
     "reading": {
      "docs": 47,
-     "field_error_rate": 0.129,
-     "fields_wrong": 41,
+     "field_error_rate": 0.1,
+     "fields_wrong": 32,
      "fields_compared": 319,
      "docs_all_key_fields_right": 26,
      "docs_items_right": 17,
@@ -978,7 +978,7 @@
       "buyer_ubn": "0/32",
       "net": "21/32",
       "tax": "10/32",
-      "total": "10/47"
+      "total": "1/47"
      },
      "amount_check": {
       "docs_with_amount_error": 21,
@@ -990,9 +990,9 @@
      "AMOUNT_MISMATCH": 21,
      "BUYER_PRESUMED": 0,
      "NOT_A_VOUCHER": 0,
-     "READ_REVIEW": 0
+     "READ_REVIEW": 13
     },
-    "docs_held_for_review": 21
+    "docs_held_for_review": 31
    },
    "main": {
     "per_type": {
@@ -1058,9 +1058,9 @@
     "clean_docs": 28,
     "clean_docs_flagged": 0,
     "sec_per_doc": {
-     "mean": 0.8,
+     "mean": 0.7,
      "median": 0.7,
-     "max": 3.6,
+     "max": 2.2,
      "n": 52
     },
     "reading": {
@@ -1090,9 +1090,316 @@
      "AMOUNT_MISMATCH": 1,
      "BUYER_PRESUMED": 0,
      "NOT_A_VOUCHER": 0,
-     "READ_REVIEW": 0
+     "READ_REVIEW": 4
     },
-    "docs_held_for_review": 1
+    "docs_held_for_review": 5
+   }
+  }
+ },
+ "totals": {
+  "main|Qwen3.5-2B-int4-ov": {
+   "set": "main",
+   "model": "Qwen3.5-2B-int4-ov",
+   "device": "GPU",
+   "code_rev": "3d860c9",
+   "reader_version": "r8",
+   "run_at": "2026-11-02T22:55:22+08:00",
+   "total_provenance": {
+    "ocr-label+model+words": 9,
+    "ocr-arith+label+model+words": 11,
+    "ocr-label+words": 2,
+    "ocr-arith+label+model+slot": 8,
+    "ocr-arith+label+model": 8,
+    "ocr-label+model+slot": 5,
+    "ocr-arith+model+words": 1,
+    "ocr-label+model": 3,
+    "ocr-arith+label+slot": 2,
+    "ocr-arith+label+words": 2,
+    "ocr-arith+model": 1
+   },
+   "follow_up_total_questions": 0,
+   "mean_read_s": 16.86,
+   "docs": 52,
+   "after": {
+    "net": "33/33",
+    "tax": "33/33",
+    "total": "52/52",
+    "docs_with_amount_error": 0,
+    "amount_errors_not_held": 0,
+    "docs_held_for_a_person": 0,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0
+    },
+    "micro_f1": 1.0,
+    "clean_docs_flagged": 0
+   },
+   "before": {
+    "net": "16/44",
+    "tax": "22/36",
+    "total": "52/52",
+    "docs_with_amount_error": 20,
+    "amount_errors_not_held": 0,
+    "docs_held_for_a_person": 20,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0
+    },
+    "micro_f1": 1.0,
+    "clean_docs_flagged": 0
+   },
+   "model_text": {
+    "net": "16/44",
+    "tax": "22/36",
+    "total": "46/52",
+    "docs_with_amount_error": 22
+   },
+   "pure_model": {
+    "total": "43/52",
+    "total_wrong_all_unflagged": 9,
+    "over_limit": {
+     "tp": 2,
+     "fp": 26,
+     "fn": 2
+    },
+    "micro_f1": 0.169
+   }
+  },
+  "heldout|Qwen3.5-2B-int4-ov": {
+   "set": "heldout",
+   "model": "Qwen3.5-2B-int4-ov",
+   "device": "GPU",
+   "code_rev": "3d860c9",
+   "reader_version": "r8",
+   "run_at": "2026-11-02T22:55:23+08:00",
+   "total_provenance": {
+    "ocr-arith+label": 4,
+    "ocr-arith+label+model": 5,
+    "ocr-label+model+slot": 2,
+    "ocr-label+model+words": 1,
+    "ocr-arith+label+model+slot": 10,
+    "ocr-arith+label+slot": 1,
+    "ocr-arith+label+model+words": 5,
+    "ocr-arith+label+words": 2,
+    "ocr-label+model": 9,
+    "ocr-arith+model": 2,
+    "ocr-label+slot": 1,
+    "ocr-asked+label": 1,
+    "ocr-label+words": 1,
+    "ocr-arith+model+words": 2,
+    "ocr-arith+asked": 1
+   },
+   "follow_up_total_questions": 2,
+   "mean_read_s": 11.56,
+   "docs": 47,
+   "after": {
+    "net": "32/32",
+    "tax": "32/32",
+    "total": "47/47",
+    "docs_with_amount_error": 0,
+    "amount_errors_not_held": 0,
+    "docs_held_for_a_person": 0,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0
+    },
+    "micro_f1": 1.0,
+    "clean_docs_flagged": 0
+   },
+   "before": {
+    "net": "16/40",
+    "tax": "24/36",
+    "total": "41/47",
+    "docs_with_amount_error": 20,
+    "amount_errors_not_held": 0,
+    "docs_held_for_a_person": 20,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 0
+    },
+    "micro_f1": 1.0,
+    "clean_docs_flagged": 0
+   },
+   "model_text": {
+    "net": "16/40",
+    "tax": "24/36",
+    "total": "36/47",
+    "docs_with_amount_error": 22
+   },
+   "pure_model": {
+    "total": "46/47",
+    "total_wrong_all_unflagged": 1,
+    "over_limit": {
+     "tp": 2,
+     "fp": 22,
+     "fn": 2
+    },
+    "micro_f1": 0.146
+   }
+  },
+  "private_real|Qwen3.5-2B-int4-ov": {
+   "set": "private_real",
+   "model": "Qwen3.5-2B-int4-ov",
+   "device": "GPU",
+   "code_rev": "3d860c9",
+   "reader_version": "r8",
+   "run_at": "2026-11-02T22:55:24+08:00",
+   "total_provenance": {
+    "unconfirmed": 3,
+    "model-agree-on-page": 2,
+    "ocr-model+weak": 2,
+    "ocr-asked+slot": 5,
+    "ocr-model+slot": 2,
+    "ocr-label+weak": 1
+   },
+   "follow_up_total_questions": 10,
+   "mean_read_s": 12.62,
+   "blind": false,
+   "note_blind": "10 real receipts already seen during development; not a blind test",
+   "totals_in_key": 9,
+   "after": {
+    "total": "9/9",
+    "total_wrong_not_held": 0,
+    "captures_held_for_a_person": "6/15"
+   },
+   "before": {
+    "total": "5/9",
+    "total_wrong_not_held": 3,
+    "captures_held_for_a_person": "8/15"
+   },
+   "model_text": {
+    "total": "4/9"
+   },
+   "pure_model": {
+    "total": "8/9",
+    "total_wrong_all_unflagged": 1
+   }
+  },
+  "private_real|Qwen3.5-9B-int4-ov": {
+   "set": "private_real",
+   "model": "Qwen3.5-9B-int4-ov",
+   "device": "CPU",
+   "code_rev": "3d860c9",
+   "reader_version": "r8",
+   "run_at": "2026-11-02T22:55:25+08:00",
+   "total_provenance": {
+    "ocr-model+slot": 8,
+    "model-agree-on-page": 2,
+    "unconfirmed": 2,
+    "ocr-model+weak": 2,
+    "ocr-label+weak": 1
+   },
+   "follow_up_total_questions": 4,
+   "mean_read_s": 76.79,
+   "blind": false,
+   "note_blind": "10 real receipts already seen during development; not a blind test",
+   "totals_in_key": 9,
+   "after": {
+    "total": "9/9",
+    "total_wrong_not_held": 0,
+    "captures_held_for_a_person": "4/15"
+   },
+   "before": {
+    "total": "7/9",
+    "total_wrong_not_held": 2,
+    "captures_held_for_a_person": "6/15"
+   },
+   "model_text": {
+    "total": "6/9"
+   },
+   "pure_model": {
+    "total": "9/9",
+    "total_wrong_all_unflagged": 0
+   }
+  },
+  "heldout2|Qwen3.5-2B-int4-ov": {
+   "set": "heldout2",
+   "model": "Qwen3.5-2B-int4-ov",
+   "device": "GPU",
+   "code_rev": "3d860c9",
+   "reader_version": "r8",
+   "run_at": "2026-11-02T22:49:56+08:00",
+   "total_provenance": {
+    "ocr-arith+label+model+slot+weak": 13,
+    "ocr-label+model": 5,
+    "ocr-arith+label+model+words": 4,
+    "ocr-label+model+slot+weak": 3,
+    "ocr-arith+label+words": 4,
+    "ocr-arith+label+slot": 2,
+    "ocr-asked+label": 1,
+    "ocr-arith+label+slot+weak": 5,
+    "ocr-label+model+words": 5,
+    "ocr-label+words": 3,
+    "ocr-arith+asked": 1,
+    "ocr-label+slot+weak": 2,
+    "ocr-arith+label+model": 3,
+    "ocr-arith+model+words": 3,
+    "model-agree-on-page": 1
+   },
+   "follow_up_total_questions": 3,
+   "mean_read_s": 30.25,
+   "note": "first and only run of heldout2 (frozen at 862a875), code 59372db",
+   "frozen": true,
+   "docs": 55,
+   "after": {
+    "net": "35/35",
+    "tax": "35/35",
+    "total": "55/55",
+    "docs_with_amount_error": 0,
+    "amount_errors_not_held": 0,
+    "total_is_cash_change_balance_or_deposit": 0,
+    "docs_held_for_a_person": 0,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 5,
+     "fp": 1,
+     "fn": 0
+    },
+    "micro_f1": 0.981,
+    "clean_docs_flagged": 0
+   },
+   "before": {
+    "net": "16/39",
+    "tax": "23/39",
+    "total": "51/55",
+    "docs_with_amount_error": 24,
+    "amount_errors_not_held": 2,
+    "total_is_cash_change_balance_or_deposit": 2,
+    "docs_held_for_a_person": 22,
+    "held_by_amount_checks_with_right_amounts": 0,
+    "over_limit": {
+     "tp": 5,
+     "fp": 1,
+     "fn": 0
+    },
+    "micro_f1": 0.941,
+    "clean_docs_flagged": 0
+   },
+   "model_text": {
+    "net": "16/39",
+    "tax": "23/39",
+    "total": "37/55",
+    "docs_with_amount_error": 28,
+    "total_is_cash_change_balance_or_deposit": 1
+   },
+   "pure_model": {
+    "total": "44/55",
+    "total_wrong_all_unflagged": 11,
+    "total_is_cash_change_balance_or_deposit": 2,
+    "over_limit": {
+     "tp": 2,
+     "fp": 17,
+     "fn": 3
+    },
+    "micro_f1": 0.158
    }
   }
  },
@@ -1114,9 +1421,9 @@
     "invoice_no": "9/10",
     "date": "9/10",
     "seller_ubn": "8/10",
-    "total": "5/9"
+    "total": "9/9"
    },
-   "fields_right": "37/49",
+   "fields_right": "41/49",
    "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
    "not_a_voucher_held": "3/3",
    "not_a_voucher_false": 0,
@@ -1124,18 +1431,17 @@
    "repeat_captures_flagged_as_duplicate": "5/5",
    "other_documents_flagged_as_duplicate": 0,
    "ubn_checksum_false_alarms": 0,
-   "sec_per_doc": 9.8,
+   "sec_per_doc": 12.6,
    "exceptions_by_rule": {
+    "READ_REVIEW": 4,
     "BUYER_NOT_CLIENT": 12,
     "NOT_A_VOUCHER": 3,
-    "AMOUNT_MISMATCH": 3,
-    "OVER_LIMIT": 4,
+    "OVER_LIMIT": 2,
     "PERIOD_MISMATCH": 7,
-    "READ_REVIEW": 1,
     "DUP_CROSS_MONTH": 6
    },
    "captures_held_for_review": "6/15",
-   "totals_wrong_not_held": 4,
+   "totals_wrong_not_held": 0,
    "pure_model": {
     "field_accuracy": {
      "invoice_no": "3/10",
@@ -1173,9 +1479,9 @@
     "invoice_no": "10/10",
     "date": "9/10",
     "seller_ubn": "9/10",
-    "total": "7/9"
+    "total": "9/9"
    },
-   "fields_right": "40/49",
+   "fields_right": "42/49",
    "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
    "not_a_voucher_held": "3/3",
    "not_a_voucher_false": 0,
@@ -1183,16 +1489,17 @@
    "repeat_captures_flagged_as_duplicate": "5/5",
    "other_documents_flagged_as_duplicate": 0,
    "ubn_checksum_false_alarms": 0,
-   "sec_per_doc": 66.2,
+   "sec_per_doc": 76.8,
    "exceptions_by_rule": {
     "BUYER_NOT_CLIENT": 12,
     "NOT_A_VOUCHER": 3,
-    "OVER_LIMIT": 3,
+    "OVER_LIMIT": 1,
     "PERIOD_MISMATCH": 7,
+    "READ_REVIEW": 2,
     "DUP_CROSS_MONTH": 6
    },
-   "captures_held_for_review": "3/15",
-   "totals_wrong_not_held": 2,
+   "captures_held_for_review": "4/15",
+   "totals_wrong_not_held": 0,
    "pure_model": {
     "field_accuracy": {
      "invoice_no": "10/10",
@@ -1241,9 +1548,9 @@
     "invoice_no": "10/10",
     "date": "7/10",
     "seller_ubn": "8/10",
-    "total": "5/9"
+    "total": "6/9"
    },
-   "fields_right": "35/49",
+   "fields_right": "36/49",
    "lines_ready_to_deduct": "0/10 (expected 0: no voucher names the client)",
    "not_a_voucher_held": "3/3",
    "not_a_voucher_false": 0,
@@ -1253,14 +1560,14 @@
    "ubn_checksum_false_alarms": 0,
    "sec_per_doc": 1.0,
    "exceptions_by_rule": {
+    "READ_REVIEW": 14,
     "BUYER_NOT_CLIENT": 10,
     "NOT_A_VOUCHER": 3,
     "PERIOD_MISMATCH": 6,
-    "OVER_LIMIT": 2,
     "DUP_CROSS_MONTH": 5
    },
-   "captures_held_for_review": "3/15",
-   "totals_wrong_not_held": 4
+   "captures_held_for_review": "15/15",
+   "totals_wrong_not_held": 0
   }
  },
  "einvoice_check": {

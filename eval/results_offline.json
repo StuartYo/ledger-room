@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-11-02T22:21:59+08:00",
- "code_rev": "59372db",
+ "generated_at": "2026-11-02T23:12:00+08:00",
+ "code_rev": "c6c851c",
  "host_os": "Windows-11-10.0.26200-SP0",
  "synthetic": true,
  "set": "heldout",
@@ -10,14 +10,15 @@
  "openvino_telemetry": {
   "consent_file": "~\\AppData\\Local\\Intel Corporation\\openvino_telemetry",
   "consent_file_content": null,
-  "env_CI_true": false,
-  "sends_on_import": true,
-  "turn_off": "opt_in_out --opt_out (writes 0 to the consent file), or CI=true for one process"
+  "env_CI_true": true,
+  "sends_on_import": false,
+  "set_by_ledger_room": true,
+  "turn_off": "on by default: ledger_room/__init__.py sets CI=true before openvino is imported; opt_in_out --opt_out also writes 0 to the per-user consent file"
  },
  "phases_watched": "imports (openvino), model load, OCR + model reads (cache off), rules, evidence crops, audit log, CSV export",
- "duration_s": 1198.2,
+ "duration_s": 600.7,
  "sample_interval_s": 1.0,
- "samples": 1078,
+ "samples": 589,
  "non_loopback_interfaces_up": [
   "Tailscale",
   "Wi-Fi",
@@ -25,90 +26,11 @@
  ],
  "connections_seen": [],
  "non_local_connections": [],
- "python_network_calls": [
-  {
-   "event": "socket.getaddrinfo",
-   "host": "www.google-analytics.com",
-   "is_local": false,
-   "stack": [
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:532 _open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:492 _call_chain",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1392 https_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1344 do_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1338 request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1384 _send_request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1333 endheaders",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1093 _send_output",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1037 send",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1472 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1003 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\socket.py:841 create_connection"
-   ]
-  },
-  {
-   "event": "socket.connect",
-   "host": "142.250.192.142",
-   "is_local": false,
-   "stack": [
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:515 open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:532 _open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:492 _call_chain",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1392 https_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1344 do_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1338 request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1384 _send_request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1333 endheaders",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1093 _send_output",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1037 send",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1472 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1003 connect"
-   ]
-  }
- ],
- "non_local_python_calls": [
-  {
-   "event": "socket.getaddrinfo",
-   "host": "www.google-analytics.com",
-   "is_local": false,
-   "stack": [
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:532 _open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:492 _call_chain",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1392 https_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1344 do_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1338 request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1384 _send_request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1333 endheaders",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1093 _send_output",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1037 send",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1472 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1003 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\socket.py:841 create_connection"
-   ]
-  },
-  {
-   "event": "socket.connect",
-   "host": "142.250.192.142",
-   "is_local": false,
-   "stack": [
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:515 open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:532 _open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:492 _call_chain",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1392 https_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\urllib\\request.py:1344 do_open",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1338 request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1384 _send_request",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1333 endheaders",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1093 _send_output",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1037 send",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1472 connect",
-    "~\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\http\\client.py:1003 connect"
-   ]
-  }
- ],
+ "python_network_calls": [],
+ "non_local_python_calls": [],
  "sampling_errors": [],
- "pass": false,
- "verdict": "FAIL: see non_local_connections / non_local_python_calls",
+ "pass": true,
+ "verdict": "PASS: no connection or lookup to a non-local address",
  "limits": "Sampling can miss a native connection shorter than the interval; the audit hook sees Python-level socket calls only. Network adapters were up during the run. Not a replacement for a run with the network adapter disabled.",
- "outputs": "E:\\projects\\ledger-room\\data\\out\\bench_b70",
- "note": "Stack frames were recorded with an earlier trim that kept only standard-library frames; the DNS lookup of www.google-analytics.com identifies the sender: openvino_telemetry (GA4), started by 'import openvino' -> openvino.tools.ovc (traced separately on 2026-11-02)."
+ "outputs": "E:\\projects\\ledger-room\\data\\out\\bench_b70"
 }

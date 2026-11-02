@@ -212,6 +212,9 @@ def main():
     oo = ROOT / "eval" / "results_ocr_only.json"
     if oo.exists():   # eval.ocr_only: the same OCR, code and rules with no vision-language model
         results["ocr_only"] = json.loads(oo.read_text(encoding="utf-8"))
+    tt = ROOT / "eval" / "results_totals.json"
+    if tt.exists():   # eval.totals_eval: totals picked by code, before / after, incl. the one run of heldout2
+        results["totals"] = json.loads(tt.read_text(encoding="utf-8"))
     rp = ROOT / "eval" / "results_real_photos.json"
     if rp.exists():   # eval.real_check on the owner's own receipt photos (aggregates only; photos never committed)
         results["real_photos"] = json.loads(rp.read_text(encoding="utf-8"))
