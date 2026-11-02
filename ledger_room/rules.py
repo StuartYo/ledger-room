@@ -374,6 +374,11 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
 
     for d in docs:
         c = clients[d.client_id]
+        # 0. a total that two independent readings do not agree on is checked by a person before anything is filed
+        if d.uncertain.get("total"):
+            out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                  f"Total not confirmed on the page (read NT${d.total:,}); check it by eye." if d.total
+                                  else "Total not found on the page; fill it in by eye.", ["total"], confidence="low"))
         # 1. UBN checksum (+ optional registration lookup)
         for role in ("seller", "buyer"):
             if d.doc_kind == "payment_slip":

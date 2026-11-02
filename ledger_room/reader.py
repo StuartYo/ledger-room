@@ -15,6 +15,8 @@ The model only transcribes. Code then reconciles what it said with what is print
 """
 from __future__ import annotations
 
+import hashlib
+import math
 import os
 import re
 import threading
@@ -350,6 +352,297 @@ def seller_name_from_ocr(lines: list[Line], seller_line: Line | None, dtype: str
     return None, None
 
 
+# ---------------- amounts: the model reads, code decides ----------------
+# The total is the number most often misread on real receipts: a reader takes cash paid (現金 / 實收), change (找零),
+# a card balance or a long serial number instead. Code collects what is printed (labelled rows, the e-invoice header
+# slot, net + tax = total triples, the amount in words), drops numbers on payment rows, and accepts a total only when
+# two independent readings agree. Otherwise the total is marked unconfirmed and a person checks it (READ_REVIEW).
+
+TOTAL_ASK_PROMPT = """This photo is ONE Taiwanese receipt or invoice. OCR text lines of the photo (digits are reliable, but OCR can drop characters):
+{ocr}
+
+What is the TOTAL AMOUNT of this purchase (總計 / 合計 / 應付金額 / 總金額 / 銷售總額)? Do NOT answer cash handed over (現金 / 實收), change (找零), a card or stored-value balance (餘額), points, a deposit (訂金), the net amount or tax alone, or any serial, order, card or phone number.
+Reply with the number only, digits without commas. Reply none if no total is printed."""
+TOTAL_ASK_KEY = hashlib.sha256(TOTAL_ASK_PROMPT.encode("utf-8")).hexdigest()[:12]   # cache key for answers
+
+_FOLD = str.maketrans({"总": "總", "计": "計", "额": "額", "税": "稅", "应": "應", "实": "實", "现": "現", "余": "餘",
+                       "点": "點", "号": "號", "码": "碼", "随": "隨", "机": "機", "编": "編", "订": "訂", "单": "單",
+                       "销": "銷", "营": "營", "业": "業", "载": "載", "会": "會", "员": "員", "帐": "帳", "账": "帳",
+                       "权": "權", "数": "數", "统": "統", "电": "電", "话": "話", "买": "買", "卖": "賣", "费": "費",
+                       "扣": "扣", "币": "幣", "台": "臺", "写": "寫", "贰": "貳", "叁": "參", "参": "參", "陆": "陸",
+                       "万": "萬", "圆": "元", "选": "選", "储": "儲", "值": "值", "规": "機"})
+_SP = re.compile(r"[\s　]")
+# order matters: a payment row is never the total; 銷售額合計 is the net, not the total
+EXCLUDE_LABEL = re.compile(r"現金|實收|收現|找零|找拿|找回|找|付款|您付|已付|支付|刷卡|信用卡|悠遊卡|悠游卡|一卡通|儲值|餘額|"
+                           r"點數|卡號|序號|訂金|尾款|授權|帳號|電話|編號|統編|載具|會員|訂單|號碼|碼|機號|店號|端末|代號|"
+                           r"人數|數量|件數|折抵|折扣|找續|格式|LINE|Pay|PAY|No|POS|TEL|Tel")
+NET_LABEL = re.compile(r"銷售額|未稅|稅前")
+TAX_LABEL = re.compile(r"稅額|營業稅|稅金")
+WORDS_LABEL = re.compile(r"新臺幣|大寫")
+TOTAL_LABEL = re.compile(r"總計|總金額|總額|應付|應收|銷售總|合計|總價|總.?[:：]?$")
+WEAK_TOTAL_LABEL = re.compile(r"小計|^計[:：]?$|^[總計][^\d]?$")
+PAYMENT_SLIP_PAID = re.compile(r"您付|付款金額|支付金額|交易金額")
+_NUM_TOK = re.compile(r"\d{1,3}(?:[,.]\d{3})+(?!\d)|\d+")
+_UNIT_AFTER = set("份入人吋埠件項年月日號樓巷弄段之時分秒個盒張瓶包箱支片條天晚克x×*%")
+_CN_DIG = {"零": 0, "壹": 1, "貳": 2, "參": 3, "肆": 4, "伍": 5, "陸": 6, "柒": 7, "捌": 8, "玖": 9}
+_CN_UNIT = {"拾": 10, "佰": 100, "仟": 1000}
+_CN_WORDS = re.compile(r"[零壹貳參肆伍陸柒捌玖拾佰仟萬]{2,}元")
+
+
+def _fold(s: str) -> str:
+    return _SP.sub("", s or "").translate(_FOLD)
+
+
+def cn_words_to_int(s: str) -> int | None:
+    """'參仟壹佰壹拾捌元整' -> 3118. None when the string is not a clean 大寫 amount."""
+    m = _CN_WORDS.search(_fold(s))
+    if not m:
+        return None
+    total, section, digit = 0, 0, None
+    for ch in m.group(0)[:-1]:
+        if ch in _CN_DIG:
+            if digit is not None and _CN_DIG[ch] != 0:
+                return None   # two digits in a row: not a clean amount in words
+            digit = _CN_DIG[ch] or None
+        elif ch in _CN_UNIT:
+            if digit is None:
+                return None
+            section += digit * _CN_UNIT[ch]
+            digit = None
+        elif ch == "萬":
+            section += digit or 0
+            total += section * 10000
+            section, digit = 0, None
+    total += section + (digit or 0)
+    return total or None
+
+
+def _line_h(lines: list[Line]) -> float:
+    """Typical text height: median box height of short lines (a long line's box grows when the photo is tilted)."""
+    hs = sorted(l.box[3] - l.box[1] for l in lines if (l.box[2] - l.box[0]) < 4 * (l.box[3] - l.box[1]))
+    return float(hs[len(hs) // 2]) if hs else 24.0
+
+
+def estimate_skew(lines: list[Line]) -> float:
+    """Tilt of the photo (tan of the angle), from how text boxes line up into rows: the slope that puts the most
+    pairs of boxes far apart horizontally on the same row. 0 when nothing lines up (a single column of text)."""
+    if len(lines) < 4:
+        return 0.0
+    h = _line_h(lines)
+    pts = [((l.box[0] + l.box[2]) / 2, (l.box[1] + l.box[3]) / 2) for l in lines]
+    pairs = [(x1 - x2, y1 - y2) for i, (x1, y1) in enumerate(pts) for (x2, y2) in pts[i + 1:] if abs(x1 - x2) > 4 * h]
+    if not pairs:
+        return 0.0
+    best, best_n = 0.0, -1
+    for k in sorted(range(-28, 29), key=abs):          # -7 .. +7 degrees in 0.25 degree steps, smallest tilt first
+        t = math.tan(math.radians(k * 0.25))
+        n = sum(1 for dx, dy in pairs if abs(dy - dx * t) < 0.3 * h)
+        if n > best_n:
+            best, best_n = t, n
+    return best
+
+
+def _row(lines: list[Line], l: Line, tol: float = 0.6, skew: float = 0.0) -> list[Line]:
+    h = _line_h(lines) if skew else max(10, l.box[3] - l.box[1])
+    cx, cy = (l.box[0] + l.box[2]) / 2, (l.box[1] + l.box[3]) / 2
+    return [o for o in lines if o is not l
+            and abs((o.box[1] + o.box[3]) / 2 - cy - ((o.box[0] + o.box[2]) / 2 - cx) * skew) < tol * h]
+
+
+def _label_of(segment: str) -> str:
+    """Classify the words just before a number: exclude | net | tax | words | total | weak | ''."""
+    s = _fold(segment)
+    s = s.rstrip("()（）[]$＄.,-－_|/")
+    if not s:
+        return ""
+    if EXCLUDE_LABEL.search(s):
+        return "exclude"
+    if WORDS_LABEL.search(s):
+        return "words"
+    if NET_LABEL.search(s):
+        return "net"
+    if TAX_LABEL.search(s):
+        return "tax"
+    if TOTAL_LABEL.search(s):
+        return "total"
+    if WEAK_TOTAL_LABEL.search(s):
+        return "weak"
+    return "other" if re.search(r"[一-鿿A-Za-z]", s) else ""
+
+
+def amount_tokens(lines: list[Line], payment_slip: bool = False, skew: float = 0.0) -> list[dict]:
+    """Every number on the page that could be an amount, with the label it is printed under.
+    Dates, times, phone numbers, ids, quantities with units and numbers of 7+ digits are dropped."""
+    out = []
+    for l in lines:
+        t = re.sub(r"(\d),\s+(\d{3})(?!\d)", r"\1,\2", _INV.sub(lambda m: "#" * len(m.group(0)), l.text))
+        prev_end, line_label = 0, None
+        for m in _NUM_TOK.finditer(t):
+            s, a, b = m.group(0), m.start(), m.end()
+            pre, pre2 = t[a - 1:a], t[a - 2:a - 1]
+            post, post2 = t[b:b + 1], t[b + 1:b + 2]
+            post_w = t[b:].lstrip()[:1]
+            seg = t[prev_end:a]
+            prev_end = b
+            raw_digits = re.sub(r"\D", "", s)
+            if pre in "-/:#." and pre and pre2.isdigit() or post in "-/:." and post and post2.isdigit():
+                continue                       # date, time, id with separators
+            if pre == "#" or (pre.isascii() and pre.isalpha() and pre not in "T$") or post == "#":
+                continue                       # glued to letters: an id
+            if post_w and (post_w in _UNIT_AFTER or (post.isascii() and post.isalpha() and post not in "TX")):
+                continue                       # quantity, unit, size
+            if len(raw_digits) >= 7 and "," not in s and "." not in s:
+                continue                       # UBN, serial, card or phone number
+            v = int(raw_digits) if ("." in s and re.fullmatch(r"\d{1,3}(\.\d{3})+", s)) or "," in s else (
+                int(s) if s.isdigit() else None)
+            if v is None:
+                continue
+            lab = _label_of(seg)
+            if lab in ("", "other") and line_label is None and not re.search(r"[一-鿿A-Za-z]", _fold(t[:a])):
+                # number alone on its OCR line: the label is the nearest text to its left on the same row
+                left = sorted((o for o in _row(lines, l, skew=skew) if o.box[2] <= l.box[0] + 8), key=lambda o: -o.box[2])
+                for o in left:
+                    ot = _INV.sub(" ", o.text)
+                    tail = re.split(r"\d[\d,.]*", ot)[-1]
+                    if re.search(r"\d", ot) and not re.search(r"[一-鿿A-Za-z]", tail):
+                        break                  # the text to the left ends in its own number: no label for this one
+                    lab2 = _label_of(tail)
+                    if lab2:
+                        lab = lab2
+                        break
+            if lab in ("total", "weak", "net", "tax", "exclude", "words"):
+                line_label = lab
+            elif line_label in ("exclude",) and lab in ("", "other") and not seg.strip():
+                lab = "exclude"               # second number on a payment row (e.g. 現金 1,000 找零 166)
+            if payment_slip and PAYMENT_SLIP_PAID.search(_fold(seg)):
+                lab = "total"                  # on a payment slip the amount paid is the amount
+            out.append({"v": v, "label": lab, "line": l, "pos": a})
+    return out
+
+
+def _arith_triples(vals: set[int]) -> list[tuple[int, int, int]]:
+    out = []
+    for n in vals:
+        if n < 20:
+            continue
+        for t in vals:
+            if 1 <= t < n and abs(t - n * 0.05) <= 1.01 and (n + t) in vals:
+                out.append((n, t, n + t))
+    return out
+
+
+def header_slot(lines: list[Line], toks: list[dict], skew: float = 0.0) -> tuple[int | None, set]:
+    """E-invoice proof: the total is printed on the 隨機碼 row. Returns the one other number on that row (and the row)."""
+    for l in lines:
+        f = _fold(l.text)
+        if not re.search(r"隨機?碼|機碼|碼[:：]\d{4}", f):
+            continue
+        row = {id(l)} | {id(o) for o in _row(lines, l, skew=skew)}
+        rnd = re.search(r"碼[:：]?(\d{4})", f)
+        cands = {x["v"] for x in toks if id(x["line"]) in row and x["label"] not in ("exclude", "net", "tax", "words")}
+        if rnd:
+            cands.discard(int(rnd.group(1)))
+        cands = {v for v in cands if v >= 1}
+        if len(cands) == 1:
+            return cands.pop(), row
+    return None, set()
+
+
+def amount_evidence(lines: list[Line], dtype: str | None, payment_slip: bool = False) -> dict:
+    skew = estimate_skew(lines)
+    toks = amount_tokens(lines, payment_slip, skew)
+    ok = [x for x in toks if x["label"] != "exclude"]
+    vals = {x["v"] for x in ok}
+    tri = _arith_triples(vals)
+    totals = {T for _, _, T in tri}
+    # several triples: item prices can add up by chance (105 + 5 = 110); the totals block ends in the largest amount
+    top_t = max(totals) if totals and max(totals) == max(vals) else (next(iter(totals)) if len(totals) == 1 else None)
+    arith = next((x for x in tri if x[2] == top_t), None) if top_t is not None else None
+    lab = Counter(x["v"] for x in ok if x["label"] == "total" and x["v"] > 0)
+    label = None
+    if lab:
+        top = lab.most_common()
+        label = top[0][0] if len(top) == 1 or top[0][1] > top[1][1] else None
+    weak = sorted({x["v"] for x in ok if x["label"] == "weak" and x["v"] > 0})
+    words = None
+    for l in lines:
+        w = cn_words_to_int(l.text)
+        if w:
+            words = w
+    page = _fold(" ".join(l.text for l in lines))
+    slot, slot_row = header_slot(lines, toks, skew) if dtype == "e_invoice" else (None, set())
+    weak = weak[0] if len(weak) == 1 else None
+    # the 總計 on the header row is one printed number, not two pieces of evidence: count it as the slot only
+    if slot is not None:
+        def only_on_slot_row(kind, v):
+            return all(id(x["line"]) in slot_row for x in ok if x["label"] == kind and x["v"] == v)
+        if label == slot and only_on_slot_row("total", slot):
+            label = None
+        if weak == slot and only_on_slot_row("weak", slot):
+            weak = None
+    return {
+        "tokens": toks, "skew": skew, "on_page": vals, "excluded": {x["v"] for x in toks if x["label"] == "exclude"} - vals,
+        "arith": arith, "arith_ambiguous": len(totals) > 1, "label": label,
+        "label_conflict": bool(lab) and label is None, "weak": weak, "words": words, "slot": slot,
+        "net_label": [x["v"] for x in ok if x["label"] == "net"], "tax_label": [x["v"] for x in ok if x["label"] == "tax"],
+        "net_tax_printed": bool(NET_LABEL.search(page) or TAX_LABEL.search(page)),
+    }
+
+
+def decide_total(ev: dict, model_total: int | None, asked: int | None) -> tuple[int | None, str, bool, dict]:
+    """Returns (total, provenance, needs_ask, detail).
+
+    Sources: an arithmetic triple ending in the total, the e-invoice header slot, a total-labelled row, the amount in
+    words, a 小計 row, the model's transcription and its answer to the total question. The model's numbers count only
+    when the number is printed on the page outside a payment row. A total is accepted when at least two sources agree
+    on it and no other value has as many; otherwise code asks the total question once, and if that does not settle
+    it the total is marked unconfirmed (a person checks it)."""
+    if isinstance(asked, str):
+        asked = parse_ask(asked)
+    src = {k: ev[k] for k in ("arith", "slot", "label", "words", "weak") if ev.get(k)}
+    if src.get("arith"):
+        src["arith"] = src["arith"][2]
+    m = model_total if model_total and model_total in ev["on_page"] else None
+    a = asked if asked and asked in ev["on_page"] else None
+    if m:
+        src["model"] = m
+    if a:
+        src["asked"] = a
+    detail = {"sources": dict(src), "model": model_total, "asked": asked}
+    rejected = sorted({v for v in (model_total, asked) if v and v in ev["excluded"]})
+    if rejected:
+        detail["rejected_payment_row"] = rejected
+    support = Counter(src.values())
+    ranked = support.most_common()
+    if ranked:
+        best, n = ranked[0]
+        second = ranked[1][1] if len(ranked) > 1 else 0
+        if n >= 2 and n > second:
+            names = sorted(k for k, v in src.items() if v == best)
+            how = "model-agree-on-page" if set(names) <= {"model", "asked"} else "ocr-" + "+".join(names)
+            return best, how, False, detail
+        guess = best if n > second else None
+    else:
+        guess = None
+    return guess, "unconfirmed", asked is None, detail
+
+
+def decide_net_tax(ev: dict, total: int | None, dtype: str | None, net_m: int | None, tax_m: int | None):
+    """net / tax: an arithmetic triple that ends in the chosen total wins; then labelled rows; when the page prints no
+    net or tax line (plain receipts, consumer e-invoices) both are empty."""
+    tri = ev.get("arith")
+    if tri and tri[2] == total:
+        return tri[0], tri[1], "ocr-arith", "ocr-arith"
+    nl, tl = ev["net_label"], ev["tax_label"]
+    if nl or tl:
+        net = nl[-1] if nl else net_m
+        tax = tl[-1] if tl else tax_m
+        return net, tax, ("ocr-label" if nl else "model-only"), ("ocr-label" if tl else "model-only")
+    if not ev["net_tax_printed"] and dtype != "triplicate_invoice":
+        return None, None, "not-printed", "not-printed"
+    return net_m, tax_m, ("model-only" if net_m is not None else "missing"), ("model-only" if tax_m is not None else "missing")
+
+
 class Reader:
     def __init__(self, model_dir: str = DEFAULT_MODEL_DIR, device: str | None = None):
         import openvino as ov
@@ -412,6 +705,14 @@ class Reader:
         timing = dict(raw["timing"])
         obj = N.parse_json_loose(raw["raw"]) or {}
         fields, prov, boxes, extra = postprocess(obj, lines)
+        if extra.get("total_needs_ask"):
+            ask = (raw.get("total_ask") or {}).get(TOTAL_ASK_KEY)
+            if ask is None:
+                ask = self.ask_total(path, lines)
+                raw.setdefault("total_ask", {})[TOTAL_ASK_KEY] = ask
+                raw["_dirty"] = True
+            timing["ask_s"] = ask["vlm_s"]
+            fields, prov, boxes, extra = postprocess(obj, lines, asked=ask["answer"])
         if prov.get("buyer_ubn") == "needs-zoom":
             img = Image.open(path).convert("RGB")
             v, how, box, cands, zt = self.zoom_vote(img, buyer_label_line(lines), extra.get("buyer_ubn_model"))
@@ -420,13 +721,19 @@ class Reader:
             extra["buyer_ubn_reads"] = cands
             if box:
                 boxes["buyer_ubn"] = box
-        timing["total_s"] = round(sum(timing.get(k, 0) for k in ("ocr_s", "vlm_s", "zoom_s")), 2)
+        timing["total_s"] = round(sum(timing.get(k, 0) for k in ("ocr_s", "vlm_s", "zoom_s", "ask_s")), 2)
         return {
             "fields": fields, "provenance": prov, "boxes": boxes, "extra": extra,
             "ocr_lines": raw["ocr_lines"], "raw": raw["raw"], "parsed": bool(obj),
             "timing": timing, "model": raw.get("model", self.model_id), "device": raw.get("device", self.device),
             "image_size": raw["image_size"],
         }
+
+    def ask_total(self, path: str | Path, lines: list[Line]) -> dict:
+        """One short question: the total only. The answer is a vote; code decides whether it counts."""
+        img = Image.open(path).convert("RGB")
+        txt, t = self.generate(TOTAL_ASK_PROMPT.format(ocr=_fmt_ocr(lines)), img, max_new_tokens=12)
+        return {"answer": txt.strip()[:40], "vlm_s": t["vlm_s"]}
 
     def zoom_vote(self, img: Image.Image, label: Line | None, model_value: str | None):
         """Three independent reads of a boxed UBN; accept only a value two of them agree on."""
@@ -454,7 +761,17 @@ class Reader:
         return None, "unconfirmed", box, reads, zt
 
 
-def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict, dict]:
+def parse_ask(answer) -> int | None:
+    """The model's answer to the total question: one number, else None."""
+    if answer is None:
+        return None
+    nums = [N.to_int(x) for x in re.findall(r"\d{1,3}(?:,\d{3})+|\d+", str(answer))]
+    nums = [x for x in nums if x]
+    return nums[0] if len(nums) == 1 else None
+
+
+def postprocess(obj: dict, lines: list[Line], asked: str | None = None) -> tuple[dict, dict, dict, dict]:
+    """asked: the model's answer to TOTAL_ASK_PROMPT, when code asked for it (extra['total_needs_ask'])."""
     inv_c, date_c = ocr_tokens(lines)
     prov, boxes, extra = {}, {}, {}
 
@@ -563,17 +880,16 @@ def postprocess(obj: dict, lines: list[Line]) -> tuple[dict, dict, dict, dict]:
     first = next((locate_text(lines, i["desc"]) for i in items), None)
     put_box("items", first)
 
-    total, net, tax = N.to_int(obj.get("total")), N.to_int(obj.get("net")), N.to_int(obj.get("tax"))
-    amts = ocr_amounts(lines)
-    tl = ocr_total_line_amounts(lines)
-    if total is not None and total in amts:
-        prov["total"] = "ocr-confirmed"
-    elif tl:
-        total, prov["total"] = max(tl), "ocr-total-line"
-    elif amts:
-        total, prov["total"] = max(amts), "ocr-max"
-    else:
-        prov["total"] = "model-only" if total is not None else "missing"
+    total_m, net_m, tax_m = N.to_int(obj.get("total")), N.to_int(obj.get("net")), N.to_int(obj.get("tax"))
+    from .rules import voucher_kind
+    slip = voucher_kind(" ".join(l.text for l in lines), inv) == "payment_slip"
+    ev = amount_evidence(lines, dtype, payment_slip=slip)
+    total, prov["total"], needs_ask, detail = decide_total(ev, total_m or None, parse_ask(asked))
+    net, tax, prov["net"], prov["tax"] = decide_net_tax(ev, total, dtype, net_m, tax_m)
+    extra["total_needs_ask"] = needs_ask
+    extra["total_evidence"] = detail
+    if asked is not None:
+        extra["total_asked_raw"] = asked
     put_box("total", locate_amount(lines, total))
 
     note = N.clean_str(obj.get("note"))

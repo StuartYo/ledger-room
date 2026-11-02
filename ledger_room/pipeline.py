@@ -19,12 +19,12 @@ from pathlib import Path
 from PIL import Image
 
 from . import export, keys, rules
-from .reader import EXTRACT_PROMPT
+from .reader import EXTRACT_PROMPT, TOTAL_ASK_KEY
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = DATA / "out"
-READER_VERSION = "r7"   # bump when post-processing changes so cached reads are redone
+READER_VERSION = "r8"   # bump when post-processing changes so cached reads are redone
 PII_RULE = {"label": "Bookkeepers' personal-data safeguard regulation Art. 19: keep personal-data usage records "
                      "and automated-equipment trail data, for at least five years",
             "url": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340165&flno=19"}
@@ -71,7 +71,7 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | No
     return rules.Doc(
         doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
         small_business_receipt=rules.small_business_receipt(ocr_text),
-        uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn") if prov.get(k) in UNCONFIRMED},
+        uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
         date=date.fromisoformat(f["date"]) if f.get("date") else None,
@@ -148,7 +148,7 @@ def cache_key(img_sha: str, model_id: str, raw: bool = False) -> str:
     if raw:
         h = hashlib.sha256((EXTRACT_PROMPT + model_id).encode("utf-8")).hexdigest()[:12]
         return f"{img_sha[:24]}_{h}_raw"
-    h = hashlib.sha256((EXTRACT_PROMPT + READER_VERSION + model_id).encode("utf-8")).hexdigest()[:12]
+    h = hashlib.sha256((EXTRACT_PROMPT + READER_VERSION + TOTAL_ASK_KEY + model_id).encode("utf-8")).hexdigest()[:12]
     return f"{img_sha[:24]}_{h}"
 
 
@@ -173,6 +173,8 @@ def read_docs(docs: list[dict], reader=None, *, cache=True, progress=None, model
                 raw = reader.read_raw(d["path"])
                 rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
             res = reader.read(d["path"], raw)
+            if raw.pop("_dirty", False):   # the reader asked a follow-up question (the total): keep its answer
+                rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
             res["sha256"] = sha
             res["cached"] = raw_cached
             cp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
