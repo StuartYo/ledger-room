@@ -1,0 +1,36 @@
+{
+ "generated_at": "2026-11-02T22:41:29+08:00",
+ "code_rev": "59372db",
+ "host_os": "Windows-11-10.0.26200-SP0",
+ "synthetic": true,
+ "set": "heldout",
+ "docs_read": 47,
+ "model": "Qwen3.5-2B-int4-ov",
+ "device": "GPU",
+ "openvino_telemetry": {
+  "consent_file": "~\\AppData\\Local\\Intel Corporation\\openvino_telemetry",
+  "consent_file_content": null,
+  "env_CI_true": true,
+  "sends_on_import": false,
+  "turn_off": "opt_in_out --opt_out (writes 0 to the consent file), or CI=true for one process"
+ },
+ "phases_watched": "imports (openvino), model load, OCR + model reads (cache off), rules, evidence crops, audit log, CSV export",
+ "duration_s": 1165.2,
+ "sample_interval_s": 1.0,
+ "samples": 1115,
+ "non_loopback_interfaces_up": [
+  "Tailscale",
+  "Wi-Fi",
+  "vEthernet (Default Switch)"
+ ],
+ "connections_seen": [],
+ "non_local_connections": [],
+ "python_network_calls": [],
+ "non_local_python_calls": [],
+ "sampling_errors": [],
+ "pass": true,
+ "verdict": "PASS: no connection or lookup to a non-local address",
+ "limits": "Sampling can miss a native connection shorter than the interval; the audit hook sees Python-level socket calls only. Network adapters were up during the run. Not a replacement for a run with the network adapter disabled.",
+ "outputs": "E:\\projects\\ledger-room\\data\\out\\bench_b70",
+ "note": "Same run as results_offline.json with CI=true set for this one process, which makes openvino_telemetry skip sending (its opt_in_checker treats CI=true as declined). Shows the telemetry event is the only outbound traffic seen."
+}

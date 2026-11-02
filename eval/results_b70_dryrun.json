@@ -1,0 +1,300 @@
+{
+ "synthetic": true,
+ "generated_at": "2026-11-02T22:42:03+08:00",
+ "code_rev": "59372db",
+ "dry_run": true,
+ "set": "heldout",
+ "docs_used": 3,
+ "device": "GPU.0",
+ "device_name": "Intel(R) UHD Graphics (iGPU)",
+ "measured_on_b70": false,
+ "targets_binding": false,
+ "targets_source": "README.md, 'Stage II targets on the B70' (frozen 2026-10-14)",
+ "time_definition": "OCR + model + zoomed re-reads for one document, averaged over the set (fresh reads, cache off)",
+ "outputs": "E:\\projects\\ledger-room\\data\\out\\bench_b70",
+ "inventory": {
+  "os": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "python": "3.12.10",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "cpu_logical": 16,
+  "ram_gb": 31.6,
+  "host": "DESKTOP-G62O404",
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "13th Gen Intel(R) Core(TM) i7-13620H"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) UHD Graphics (iGPU)",
+    "type": "Type.INTEGRATED",
+    "memory_gb": 14.4,
+    "driver": "",
+    "uarch": "12.3.0"
+   },
+   {
+    "id": "GPU.1",
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 6.0,
+    "driver": "",
+    "uarch": "8.9.0"
+   }
+  ],
+  "openvino_telemetry": {
+   "consent_file": "~\\AppData\\Local\\Intel Corporation\\openvino_telemetry",
+   "consent_file_content": null,
+   "env_CI_true": false,
+   "sends_on_import": true,
+   "turn_off": "opt_in_out --opt_out (writes 0 to the consent file), or CI=true for one process"
+  },
+  "models_root": "E:\\models",
+  "disk_free_gb": 47.3
+ },
+ "models": {
+  "OpenVINO/Qwen3.5-2B-int4-ov": {
+   "repo": "OpenVINO/Qwen3.5-2B-int4-ov",
+   "dir": "E:\\models\\Qwen3.5-2B-int4-ov",
+   "present": true,
+   "expected_size_gb": 1.99
+  }
+ },
+ "results": {
+  "Qwen3.5-2B-int4-ov": {
+   "model": "Qwen3.5-2B-int4-ov",
+   "device_requested": "GPU.0",
+   "n_docs": 3,
+   "device": "GPU.0",
+   "load_s": 12.0,
+   "thinking": "off",
+   "ledger_room": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "OVER_LIMIT": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     }
+    },
+    "micro": {
+     "tp": 0,
+     "fp": 0,
+     "fn": 0,
+     "precision": null,
+     "recall": null,
+     "f1": null
+    },
+    "docs_exact": 3,
+    "n_docs": 3,
+    "clean_docs": 3,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 31.2,
+     "median": 28.4,
+     "max": 39.0,
+     "n": 3
+    },
+    "sec_per_doc_excluding_first": {
+     "mean": 27.3,
+     "median": 27.3,
+     "max": 28.4,
+     "n": 2
+    },
+    "wall_s": 93.9,
+    "run_id": "b70-Qwen3.5-2B-int4-ov-20261102-224215"
+   },
+   "docs_per_hour": 115,
+   "reading": {
+    "docs": 3,
+    "field_error_rate": 0.0,
+    "fields_wrong": 0,
+    "fields_compared": 21,
+    "docs_all_key_fields_right": 3,
+    "docs_items_right": 3,
+    "per_field": {
+     "doc_type": "0/3",
+     "invoice_no": "0/3",
+     "date": "0/3",
+     "seller_ubn": "0/3",
+     "buyer_ubn": "0/2",
+     "net": "0/2",
+     "tax": "0/2",
+     "total": "0/3"
+    },
+    "amount_check": {
+     "docs_with_amount_error": 0,
+     "held_by_amount_rule": 0,
+     "held_with_correct_amounts": 0
+    }
+   },
+   "pure_model": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 0,
+      "fp": 3,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": null,
+      "f1": 0.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": null,
+      "f1": 0.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "OVER_LIMIT": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null
+     }
+    },
+    "micro": {
+     "tp": 0,
+     "fp": 4,
+     "fn": 0,
+     "precision": 0.0,
+     "recall": null,
+     "f1": 0.0
+    },
+    "docs_exact": 0,
+    "n_docs": 3,
+    "clean_docs": 3,
+    "clean_docs_flagged": 3,
+    "sec_per_doc": {
+     "mean": 15.8,
+     "median": 15.6,
+     "max": 17.2,
+     "n": 3
+    },
+    "unparsed_replies": 0
+   },
+   "peak_memory": {
+    "process_rss_gb": 3.87,
+    "gpu_dedicated_gb": 0.0,
+    "gpu_shared_gb": 2.64
+   }
+  }
+ },
+ "targets": [
+  {
+   "model": "Qwen3.5-2B-int4-ov (judged with the 9B targets, dry run only)",
+   "target": "Key fields wrong, held-out",
+   "threshold": "<= 0.0693 (laptop 9B 20/337 + 1 point)",
+   "value": 0.0,
+   "pass": true,
+   "binding": false,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-2B-int4-ov (judged with the 9B targets, dry run only)",
+   "target": "Ledger Room micro F1, held-out",
+   "threshold": ">= 0.95",
+   "value": null,
+   "pass": null,
+   "binding": false,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-2B-int4-ov (judged with the 9B targets, dry run only)",
+   "target": "Read time per document, whole pipeline (mean s)",
+   "threshold": "<= 6.0",
+   "value": 31.2,
+   "pass": false,
+   "binding": false,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-2B-int4-ov (judged with the 9B targets, dry run only)",
+   "target": "Read time per document, goal (mean s)",
+   "threshold": "<= 3.0",
+   "value": 31.2,
+   "pass": false,
+   "binding": false,
+   "note": "goal, not the pass line"
+  },
+  {
+   "model": "Qwen3.5-2B-int4-ov (judged with the 9B targets, dry run only)",
+   "target": "Pure-model baseline with the same model",
+   "threshold": "reported next to Ledger Room",
+   "value": 0.0,
+   "pass": true,
+   "binding": false,
+   "note": ""
+  }
+ ]
+}
