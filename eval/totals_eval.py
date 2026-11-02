@@ -203,6 +203,8 @@ def main():
              "reader_version": pipeline.READER_VERSION, "run_at": datetime.now().astimezone().isoformat(timespec="seconds"),
              "total_provenance": dict(prov_counts), "follow_up_total_questions": asked,
              "mean_read_s": run["summary"]["mean_read_s"]}
+    if a.score_only and prev.get(f"{a.set}|{mid}", {}).get("device", "cache") != "cache":
+        entry["device"] = prev[f"{a.set}|{mid}"]["device"]   # re-scored from cache: keep where the reads ran
     if a.label:
         entry["note"] = a.label
     if a.freeze:
