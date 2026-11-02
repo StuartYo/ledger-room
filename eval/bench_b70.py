@@ -125,7 +125,8 @@ def _cpu_name() -> str:
 def telemetry_status() -> dict:
     """OpenVINO's telemetry (openvino_telemetry, Google Analytics 4) sends an event on `import openvino` unless its
     consent file holds "0" or CI=true is set (openvino_telemetry/utils/opt_in_checker.py; found 2026-11-02).
-    Reports the state without importing openvino and without changing anything."""
+    `import ledger_room` sets CI=true for its own process (ledger_room/__init__.py), so this normally reports
+    sends_on_import false whatever the consent file says. Reports the state without importing openvino."""
     if platform.system() == "Windows":
         f = Path(os.path.expandvars("$LOCALAPPDATA")) / "Intel Corporation" / "openvino_telemetry"
     else:
@@ -134,7 +135,9 @@ def telemetry_status() -> dict:
     ci = os.environ.get("CI", "").lower() == "true"
     sends = not ci and content != "0"
     return {"consent_file": str(f), "consent_file_content": content, "env_CI_true": ci, "sends_on_import": sends,
-            "turn_off": "opt_in_out --opt_out (writes 0 to the consent file), or CI=true for one process"}
+            "set_by_ledger_room": os.environ.get("CI") == "true" and "ledger_room" in sys.modules,
+            "turn_off": "on by default: ledger_room/__init__.py sets CI=true before openvino is imported; "
+                        "opt_in_out --opt_out also writes 0 to the per-user consent file"}
 
 
 def pick_gpu(inv: dict) -> str | None:
