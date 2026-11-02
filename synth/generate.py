@@ -8,6 +8,11 @@ image is drawn with Pillow. Any match with a real business is coincidental.
 Usage:
   python -m synth.generate --set main     --seed 20261014 --family A
   python -m synth.generate --set heldout  --seed 777013   --family B
+  python -m synth.generate --set heldout2 --seed 50311207 --family C
+
+Family C (heldout2) is a register-style layout family added on 2026-11-02 to test total reading: the total sits next
+to cash paid, change, card or stored-value balance, deposits and long order numbers, and the total label varies
+(總計 / 合計 / 應付金額 / 總金額). Families A and B are unchanged (their images and answers stay frozen).
 
 Writes:
   data/<set>/clients.json
@@ -76,6 +81,13 @@ CLIENTS_B = [
     ("H03", "晴海物流有限公司", "logistics", "基隆市仁愛區樣品路 9 號"),
     ("H04", "安和醫材有限公司", "medical supplies", "臺北市內湖區假想路 300 號"),
     ("H05", "星砂影像製作有限公司", "video production", "花蓮縣花蓮市測驗街 18 號"),
+]
+CLIENTS_C = [
+    ("J01", "澄川室內裝修有限公司", "renovation", "新竹縣竹北市假定路 52 號"),
+    ("J02", "穗田便當有限公司", "lunch boxes", "臺中市北屯區範本街 140 號"),
+    ("J03", "銀杏顧問有限公司", "consulting", "臺北市中山區試算路 7 號"),
+    ("J04", "東岸冷鏈物流有限公司", "cold-chain logistics", "宜蘭縣羅東鎮推演路 88 號"),
+    ("J05", "光點數位行銷有限公司", "digital marketing", "高雄市苓雅區虛設街 31 號"),
 ]
 
 # key, name, allowed doc types, expense kind, items [(desc, (lo, hi), qty choices)]
@@ -308,7 +320,7 @@ class Planner:
 def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[dict]]:
     P = Planner(seed, family, set_name)
     rng = P.rng
-    base = CLIENTS_A if family == "A" else CLIENTS_B
+    base = {"A": CLIENTS_A, "B": CLIENTS_B, "C": CLIENTS_C}[family]
     clients = []
     for i, (cid, name, industry, addr) in enumerate(base):
         kind = "new_only" if i == 2 else ("seven" if i == 3 else "both")   # one client has a post-2023 UBN
@@ -340,23 +352,27 @@ def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[
         return P.make(c, key, d=d, max_total=int(cap * 0.8),
                       item_filter=lambda s: "家用" not in s)
 
-    n_clean = 6 if family == "A" else 5
+    n_clean = 5 if family == "B" else 6
     for c in clients:
         for j in range(n_clean):
             clean(c, month="2026-09" if j % 2 == 0 else "2026-10")
 
     cs = clients
     # ---- UBN_CHECKSUM (seller typo x3, buyer typo on a triplicate x1, + family B: one more)
-    for c, key in [(cs[0], "stationery"), (cs[1], "cafe"), (cs[3], "building")] + ([(cs[4], "print")] if family == "B" else []):
+    typo = [(cs[0], "stationery"), (cs[1], "cafe"), (cs[3], "building")] + ([(cs[4], "print")] if family == "B" else [])
+    if family == "C":
+        typo = [(cs[0], "print"), (cs[1], "noodle"), (cs[2], "stationery"), (cs[4], "building")]
+    for c, key in typo:
         doc = P.make(c, key, max_total=int(lim(c, "meal") * 0.7) if SELLERS[key][2] == "meal" else 20000,
                      item_filter=lambda s: "家用" not in s, issues=["UBN_CHECKSUM"])
         doc["seller_ubn"] = P.bad_variant(doc["seller_ubn"])
-    doc = P.make(cs[2], "computer", doc_type="triplicate_invoice", max_total=20000, issues=["UBN_CHECKSUM"])
+    doc = P.make(cs[3] if family == "C" else cs[2], "computer", doc_type="triplicate_invoice", max_total=20000,
+                 issues=["UBN_CHECKSUM"])
     doc["buyer_ubn"] = P.bad_variant(doc["buyer_ubn"])
 
     # ---- DUP_CROSS_MONTH: September voucher re-submitted in October
     sept_clean = [d for d in P.docs if d["month"] == "2026-09" and not d["issues"] and d["date"] < "2026-09-29"]
-    n_dm = 3 if family == "A" else 2
+    n_dm = 2 if family == "B" else 3
     picks = rng.sample(sept_clean, n_dm)
     for src in picks:
         c = next(x for x in cs if x["id"] == src["client_id"])
@@ -377,6 +393,9 @@ def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[
     if family == "B":
         s19 = [(cs[0], "wine", None), (cs[1], "gift", "送客戶"), (cs[2], "carservice", None),
                (cs[3], "travel", "員工旅遊"), (cs[4], "mart", None)]
+    if family == "C":
+        s19 = [(cs[0], "gift", "送廠商"), (cs[1], "mart", None), (cs[2], "wine", None),
+               (cs[3], "carservice", None), (cs[4], "travel", "員工旅遊")]
     for c, key, note in s19:
         filt = (lambda s: "家用" in s) if key == "mart" else None
         P.make(c, key, b2b=True, note=note, item_filter=filt, max_total=int(lim(c, "any") * 0.6),
@@ -394,6 +413,23 @@ def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[
     c = cs[3]
     q = math.ceil(lim(c, "any") / 1.05 / 6990) + 1
     P.make(c, "computer", doc_type="triplicate_invoice", items=[("27吋螢幕", q, 6990)], issues=["OVER_LIMIT"])
+    if family == "C":
+        # the trap this family is for: a meal under the client's limit, paid with cash above the limit
+        # (a reader that takes 現金 / 實收 as the total raises a false OVER_LIMIT)
+        for c, key, dtype in [(cs[1], "noodle", "e_invoice"), (cs[2], "cafe", "receipt"), (cs[4], "seafood", "e_invoice")]:
+            cap = lim(c, "meal")
+            for _ in range(400):
+                doc = P.make(c, key, doc_type=dtype, b2b=False, max_total=cap)
+                if 0.75 * cap <= doc["total"] <= cap - 60:
+                    break
+                P.docs.remove(doc)
+            paid = (cap // 1000 + 1) * 1000
+            doc["payment"] = {"kind": "cash", "paid": paid, "change": paid - doc["total"]}
+        # and one over the limit, paid by stored-value card (the balance is the confusable number)
+        c = cs[0]
+        doc = P.make(c, "seafood", doc_type="e_invoice", b2b=False,
+                     items=[("海鮮合菜 6人份", 1, lim(c, "meal") + 760), ("清蒸魚", 1, 520)], issues=["OVER_LIMIT"])
+        doc["payment"] = {"kind": "ecard", "paid": doc["total"], "balance": 386, "card_no": "6403119827"}
 
     # ---- PERIOD_MISMATCH
     c = cs[2]
@@ -403,7 +439,7 @@ def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[
     P.make(c, "stationery", doc_type="e_invoice", d=date(2026, 8, 30), month="2026-09", max_total=15000,
            issues=["PERIOD_MISMATCH"])
     c = cs[0]
-    P.make(c, "building" if family == "A" else "print", doc_type="triplicate_invoice", d=date(2026, 11, 3),
+    P.make(c, "building" if family != "B" else "print", doc_type="triplicate_invoice", d=date(2026, 11, 3),
            month="2026-10", max_total=15000, issues=["PERIOD_MISMATCH"])
     c = cs[3]
     doc = P.make(c, "courier", doc_type="e_invoice", d=date(2026, 9, 5) if family == "A" else date(2026, 10, 12),
@@ -482,6 +518,9 @@ NOTE_POS = {  # (doc_type, family) -> where a client's sticky note goes (kept of
     ("triplicate_invoice", "B"): lambda W, H, w: (40, H - 120),
     ("receipt", "A"): lambda W, H, w: (24, H - 220),
     ("receipt", "B"): lambda W, H, w: (30, H - 105),
+    ("e_invoice", "C"): lambda W, H, w: ((W - w) // 2, H - 150),
+    ("triplicate_invoice", "C"): lambda W, H, w: (40, H - 110),
+    ("receipt", "C"): lambda W, H, w: (30, H - 140),
 }
 
 
@@ -700,6 +739,263 @@ def render_receipt(doc, family, rng):
     return img
 
 
+# ---- family C: register-style layouts (total next to cash paid, change, balances, deposits, long numbers)
+
+def payment_of(doc: dict) -> dict:
+    """How the voucher was paid, printed next to the total. Stable for a voucher (a re-photographed duplicate shows
+    the same payment), independent of the planner's random stream."""
+    if doc.get("payment"):
+        return doc["payment"]
+    key = f"{doc['invoice_no'] or doc['receipt_serial']}|{doc['date']}|{doc['total']}"
+    r = random.Random(int(hashlib.sha256(key.encode("utf-8")).hexdigest()[:12], 16))
+    t = doc["total"]
+    kind = r.choices(["cash", "card", "ecard", "transfer"], [6, 2, 2, 1])[0]
+    if kind == "cash":
+        step = r.choice([100, 500, 1000, 1000])
+        paid = (t // step + 1) * step
+        return {"kind": "cash", "paid": paid, "change": paid - t}
+    if kind == "card":
+        return {"kind": "card", "paid": t, "last4": f"{r.randrange(10000):04d}", "auth": f"{r.randrange(10**6):06d}"}
+    if kind == "ecard":
+        return {"kind": "ecard", "paid": t, "balance": r.randrange(35, 2900), "card_no": f"{r.randrange(10**10):010d}"}
+    return {"kind": "transfer", "paid": t, "acct5": f"{r.randrange(10**5):05d}"}
+
+
+def _extras_c(doc: dict) -> dict:
+    key = f"x|{doc['invoice_no'] or doc['receipt_serial']}|{doc['date']}"
+    r = random.Random(int(hashlib.sha256(key.encode("utf-8")).hexdigest()[:12], 16))
+    t = doc["total"]
+    return {
+        "label": r.choice(["應付金額", "合計", "總金額", "應收總額"]),
+        "serial": f"{r.randrange(10**11, 10**12)}",           # 12-digit transaction serial in the detail
+        "points": r.random() < 0.5,
+        "earned": max(1, t // 100), "points_total": r.randrange(120, 9800),
+        "order_no": f"{r.randrange(10**9, 10**10)}",          # 10-digit order number (triplicate)
+        "deposit": (t // 3) // 100 * 100 if r.random() < 0.5 and t >= 900 else None,
+    }
+
+
+def _rr(d, y, s, f, W, x0, fill):
+    d.text((W - x0 - text_w(d, s, f), y), s, font=f, fill=fill)
+
+
+def payment_lines(doc: dict) -> list[tuple[str, str]]:
+    p = payment_of(doc)
+    if p["kind"] == "cash":
+        return [("現金", f"{p['paid']:,}"), ("找零", f"{p['change']:,}")]
+    if p["kind"] == "card":
+        return [("信用卡", f"****{p['last4']}"), ("授權碼", p["auth"]), ("刷卡金額", f"{p['paid']:,}")]
+    if p["kind"] == "ecard":
+        return [("悠遊卡", f"{p['paid']:,}"), ("卡號", p["card_no"]), ("餘額", f"{p['balance']:,}")]
+    return [("轉帳", f"{p['paid']:,}"), ("帳號後五碼", p["acct5"])]
+
+
+def _dashes(d, y, x0, W, ink):
+    for xx in range(x0, W - x0, 10):
+        d.line([xx, y, xx + 5, y], fill=ink, width=1)
+
+
+def render_e_invoice_c(doc, family, rng):
+    W = 400
+    img = Image.new("RGB", (W, 1700), (251, 251, 249))
+    d = ImageDraw.Draw(img)
+    ink = (40, 40, 44)
+    big = font("sans_bold", 30)
+    mid = font("sans", 17)
+    small = font("sans", 16)
+    ex = _extras_c(doc)
+    y = 16
+    centered(d, y, doc["seller_name"], font("sans_medium", 22), W, ink); y += 40
+    centered(d, y, "電子發票證明聯", big, W, ink); y += 42
+    centered(d, y, period_label(doc["invoice_period"]), big, W, ink); y += 42
+    no = doc["invoice_no"]
+    centered(d, y, f"{no[:2]}-{no[2:]}", big, W, ink); y += 48
+    x0 = 24
+    d.text((x0, y), f"{doc['date']} {doc['time']}", font=mid, fill=ink)
+    if doc["buyer_ubn"]:
+        _rr(d, y, "格式:25", mid, W, x0, ink)
+    y += 26
+    d.text((x0, y), f"隨機碼:{doc['random_code']}", font=mid, fill=ink)
+    _rr(d, y, f"總計:{doc['total']:,}", mid, W, x0, ink); y += 26
+    d.text((x0, y), f"賣方:{doc['seller_ubn']}" + (f"  買方:{doc['buyer_ubn']}" if doc["buyer_ubn"] else ""),
+           font=mid, fill=ink); y += 32
+    fake_barcode(d, x0, y, W - 2 * x0, 40, rng); y += 52
+    q = 130
+    fake_qr(d, x0 + 12, y, q, rng)
+    fake_qr(d, W - x0 - 12 - q, y, q, rng); y += q + 18
+    _dashes(d, y, x0, W, ink); y += 10
+    centered(d, y, "交易明細", mid, W, ink); y += 28
+    d.text((x0, y), f"交易序號 {ex['serial']}", font=small, fill=ink); y += 26
+    n_items = 0
+    for it in doc["items"]:
+        d.text((x0, y), it["desc"], font=small, fill=ink)
+        _rr(d, y, f"{it['amount']:,}TX", small, W, x0, ink); y += 22
+        d.text((x0 + 18, y), f"{it['qty']} x {it['unit']:,}", font=small, fill=ink); y += 26
+        n_items += it["qty"]
+    _dashes(d, y, x0, W, ink); y += 10
+    d.text((x0, y), f"共 {n_items} 件", font=small, fill=ink)
+    _rr(d, y, f"小計 {doc['total']:,}", small, W, x0, ink); y += 26
+    if doc["buyer_ubn"]:
+        for k, v in (("銷售額", doc["net"]), ("稅額", doc["tax"])):
+            d.text((x0, y), k, font=mid, fill=ink)
+            _rr(d, y, f"{v:,}", mid, W, x0, ink); y += 26
+    d.text((x0, y), ex["label"], font=font("sans_bold", 19), fill=ink)
+    _rr(d, y, f"{doc['total']:,}", font("sans_bold", 19), W, x0, ink); y += 30
+    for k, v in payment_lines(doc):
+        d.text((x0, y), k, font=mid, fill=ink)
+        _rr(d, y, v, mid, W, x0, ink); y += 26
+    if ex["points"]:
+        d.text((x0, y), f"本次點數 {ex['earned']}  累計點數 {ex['points_total']:,}", font=small, fill=ink); y += 26
+    y += 10
+    centered(d, y, "退貨憑電子發票證明聯正本辦理", font("sans", 14), W, (110, 110, 110)); y += 30
+    H = y + 160
+    img = img.crop((0, 0, W, H))
+    synthetic_mark(ImageDraw.Draw(img), W, H, font("sans", 13))
+    return img
+
+
+def render_triplicate_c(doc, family, rng):
+    W, H = 1080, 800
+    img = Image.new("RGB", (W, H), (252, 250, 245))
+    d = ImageDraw.Draw(img)
+    line = (140, 90, 50)
+    lab = font("sans", 19)
+    val = font("serif", 22)
+    ex = _extras_c(doc)
+    dt = date.fromisoformat(doc["date"])
+    d.text((40, 24), "統一發票（三聯式）", font=font("serif_bold", 32), fill=line)
+    d.text((40, 70), "第二聯　扣抵聯　買受人作為扣抵進項稅額之憑證", font=font("sans", 16), fill=line)
+    no = doc["invoice_no"]
+    d.text((W - 300, 28), f"{no[:2]}{no[2:]}", font=font("sans_bold", 28), fill=RED)
+    d.text((W - 420, 72), f"中華民國{roc(dt)}年{dt.month:02d}月{dt.day:02d}日", font=val, fill=INK)
+    y = 118
+    d.text((40, y), "買受人", font=lab, fill=line)
+    d.text((120, y - 2), doc["buyer_name"], font=val, fill=INK)
+    d.text((620, y), "訂單編號", font=lab, fill=line)
+    d.text((720, y - 2), ex["order_no"], font=val, fill=INK)
+    y += 42
+    d.text((40, y), "統一編號", font=lab, fill=line)
+    d.text((140, y - 2), doc["buyer_ubn"], font=val, fill=INK)
+    d.text((420, y), "地址", font=lab, fill=line)
+    d.text((470, y - 2), doc["buyer_addr"], font=val, fill=INK)
+    y += 46
+    cols = [("品名", 40, 450), ("數量", 450, 550), ("單價", 550, 700), ("金額", 700, 880), ("備註", 880, 1040)]
+    keys = ["desc", "qty", "unit", "amount", None]
+    top, row_h, n_rows = y, 42, 5
+    d.rectangle([cols[0][1], top, cols[-1][2], top + row_h * (n_rows + 1)], outline=line, width=2)
+    for name, a, b in cols:
+        d.line([a, top, a, top + row_h * (n_rows + 1)], fill=line, width=1)
+        d.text((a + (b - a - text_w(d, name, lab)) / 2, top + 10), name, font=lab, fill=line)
+    for r in range(1, n_rows + 1):
+        d.line([cols[0][1], top + r * row_h, cols[-1][2], top + r * row_h], fill=line, width=1)
+    for r, it in enumerate(doc["items"][:n_rows]):
+        yy = top + (r + 1) * row_h + 8
+        for (name, a, b), k in zip(cols, keys):
+            if not k:
+                continue
+            s = it[k] if k == "desc" else f"{it[k]:,}"
+            xx = a + 10 if k == "desc" else b - 12 - text_w(d, s, val)
+            d.text((xx, yy), s, font=val, fill=INK)
+    yy = top + (n_rows + 1) * row_h + 14
+    # totals block on the right; deposit and balance due written by hand on its left
+    bx0, bx1 = 600, 1040
+    for i, (k, v) in enumerate([("銷售額合計", doc["net"]), ("營業稅額", doc["tax"]), ("總　計", doc["total"])]):
+        d.rectangle([bx0, yy + i * 40, bx1, yy + (i + 1) * 40], outline=line, width=1)
+        d.text((bx0 + 12, yy + i * 40 + 9), k, font=lab, fill=line)
+        s = f"{v:,}"
+        d.text((bx1 - 14 - text_w(d, s, val), yy + i * 40 + 7), s, font=val, fill=INK)
+    if ex["deposit"]:
+        d.text((40, yy + 10), f"已收訂金 {ex['deposit']:,}", font=font("kai", 26), fill=(30, 40, 110))
+        d.text((40, yy + 52), f"尾款 {doc['total'] - ex['deposit']:,}", font=font("kai", 26), fill=(30, 40, 110))
+    yy += 3 * 40 + 18
+    d.text((40, yy), "總計新臺幣（大寫）", font=lab, fill=line)
+    d.text((240, yy - 2), cn_amount(doc["total"]), font=val, fill=INK)
+    stamp(img, W - 330, H - 168, doc, family, rng)
+    synthetic_mark(d, W, H, font("sans", 14), left=True)
+    return img
+
+
+def render_receipt_c(doc, family, rng):
+    W, H = 600, 900
+    img = Image.new("RGB", (W, H), (255, 253, 246))
+    d = ImageDraw.Draw(img)
+    lab = font("sans", 19)
+    hand = font("kai", 26)
+    blue = (30, 40, 110)
+    dt = date.fromisoformat(doc["date"])
+    centered(d, 22, "收　據", font("sans_bold", 38), W)
+    centered(d, 72, "免用統一發票", font("sans", 16), W, (90, 90, 90))
+    d.text((W - 150, 26), doc["receipt_serial"], font=font("sans", 16), fill=RED)
+    y = 112
+    d.text((36, y), "抬頭：", font=lab, fill=INK)
+    d.text((100, y - 4), doc["buyer_name"], font=hand, fill=blue)
+    y += 42
+    d.text((36, y), f"中華民國 {roc(dt)} 年 {dt.month} 月 {dt.day} 日", font=hand, fill=blue)
+    y += 46
+    cols = [("品名", 36, 280), ("數量", 280, 350), ("單價", 350, 450), ("金額", 450, 564)]
+    top, rh, nr = y, 42, 4
+    d.rectangle([cols[0][1], top, cols[-1][2], top + rh * (nr + 2)], outline=INK, width=2)
+    for name, a, b in cols:
+        d.line([a, top, a, top + rh * (nr + 1)], fill=INK, width=1)
+        d.text((a + 10, top + 10), name, font=lab, fill=INK)
+    for r in range(1, nr + 2):
+        d.line([cols[0][1], top + r * rh, cols[-1][2], top + r * rh], fill=INK, width=1)
+    for r, it in enumerate(doc["items"][:nr]):
+        yy = top + (r + 1) * rh + 6
+        d.text((cols[0][1] + 8, yy), it["desc"], font=hand, fill=blue)
+        for (name, a, b), k in zip(cols[1:], ("qty", "unit", "amount")):
+            s = f"{it[k]:,}"
+            d.text((b - 10 - text_w(d, s, hand), yy), s, font=hand, fill=blue)
+    yy = top + (nr + 1) * rh + 8
+    d.text((cols[0][1] + 10, yy), _extras_c(doc)["label"], font=lab, fill=INK)
+    s = f"{doc['total']:,}"
+    d.text((cols[-1][2] - 10 - text_w(d, s, hand), yy - 2), s, font=hand, fill=blue)
+    y = top + rh * (nr + 2) + 16
+    p = payment_of(doc)
+    if p["kind"] == "cash":
+        d.text((36, y), f"實收 {p['paid']:,}", font=hand, fill=blue)
+        d.text((260, y), f"找零 {p['change']:,}", font=hand, fill=blue)
+    elif p["kind"] == "transfer":
+        d.text((36, y), f"轉帳 帳號後五碼 {p['acct5']}", font=hand, fill=blue)
+    elif p["kind"] == "ecard":
+        d.text((36, y), f"悠遊卡 {p['paid']:,}　餘額 {p['balance']:,}", font=hand, fill=blue)
+    else:
+        d.text((36, y), f"刷卡 {p['paid']:,}", font=hand, fill=blue)
+    y += 44
+    d.text((36, y), "合計新臺幣", font=lab, fill=INK)
+    d.text((150, y - 4), cn_amount(doc["total"]), font=hand, fill=blue)
+    d.text((36, y + 40), f"電話：0{rng.randrange(2, 9)}-{rng.randrange(2000, 9999)}-{rng.randrange(1000, 9999)}",
+           font=font("sans", 16), fill=INK)
+    stamp(img, W - 320, H - 300, doc, family, rng)
+    synthetic_mark(d, W, H, font("sans", 13))
+    return img
+
+
+def photo_effect_c(img: Image.Image, seed: int) -> Image.Image:
+    rng = random.Random(seed ^ 0xC0FFEE)
+    margin = rng.randint(18, 44)
+    bg_col = rng.choice([(150, 120, 90), (200, 196, 188), (84, 90, 98), (232, 226, 214)])
+    W, H = img.size
+    canvas = Image.new("RGB", (W + 2 * margin, H + 2 * margin), bg_col)
+    noise = Image.effect_noise(canvas.size, 12).convert("RGB")
+    canvas = Image.blend(canvas, noise, 0.08)
+    canvas.paste(img, (margin, margin))
+    # slight perspective: the phone is not parallel to the paper
+    w, h = canvas.size
+    k = rng.uniform(0.005, 0.025) * w
+    quad = (rng.uniform(0, k), rng.uniform(0, k), rng.uniform(0, k), h - rng.uniform(0, k),
+            w - rng.uniform(0, k), h - rng.uniform(0, k), w - rng.uniform(0, k), rng.uniform(0, k))
+    canvas = canvas.transform((w, h), Image.QUAD, quad, resample=Image.BICUBIC, fillcolor=bg_col)
+    canvas = canvas.rotate(rng.uniform(-3, 3), resample=Image.BICUBIC, expand=False, fillcolor=bg_col)
+    if rng.random() < 0.5:
+        grad = Image.linear_gradient("L").rotate(rng.choice([0, 90, 180, 270])).resize(canvas.size)
+        dark = ImageEnhance.Brightness(canvas).enhance(0.8)
+        canvas = Image.composite(canvas, dark, grad.point(lambda v: 160 + v * 95 // 255))
+    canvas = ImageEnhance.Brightness(canvas).enhance(rng.uniform(0.93, 1.04))
+    canvas = canvas.filter(ImageFilter.GaussianBlur(rng.uniform(0.25, 0.6)))
+    return canvas
+
+
 def photo_effect(img: Image.Image, seed: int, family: str) -> Image.Image:
     rng = random.Random(seed)
     strong = family == "B"
@@ -728,9 +1024,13 @@ def photo_effect(img: Image.Image, seed: int, family: str) -> Image.Image:
 def render(doc: dict, family: str) -> Image.Image:
     rng = random.Random(doc["photo_seed"] ^ 0x5EED)
     fn = {"e_invoice": render_e_invoice, "triplicate_invoice": render_triplicate, "receipt": render_receipt}
+    if family == "C":
+        fn = {"e_invoice": render_e_invoice_c, "triplicate_invoice": render_triplicate_c, "receipt": render_receipt_c}
     img = fn[doc["doc_type"]](doc, family, rng)
     if doc.get("note"):
         sticky_note(img, doc["note"], rng, doc["doc_type"], family)
+    if family == "C":
+        return photo_effect_c(img, doc["photo_seed"])
     return photo_effect(img, doc["photo_seed"], family)
 
 
@@ -777,6 +1077,17 @@ def oracle_check(clients: list[dict], docs: list[dict]) -> list[str]:
         if want != have:
             problems.append(f"{doc_id(d)} {d['seller_key']} planted={sorted(want)} rules={sorted(have)}")
     return problems
+
+
+def printed_near_total(d: dict) -> dict:
+    """Family C: the other amounts printed next to the total (to analyse which number a reader took)."""
+    ex = _extras_c(d)
+    if d["doc_type"] == "triplicate_invoice":
+        return {"total_label": "總計", "order_no": ex["order_no"], "deposit": ex["deposit"]}
+    out = {"total_label": ex["label"], "payment": payment_of(d)}
+    if d["doc_type"] == "e_invoice":
+        out.update(serial=ex["serial"], points=[ex["earned"], ex["points_total"]] if ex["points"] else None)
+    return out
 
 
 def doc_id(d: dict) -> str:
@@ -866,6 +1177,7 @@ def write_set(set_name: str, seed: int, family: str, clients: list[dict], docs: 
             "duplicate_of": d.get("duplicate_of"),
             "mutant_of": d.get("mutant_of"),
             "truth": truth_fields(d),
+            **({"printed_near_total": printed_near_total(d)} if family == "C" else {}),
         })
     records.sort(key=lambda r: r["doc_id"])
     counts = {t: sum(t in r["issues"] for r in records) for t in rules.ISSUE_TYPES}
@@ -888,7 +1200,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", required=True)
     ap.add_argument("--seed", type=int, required=True)
-    ap.add_argument("--family", choices=["A", "B"], default="A")
+    ap.add_argument("--family", choices=["A", "B", "C"], default="A")
     args = ap.parse_args()
     if args.set == "control":
         clients, before, after = build_control(args.seed)
