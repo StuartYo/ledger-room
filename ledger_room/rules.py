@@ -411,6 +411,14 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                                           "Seller UBN not found on the page; fill it in by eye.", ["seller_ubn"],
                                           confidence="low"))
                 continue
+            if role == "seller" and v == c.get("ubn"):
+                # the client does not issue its own purchase vouchers: its number was most likely read from the buyer
+                # box or the company letterhead, and the real seller UBN was lost
+                out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                      f"Seller UBN {v} is this client's own UBN: seller and buyer were probably swapped "
+                                      "when reading. Check both UBNs by eye.", ["seller_ubn", "buyer_ubn"],
+                                      confidence="low"))
+                continue
             chk = ubnlib.check(v)
             if chk.well_formed and not chk.valid_new:
                 msg = f"{role.capitalize()} UBN {v}: {chk.explanation}."

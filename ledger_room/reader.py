@@ -79,6 +79,38 @@ def _cjk(s: str) -> int:
 name_sim = N.name_sim
 
 
+_DIGITS8_ALONE = re.compile(r"^[-－]?\s*(\d{8})$")
+_TRACK_END = re.compile(r"(?<![A-Za-z])([A-Z]{2})\s*[-－]?$")
+_NOT_TRACKS = {"ID", "NO"}   # 'TAX ID 12345678', 'NO 12345678' are labels, not invoice letters
+
+
+def split_invoice_numbers(lines: list[Line]) -> list[tuple[str, Line, Line]]:
+    """Invoice numbers OCR cut in two: the 2 track letters and the 8 digits printed with a gap ('RC　50461672',
+    'AB - 12345678') come back as two lines on the same row. Returns (number, digits line, line spanning both).
+    The 8 digits of such a number are not a UBN."""
+    out = []
+    for l in lines:
+        m = _DIGITS8_ALONE.match(l.text.strip())
+        if not m:
+            continue
+        h = max(1, l.box[3] - l.box[1])
+        best = None
+        for o in lines:
+            if o is l or o.box[2] > l.box[0] + 4:
+                continue
+            ov = min(o.box[3], l.box[3]) - max(o.box[1], l.box[1])
+            if ov < 0.5 * min(h, o.box[3] - o.box[1]) or l.box[0] - o.box[2] > 3 * h:
+                continue                      # not on the same row, or too far to the left
+            t = _TRACK_END.search(o.text.strip())
+            if t and t.group(1) not in _NOT_TRACKS and (best is None or o.box[2] > best[1].box[2]):
+                best = (t.group(1), o)
+        if best:
+            o = best[1]
+            box = (min(o.box[0], l.box[0]), min(o.box[1], l.box[1]), max(o.box[2], l.box[2]), max(o.box[3], l.box[3]))
+            out.append((best[0] + m.group(1), l, Line(f"{o.id}+{l.id}", f"{o.text} {l.text}", box, min(o.conf, l.conf))))
+    return out
+
+
 def ocr_tokens(lines: list[Line]):
     inv, dates = [], []
     for l in lines:
@@ -89,6 +121,8 @@ def ocr_tokens(lines: list[Line]):
                 d = N.parse_date("-".join(m.groups()))
                 if d:
                     dates.append((d, l))
+    for tok, _, both in split_invoice_numbers(lines):
+        inv.append((tok, both))
     return inv, dates
 
 
@@ -170,7 +204,10 @@ def _near(lines: list[Line], line: Line, radius: float = 3.2) -> list[tuple[floa
 def ubn_roles(lines: list[Line]) -> dict[str, list[tuple[str, Line]]]:
     """Assign every printed 8-digit number to seller or buyer from the words around it."""
     roles: dict[str, list[tuple[str, Line]]] = {"seller": [], "buyer": [], "unknown": []}
+    split_inv = {id(dl) for _, dl, _ in split_invoice_numbers(lines)}
     for l in lines:
+        if id(l) in split_inv:
+            continue                     # the digits of an invoice number OCR split from its letters
         t = _INV.sub(" ", l.text)
         toks = [(m.group(1), m.start()) for m in re.finditer(r"(?<!\d)(\d{8})(?!\d)", t)]
         if not toks:
@@ -624,7 +661,26 @@ def decide_total(ev: dict, model_total: int | None, asked: int | None) -> tuple[
         guess = best if n > second else None
     else:
         guess = None
+    if guess is not None and _truncated(guess, model_total):
+        detail["truncated_ocr"] = guess          # one digit of a boxed amount: show the model's number (still unconfirmed)
+        guess = model_total
     return guess, "unconfirmed", asked is None, detail
+
+
+def _truncated(ocr_v: int | None, model_v: int | None) -> bool:
+    """OCR kept only the first digit of a longer number (amounts written one digit per box): a one-digit OCR value
+    that is the first digit of the model's number."""
+    return (ocr_v is not None and model_v is not None and 0 <= ocr_v < 10 <= model_v
+            and str(model_v).startswith(str(ocr_v)))
+
+
+def _fits(net: int | None, tax: int | None, total: int | None) -> bool:
+    """net and tax agree with each other (tax = 5% of net, or no tax) and with the total, when one is known."""
+    if net is None or tax is None:
+        return False
+    if tax and abs(tax - net * 0.05) > 1:
+        return False
+    return total is None or abs(net + tax - total) <= 1
 
 
 def decide_net_tax(ev: dict, total: int | None, dtype: str | None, net_m: int | None, tax_m: int | None):
@@ -635,9 +691,28 @@ def decide_net_tax(ev: dict, total: int | None, dtype: str | None, net_m: int | 
         return tri[0], tri[1], "ocr-arith", "ocr-arith"
     nl, tl = ev["net_label"], ev["tax_label"]
     if nl or tl:
-        net = nl[-1] if nl else net_m
-        tax = tl[-1] if tl else tax_m
-        return net, tax, ("ocr-label" if nl else "model-only"), ("ocr-label" if tl else "model-only")
+        # A labelled number wins over the model, unless it disagrees with the model and the arithmetic says the
+        # model is right: OCR can drop digits (one digit per box, a lost 0) while the model reads the whole number.
+        cand = {"net": [(nl[-1], "ocr-label")] if nl else [], "tax": [(tl[-1], "ocr-label")] if tl else []}
+        for k, v in (("net", net_m), ("tax", tax_m)):
+            if v is not None and all(v != x for x, _ in cand[k]):
+                cand[k].append((v, "model-only"))
+        none = (None, "model-only")
+        pairs = [(n, t) for n in cand["net"] or [none] for t in cand["tax"] or [none]]
+        (net, pn), (tax, pt) = pairs[0]       # = labelled values first, the model fills a missing one
+        if len(pairs) == 1:
+            return net, tax, pn, pt
+        fit = next((p for p in pairs if _fits(p[0][0], p[1][0], total)), None)
+        if fit is not None:
+            if fit is not pairs[0]:            # the model's number makes the arithmetic work where OCR's does not
+                (net, pn), (tax, pt) = fit
+                pn, pt = ("model-arith" if pn == "model-only" else pn), ("model-arith" if pt == "model-only" else pt)
+        else:
+            if pn == "ocr-label" and _truncated(net, net_m):
+                net, pn = net_m, "model-only"
+            if pt == "ocr-label" and _truncated(tax, tax_m):
+                tax, pt = tax_m, "model-only"
+        return net, tax, pn, pt
     if not ev["net_tax_printed"] and dtype != "triplicate_invoice":
         return None, None, "not-printed", "not-printed"
     return net_m, tax_m, ("model-only" if net_m is not None else "missing"), ("model-only" if tax_m is not None else "missing")
@@ -803,10 +878,21 @@ def postprocess(obj: dict, lines: list[Line], asked: str | None = None) -> tuple
     for role in ("seller", "buyer"):
         v = N.digits(obj.get(f"{role}_ubn"))
         v = v if v and len(v) == 8 else (v or None)
+        if v and inv and v == inv[2:]:
+            v = None                       # the model copied the invoice number's digits: not a UBN
         if role == "buyer":
             extra["buyer_ubn_model"] = v
         mine = list(dict.fromkeys(tok for tok, _ in roles[role]))
-        if len(mine) == 1:
+        # One OCR number in the buyer's place, the model reads a different one on a triplicate whose buyer UBN may be
+        # written one digit per box (OCR cannot read those): the nearby number may be something else (an invoice
+        # number cut in two, a phone number). Neither is confirmed: zoom in on the buyer's 統一編號 and vote.
+        # (A model value equal to the seller's number is the model copying the seller: OCR's role still wins.)
+        disputed = (role == "buyer" and len(mine) == 1 and v and len(v) == 8 and v != mine[0]
+                    and v not in {t for t, _ in roles["seller"]} and dtype == "triplicate_invoice"
+                    and has_buyer_label)
+        if disputed:
+            extra["buyer_ubn_ocr_role"] = mine[0]
+        if len(mine) == 1 and not disputed:
             tok = mine[0]
             prov[f"{role}_ubn"] = "ocr-confirmed" if v == tok else "ocr-role"
             out_ubn[role] = tok

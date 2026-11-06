@@ -45,7 +45,8 @@ def test_registry_separates_misread_from_unregistered(tmp_path):
     misread = rules.Doc("m", "B", "2026-10", seller_ubn="00501502")       # one digit off a registered number
     ex = rules.run_rules([misread], CL, registry=reg)
     assert [e.rule_id for e in ex] == ["UBN_CHECKSUM"] and "00501503" in ex[0].message
-    own = rules.Doc("o", "B", "2026-10", seller_ubn="12345675")           # the client's own UBN is not looked up
+    own = rules.Doc("o", "B", "2026-10", seller_ubn="85927754", buyer_ubn="12345675")   # the client's own UBN
+    # (12345675, valid but not in this register) is not looked up
     assert rules.run_rules([own], CL, registry=reg) == []
     unknown = rules.Doc("u", "A", "2026-10", seller_ubn="12345675")       # valid, but not in this register
     assert [e.rule_id for e in rules.run_rules([unknown], CL, registry=reg)] == ["UBN_NOT_REGISTERED"]

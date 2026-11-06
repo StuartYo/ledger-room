@@ -77,7 +77,8 @@ The issues are the same six types, shown in new ways:
   key, `clients.json` and the generator. A test fails if any of them changes. `python -m synth.blind3 --verify`
   re-renders the images and compares them.
 - No model, no OCR and no Ledger Room code has been run on it. The only check before freezing opened each image and
-  checked its size. The first and only scored run is planned on the B70.
+  checked its size. The first and only scored run is planned on the B70. (Run on 2026-11-06; results and the fixes
+  made after it: `docs/blind3_draft.md`.)
 
 **Known biases.**
 - The author still knows the rules and wrote the code earlier, so he knows what kind of mistake it makes. Writing
