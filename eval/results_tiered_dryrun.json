@@ -40,18 +40,18 @@
  },
  "sets": {
   "heldout": {
-   "generated_at": "2026-11-06T23:11:05+08:00",
-   "code_rev": "bc75216",
+   "generated_at": "2026-11-06T23:57:46+08:00",
+   "code_rev": "99f36fc",
    "dry_run": true,
    "escalate_all": true,
    "docs_in_set": 47,
-   "docs_used": 4,
+   "docs_used": 3,
    "answer_key": "eval/expected_heldout.json",
    "first": {
     "model": "Qwen3.5-2B-int4-ov",
     "device": "CPU",
     "device_name": "13th Gen Intel(R) Core(TM) i7-13620H",
-    "load_s": 17.2,
+    "load_s": 9.8,
     "thinking": "off"
    },
    "second": {
@@ -61,131 +61,138 @@
     "device": "GPU.0",
     "note": "Qwen3.5-27B-int4-ov not on disk at E:\\models; 2b used instead",
     "device_name": "Intel(R) UHD Graphics (iGPU)",
-    "load_s": 42.4,
-    "thinking": "off"
+    "load_s": 19.7,
+    "thinking": "off",
+    "process": "separate (spawn)"
    },
    "first_only": {
-    "docs": 4,
+    "docs": 3,
     "docs_for_person": 0,
     "docs_for_person_rate": 0.0,
     "exceptions_by_rule": {
-     "BUYER_NOT_CLIENT": 1,
-     "DUP_CROSS_MONTH": 1
+     "BUYER_NOT_CLIENT": 1
     },
     "read_review_by_field": {},
-    "wall_s": 172.2,
-    "docs_per_hour": 84,
-    "read_wall_s": 171.93,
+    "wall_s": 144.4,
+    "docs_per_hour": 75,
+    "read_wall_s": 144.31,
     "busy_s": {
-     "card_first": 171.93,
+     "card_first": 144.31,
      "card_second": 0.0
     },
     "model_call_s": {
-     "first": 160.25,
+     "first": 135.11,
      "second": 0.0
     },
     "overlap_s": 0.0,
-    "first_done_s": 171.93,
+    "first_done_s": 144.31,
     "second_tail_s": 0.0,
-    "unsure_docs": 4,
+    "unsure_docs": 3,
     "sent_to_second": 0,
     "escalation_reasons": {
-     "escalate_all (dry run)": 4
+     "escalate_all (dry run)": 3
     },
     "fields_taken_from_second": {},
     "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
     "key_fields_wrong": 0,
-    "key_fields_compared": 29,
+    "key_fields_compared": 21,
     "key_field_error_rate": 0.0,
     "key_fields_per_field": {
-     "doc_type": "0/4",
-     "invoice_no": "0/4",
-     "date": "0/4",
-     "seller_ubn": "0/4",
-     "buyer_ubn": "0/3",
-     "net": "0/3",
-     "tax": "0/3",
-     "total": "0/4"
+     "doc_type": "0/3",
+     "invoice_no": "0/3",
+     "date": "0/3",
+     "seller_ubn": "0/3",
+     "buyer_ubn": "0/2",
+     "net": "0/2",
+     "tax": "0/2",
+     "total": "0/3"
     },
-    "rule_f1": 1.0,
+    "rule_f1": null,
     "rule_micro": {
-     "tp": 1,
+     "tp": 0,
      "fp": 0,
      "fn": 0,
-     "precision": 1.0,
-     "recall": 1.0,
-     "f1": 1.0
+     "precision": null,
+     "recall": null,
+     "f1": null
     },
     "clean_docs_flagged": 0,
     "escalated_docs": [],
-    "run_id": "tiered-heldout first-20261106-231105",
+    "run_id": "tiered-heldout first-20261106-235746",
     "second_note": "not used (first reader alone)"
    },
    "tiered": {
-    "docs": 4,
+    "docs": 3,
     "docs_for_person": 0,
     "docs_for_person_rate": 0.0,
     "exceptions_by_rule": {
-     "BUYER_NOT_CLIENT": 1,
-     "DUP_CROSS_MONTH": 1
+     "BUYER_NOT_CLIENT": 1
     },
     "read_review_by_field": {},
-    "wall_s": 182.1,
-    "docs_per_hour": 79,
-    "read_wall_s": 181.92,
+    "wall_s": 165.0,
+    "docs_per_hour": 65,
+    "read_wall_s": 164.91,
     "busy_s": {
-     "card_first": 154.03,
-     "card_second": 88.74
+     "card_first": 147.24,
+     "card_second": 52.04
     },
     "model_call_s": {
-     "first": 149.68,
-     "second": 88.31
+     "first": 144.83,
+     "second": 51.79
     },
-    "overlap_s": 60.84,
-    "first_done_s": 154.03,
-    "second_tail_s": 27.89,
-    "unsure_docs": 4,
-    "sent_to_second": 4,
+    "overlap_s": 34.37,
+    "first_done_s": 147.24,
+    "second_tail_s": 17.67,
+    "unsure_docs": 3,
+    "sent_to_second": 3,
     "escalation_reasons": {
-     "escalate_all (dry run)": 4
+     "escalate_all (dry run)": 3
     },
     "fields_taken_from_second": {},
     "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
     "key_fields_wrong": 0,
-    "key_fields_compared": 29,
+    "key_fields_compared": 21,
     "key_field_error_rate": 0.0,
     "key_fields_per_field": {
-     "doc_type": "0/4",
-     "invoice_no": "0/4",
-     "date": "0/4",
-     "seller_ubn": "0/4",
-     "buyer_ubn": "0/3",
-     "net": "0/3",
-     "tax": "0/3",
-     "total": "0/4"
+     "doc_type": "0/3",
+     "invoice_no": "0/3",
+     "date": "0/3",
+     "seller_ubn": "0/3",
+     "buyer_ubn": "0/2",
+     "net": "0/2",
+     "tax": "0/2",
+     "total": "0/3"
     },
-    "rule_f1": 1.0,
+    "rule_f1": null,
     "rule_micro": {
-     "tp": 1,
+     "tp": 0,
      "fp": 0,
      "fn": 0,
-     "precision": 1.0,
-     "recall": 1.0,
-     "f1": 1.0
+     "precision": null,
+     "recall": null,
+     "f1": null
     },
     "clean_docs_flagged": 0,
     "escalated_docs": [
      "H01/2026-09/IMG_2321.jpg",
      "H01/2026-09/IMG_4011.jpg",
-     "H01/2026-09/IMG_6918.jpg",
-     "H01/2026-10/IMG_1765.jpg"
+     "H01/2026-09/IMG_6918.jpg"
     ],
-    "run_id": "tiered-heldout tiered-20261106-231357"
+    "run_id": "tiered-heldout tiered-20261107-000011"
    },
    "complete": false,
+   "status": "incomplete",
+   "measured_on_b70": false
+  },
+  "blind3": {
+   "not_started": "an earlier set in this run did not finish cleanly: heldout",
    "measured_on_b70": false
   }
  },
- "generated_at": "2026-11-06T23:16:59+08:00",
+ "generated_at": "2026-11-07T00:02:56+08:00",
  "measured_on_b70": false
 }

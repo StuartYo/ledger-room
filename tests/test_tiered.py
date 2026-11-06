@@ -261,3 +261,80 @@ def test_bench_expected_for_new_sets(tmp_path, monkeypatch):
     (tmp_path / "eval" / "expected_hard.json").write_text(json.dumps({"docs": [{"doc_id": "x"}, {"doc_id": "y"}]}),
                                                           encoding="utf-8")
     assert [d["doc_id"] for d in bench_tiered.expected_for("hard", {"x"})["docs"]] == ["x"]
+
+
+# ---- second reader in its own process -----------------------------------------------------------------------------
+class ProcFakeReader:
+    """Loaded inside the child process by ProcessReader(factory="tests.test_tiered:make_proc_fake").
+    model_dir "boom" ends the process on b.jpg, like a native abort in the GPU plugin."""
+
+    def __init__(self, model_dir, device):
+        self.model_dir, self.model_id, self.device, self.thinking = model_dir, f"proc-{model_dir}", device, "off"
+
+    def generate(self, prompt, image, max_new_tokens=360):
+        return "{}", {"vlm_s": 0.01, "ttft_s": 0.0, "gen_tokens": 1}
+
+    def read(self, path, raw=None):
+        import os
+        if self.model_dir == "boom" and path.name == "b.jpg":
+            os._exit(134)
+        r = reading(fields={"total": 500}, provenance={"total": "ocr-label+model"})
+        r["model"], r["device"] = self.model_id, self.device
+        return r
+
+
+def make_proc_fake(model_dir, device):
+    return ProcFakeReader(model_dir, device)
+
+
+def test_second_reader_in_its_own_process(inbox):
+    first = FakeReader("f", "GPU.0", {"a.jpg": reading(fields={"total": 480}, provenance={"total": "unconfirmed"})})
+    second = tiered.ProcessReader("ok", "GPU.1", factory="tests.test_tiered:make_proc_fake", poll_s=0.2)
+    try:
+        import os
+        assert second.pid != os.getpid() and second.model_id == "proc-ok" and second.device == "GPU.1"
+        tr = tiered.TieredReader(first, second)
+        reads = tr.read_docs(inbox, cache=False)
+        a = reads["A/2026-10/a.jpg"]
+        assert a["fields"]["total"] == 500 and a["tier"]["taken_from_second"] == ["total", "net", "tax"]
+        assert tr.stats["second_reader_crashed"] == 0
+    finally:
+        second.close()
+    assert not second.proc.is_alive()
+
+
+def test_second_process_crash_holds_the_document_and_the_run_goes_on(inbox):
+    first = FakeReader("f", "GPU.0", {"a.jpg": reading(fields={"total": 480}, provenance={"total": "unconfirmed"}),
+                                      "b.jpg": reading(parsed=False),
+                                      "d.jpg": reading(provenance={"seller_ubn": "model-only"})})
+    second = tiered.ProcessReader("boom", "GPU.1", factory="tests.test_tiered:make_proc_fake", poll_s=0.2)
+    try:
+        tr = tiered.TieredReader(first, second)
+        run = pipeline.audit("t", tr, run_id="crash-test", cache=False, read_fn=tr.read_docs)
+    finally:
+        second.close()
+    st = tr.stats
+    assert st["second_reader_crashed"] == 2 and st["second_reader_crashed_docs"] == ["A/2026-10/b.jpg",
+                                                                                    "A/2026-10/d.jpg"]
+    assert "exited with code 134" in st["second_reader_crash"]
+    docs = {d["doc_id"]: d for d in run["docs"]}
+    assert docs["A/2026-10/a.jpg"]["fields"]["total"] == 500            # read before the crash: kept
+    assert "second_reader_crashed" in docs["A/2026-10/b.jpg"]["tier"]
+    review = {e["doc_id"] for e in run["exceptions"] if e["rule_id"] == "READ_REVIEW"}
+    assert {"A/2026-10/b.jpg", "A/2026-10/d.jpg"} <= review           # b.jpg had no review of its own
+    assert "A/2026-10/a.jpg" not in review
+
+
+# ---- blind sets run last and only after clean runs ------------------------------------------------------------------
+def test_blind_sets_run_last_and_only_after_clean_runs():
+    from eval import bench_tiered as bt
+    assert bt.order_sets(["blind3", "heldout", "hard", "heldout"]) == ["heldout", "hard", "blind3"]
+    assert bt.blind_gate("blind3", {"heldout": True, "hard": True}, {}, "abc", False) is None
+    assert "hard" in bt.blind_gate("blind3", {"heldout": True, "hard": False}, {}, "abc", False)
+    assert "hard" in bt.blind_gate("blind3", {"heldout": True}, {}, "abc", False)
+    earlier = {"hard": {"measured_on_b70": True, "code_rev": "abc"}}
+    assert bt.blind_gate("blind3", {"heldout": True}, earlier, "abc", False) is None
+    assert bt.blind_gate("blind3", {"heldout": True}, earlier, "def", False) is not None
+    ran = {"blind3": {"dry_run": False, "status": "started", "generated_at": "x"}}
+    assert "already" in bt.blind_gate("blind3", {"heldout": True, "hard": True}, ran, "abc", False)
+    assert bt.blind_gate("blind3", {"heldout": True, "hard": True}, ran, "abc", True) is None

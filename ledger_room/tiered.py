@@ -13,7 +13,9 @@ unconfirmed after both readings keeps its provenance, so the rule engine sends i
 from __future__ import annotations
 
 import copy
+import importlib
 import json
+import multiprocessing as mp
 import queue
 import threading
 import time
@@ -139,6 +141,115 @@ def read_raw_reusing_ocr(reader, path: Path, ocr_lines: list[dict]) -> dict:
             "model": reader.model_id, "device": reader.device}
 
 
+def read_with_ocr(reader, path: Path, ocr_lines: list[dict], raw: dict | None = None) -> tuple[dict, dict, bool]:
+    """One second-reader pass (model call unless raw is given, then the reconciliation code).
+    Returns (raw, reading, raw_changed)."""
+    fresh = raw is None
+    if fresh:
+        raw = read_raw_reusing_ocr(reader, path, ocr_lines)
+    res = reader.read(path, raw)
+    dirty = bool(raw.pop("_dirty", False))
+    return raw, res, fresh or dirty
+
+
+# ---- the second reader in its own process -------------------------------------------------------------------------
+class SecondReaderCrashed(RuntimeError):
+    """The second reader's process died (for example a native abort inside the GPU plugin)."""
+
+
+def _second_process_main(factory: str, model_dir: str, device: str, req_q, resp_q) -> None:
+    """Child process: load one reader on one device, then answer requests until None arrives. Only this process
+    touches that device. A Python error in one document is sent back; a native crash simply ends the process."""
+    try:
+        import ledger_room  # noqa: F401  (CI=true before openvino is imported in this process too)
+        mod, fn = factory.split(":")
+        t = time.time()
+        reader = getattr(importlib.import_module(mod), fn)(model_dir, device)
+        resp_q.put(("ready", {"model_id": reader.model_id, "device": reader.device,
+                              "thinking": getattr(reader, "thinking", None), "load_s": round(time.time() - t, 1)}))
+    except BaseException as ex:   # noqa: BLE001
+        resp_q.put(("load_error", f"{type(ex).__name__}: {ex}"[:500]))
+        return
+    while True:
+        req = req_q.get()
+        if req is None:
+            return
+        rid, path, ocr_lines, raw = req
+        try:
+            resp_q.put((rid, "ok", read_with_ocr(reader, Path(path), ocr_lines, raw)))
+        except Exception as ex:   # noqa: BLE001
+            resp_q.put((rid, "error", f"{type(ex).__name__}: {ex}"[:300]))
+
+
+class ProcessReader:
+    """Stand-in for a Reader whose model lives in a separate process (multiprocessing, spawn), bound to its own
+    device. On the B70 host, two VLMPipelines in one process used from two threads aborted the whole process inside
+    the GPU plugin (ocl_stream.cpp, 2026-11-06). With the second reader in a child process, a crash there ends only
+    the child: read_with_ocr then raises SecondReaderCrashed and the main process goes on."""
+
+    def __init__(self, model_dir: str, device: str, *, factory: str = "ledger_room.reader:Reader",
+                 load_timeout_s: float = 900.0, poll_s: float = 1.0):
+        ctx = mp.get_context("spawn")
+        self.req_q, self.resp_q = ctx.Queue(), ctx.Queue()
+        self.poll_s = poll_s
+        self.proc = ctx.Process(target=_second_process_main, name="tier2-reader",
+                                args=(factory, str(model_dir), device, self.req_q, self.resp_q), daemon=True)
+        self.proc.start()
+        self.pid = self.proc.pid
+        self.crashed: str | None = None
+        self._rid = 0
+        self._lock = threading.Lock()
+        msg = self._wait(lambda m: m[0] in ("ready", "load_error"), load_timeout_s)
+        if msg[0] == "load_error":
+            self.close()
+            raise RuntimeError(f"second reader failed to load: {msg[1]}")
+        info = msg[1]
+        self.model_id, self.device = info["model_id"], info["device"]
+        self.thinking, self.load_s = info.get("thinking"), info.get("load_s")
+
+    def _wait(self, want, timeout_s: float | None = None) -> tuple:
+        t0 = time.time()
+        while True:
+            try:
+                m = self.resp_q.get(timeout=self.poll_s)
+            except queue.Empty:
+                if not self.proc.is_alive():
+                    try:   # a reply may have landed just before the process ended
+                        m = self.resp_q.get(timeout=0.5)
+                    except queue.Empty:
+                        self.crashed = f"second reader process exited with code {self.proc.exitcode}"
+                        raise SecondReaderCrashed(self.crashed) from None
+                elif timeout_s is not None and time.time() - t0 > timeout_s:
+                    raise TimeoutError(f"second reader did not answer in {timeout_s} s")
+                else:
+                    continue
+            if want(m):
+                return m
+
+    def read_with_ocr(self, path: Path, ocr_lines: list[dict], raw: dict | None = None) -> tuple[dict, dict, bool]:
+        with self._lock:
+            if self.crashed:
+                raise SecondReaderCrashed(self.crashed)
+            self._rid += 1
+            rid = self._rid
+            self.req_q.put((rid, str(path), ocr_lines, raw))
+            _, status, payload = self._wait(lambda m: m[0] == rid)
+        if status != "ok":
+            raise RuntimeError(payload)
+        return payload
+
+    def close(self) -> None:
+        if self.proc.is_alive():
+            try:
+                self.req_q.put(None)
+                self.proc.join(timeout=30)
+            except Exception:   # noqa: BLE001
+                pass
+        if self.proc.is_alive():
+            self.proc.terminate()
+            self.proc.join(timeout=10)
+
+
 def _model_s(res: dict) -> float:
     t = res.get("timing") or {}
     return sum(t.get(k) or 0 for k in ("vlm_s", "ask_s", "zoom_s"))
@@ -168,6 +279,7 @@ class TieredReader:
         taken_n: Counter = Counter()
         escalated: list[str] = []
         errors: list[dict] = []
+        crashed: list[str] = []
         done = [0]
         t_marks = {}
 
@@ -191,6 +303,11 @@ class TieredReader:
                     model_s["second"] += _model_s(r2)
                     merged = merge(res, r2, reasons)
                     taken_n.update(merged["tier"]["taken_from_second"])
+                except SecondReaderCrashed as ex:   # the child process died: this document goes to a person
+                    merged = copy.deepcopy(res)
+                    merged["tier"] = {"escalated": True, "reasons": reasons, "second_model": self.second.model_id,
+                                      "taken_from_second": [], "second_reader_crashed": str(ex)[:300]}
+                    crashed.append(d["doc_id"])
                 except Exception as ex:   # keep the first reading; its unsure fields still go to a person
                     merged = copy.deepcopy(res)
                     merged["tier"] = {"escalated": True, "reasons": reasons, "second_model": self.second.model_id,
@@ -236,6 +353,8 @@ class TieredReader:
             "n_docs": len(docs), "unsure_docs": unsure, "escalated": len(escalated),
             "escalated_docs": escalated, "reasons": dict(reasons_n), "fields_taken_from_second": dict(taken_n),
             "second_errors": errors,
+            "second_reader_crashed": len(crashed), "second_reader_crashed_docs": crashed,
+            "second_reader_crash": getattr(self.second, "crashed", None),
             "read_wall_s": round(wall, 2),
             "first_done_s": round(t_marks.get("first_done", t_end) - t_start, 2),
             "second_tail_s": round(max(0.0, t_end - t_marks.get("first_done", t_end)), 2),
@@ -261,11 +380,11 @@ class TieredReader:
             return res
         raw = json.loads(rp.read_text(encoding="utf-8")) if (cache and rp.exists()) else None
         raw_cached = raw is not None
-        if raw is None:
-            raw = read_raw_reusing_ocr(r, d["path"], first_res["ocr_lines"])
-            rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
-        res = r.read(d["path"], raw)
-        if raw.pop("_dirty", False):
+        if hasattr(r, "read_with_ocr"):   # ProcessReader: the model runs in the child process
+            raw, res, changed = r.read_with_ocr(d["path"], first_res["ocr_lines"], raw)
+        else:
+            raw, res, changed = read_with_ocr(r, d["path"], first_res["ocr_lines"], raw)
+        if changed:
             rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
         res["sha256"] = sha
         res["cached"] = raw_cached

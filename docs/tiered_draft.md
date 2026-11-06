@@ -8,8 +8,9 @@ tiered run and is fixed in code (`ledger_room/tiered.py`, rule version `t1`).
 The B70 host has two Arc Pro B70 cards. Until now Ledger Room used one of them. Tiered reading uses both.
 
 1. The 9B reader runs on the first card (GPU.0) and reads every document in order.
-2. When code is unsure about a document, it puts the document in a queue. The 27B reader runs on the second card
-   (GPU.1) and reads the queued documents while the 9B goes on with the rest. The two cards work at the same time.
+2. When code is unsure about a document, it puts the document in a queue. The 27B reader runs in a separate
+   process on the second card (GPU.1) and reads the queued documents while the 9B goes on with the rest. The two
+   cards work at the same time.
 3. Code merges the two readings field by field. Then the same rules as before decide what is held.
 4. A document goes to a person only when the two readings and OCR together still do not settle it.
 
@@ -82,5 +83,9 @@ Its numbers check that the code runs. They are not results.
   many, on real photos. We will report what it does and not change it after seeing the numbers.
 - On the synthetic held-out set the 9B alone already had no key field wrong on the B70 (2026-11-06). Tiered reading
   can only show a difference on harder sets or real photos.
-- Both readers run in one process, in two threads. If the runtime holds Python's lock during a model call, the two
-  cards would take turns. The results file reports the overlap so this can be checked.
+- The first B70 run had both readers in one process, in two threads. On the first set that sent documents to the
+  27B, the GPU plugin aborted the whole process. The 27B now runs in its own process on GPU.1, and the main process
+  only loads the 9B on GPU.0. If the 27B process dies, the documents it had not finished go to a person, the
+  results file records `second_reader_crashed`, and the run goes on. The results file also reports how much the two
+  cards overlapped.
+- The blind set is read last, and only after heldout and hard both finished cleanly. It is read once.

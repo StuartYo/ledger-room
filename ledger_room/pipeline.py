@@ -219,6 +219,12 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
              for d in docs]
     excs = rules.run_rules(rdocs, clients, registry=registry)
+    for d in docs:   # tiered mode: the second reader's process died before re-reading this document
+        crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
+        if crash:
+            excs.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
+                                         "The second reader stopped before it could re-read this document "
+                                         f"({crash}); check it by eye.", ["total"], confidence="low"))
     by_id = {d["doc_id"]: d for d in docs}
     out_ex = []
     for k, e in enumerate(excs):

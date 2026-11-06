@@ -15,7 +15,18 @@ against the answer key (eval.read_accuracy), rule micro F1 (eval.run_eval.score)
 documents per hour, busy seconds of each card's worker, documents sent to the second reader.
 
 A set without eval/expected_<set>.json (private_real) gets counts and times only: no document ids, file names or
-field values are written. measured_on_b70 is true only for a run on two B70 cards, not a dry run, with every
+field values are written.
+
+The second reader runs in its own process (spawn), loaded on its own card; the main process only loads the first
+reader. If that process dies, the documents it had not finished go to a person (READ_REVIEW, recorded as
+second_reader_crashed), the main process goes on, and the child is restarted for the next set.
+
+Blind sets (names starting with "blind") always run last, and only when heldout and hard both finished cleanly
+(in this run, or measured on the B70 earlier with the same code revision) and every set before them in this run
+finished cleanly. A blind set that already has a real (not dry run) record is not read again unless
+--allow-blind-rerun is given; its record is written as "started" before the first document is read.
+
+measured_on_b70 is true only for a run on two B70 cards, not a dry run, with every
 document of the set read and no reader error. The real results file keeps sets from earlier runs (each set carries
 its own date, code revision, devices and models); a dry run writes eval/results_tiered_dryrun.json instead.
 """
@@ -124,6 +135,8 @@ def run_mode(tr, inbox: str, exp: dict | None, private: bool, tag: str) -> dict:
         "escalation_reasons": st.get("reasons"),
         "fields_taken_from_second": st.get("fields_taken_from_second"),
         "second_errors": len(st.get("second_errors") or []),
+        "second_reader_crashed": st.get("second_reader_crashed") or 0,
+        "second_reader_crash": st.get("second_reader_crash"),
     }
     if exp is not None:
         expd = {d["doc_id"]: set(d["issues"]) for d in exp["docs"]}
@@ -148,8 +161,40 @@ def run_mode(tr, inbox: str, exp: dict | None, private: bool, tag: str) -> dict:
         out["note"] = "no answer key in the repository: counts and times only"
     if st.get("second_note"):
         out["second_note"] = st["second_note"]
-    out["_complete"] = n > 0 and not st.get("second_errors")
+    out["_complete"] = n > 0 and not st.get("second_errors") and not st.get("second_reader_crashed")
     return out
+
+
+BLIND_PREREQS = ("heldout", "hard")
+
+
+def is_blind(set_name: str) -> bool:
+    return set_name.startswith("blind")
+
+
+def order_sets(sets: list[str]) -> list[str]:
+    """Blind sets last, everything else in the order given; duplicates dropped."""
+    sets = list(dict.fromkeys(sets))
+    return [s for s in sets if not is_blind(s)] + [s for s in sets if is_blind(s)]
+
+
+def blind_gate(set_name: str, run_complete: dict[str, bool], prev: dict, code_rev: str, allow_rerun: bool) -> str | None:
+    """None when the blind set may be read now, else the reason it is not started."""
+    old = prev.get(set_name)
+    if isinstance(old, dict) and not old.get("dry_run") and "not_started" not in old and not allow_rerun:
+        return f"{set_name} already has a real run in the results file ({old.get('status', 'unknown')}, " \
+               f"{old.get('generated_at')}); use --allow-blind-rerun to read it again"
+    bad = [s for s, ok in run_complete.items() if not ok]
+    if bad:
+        return "an earlier set in this run did not finish cleanly: " + ", ".join(bad)
+    for s in BLIND_PREREQS:
+        if run_complete.get(s):
+            continue
+        p = prev.get(s) or {}
+        if p.get("measured_on_b70") and p.get("code_rev") == code_rev:
+            continue
+        return f"{s} has not finished cleanly in this run (or on the B70 earlier with code {code_rev})"
+    return None
 
 
 def _count(it):
@@ -178,6 +223,8 @@ def main(argv=None) -> int:
     ap.add_argument("--escalate-all", action="store_true",
                     help="dry run only: send every document to the second reader, to check the two-card path")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--allow-blind-rerun", action="store_true",
+                    help="read a blind set again although the results file already has a real run of it")
     a = ap.parse_args(argv)
     if a.escalate_all and not a.dry_run:
         ap.error("--escalate-all is only allowed with --dry-run")
@@ -187,7 +234,7 @@ def main(argv=None) -> int:
     from ledger_room.pipeline import git_rev, load_inbox
     from ledger_room.reader import Reader
 
-    sets = [s.strip() for v in (a.set or ["heldout,main"]) for s in v.split(",") if s.strip()]
+    sets = order_sets([s.strip() for v in (a.set or ["heldout,main"]) for s in v.split(",") if s.strip()])
     models_root = Path(a.models_root) if a.models_root else B.default_models_root()
     inv = B.inventory(models_root)
     devs = {d["id"]: d.get("name") for d in inv.get("devices", [])}
@@ -219,11 +266,11 @@ def main(argv=None) -> int:
     print(f"first reader {first.model_id} on {first.device} ({first_info['load_s']} s)", flush=True)
     second = None
     if second_dir is not None:
-        t = time.time()
-        second = Reader(str(second_dir), second_dev)
+        second = tiered.ProcessReader(str(second_dir), second_dev)
         second_info.update(used=second.model_id, device=second.device, device_name=devs.get(second.device),
-                           load_s=round(time.time() - t, 1), thinking=second.thinking)
-        print(f"second reader {second.model_id} on {second.device} ({second_info['load_s']} s)", flush=True)
+                           load_s=second.load_s, thinking=second.thinking, process="separate (spawn)")
+        print(f"second reader {second.model_id} on {second.device}, own process {second.pid} "
+              f"({second_info['load_s']} s)", flush=True)
 
     on_b70 = all("B70" in (devs.get(x) or "") for x in (first.device, second.device if second else second_dev))
     escalate = (lambda res: tiered.escalation_reasons(res) or ["escalate_all (dry run)"]) if a.escalate_all \
@@ -257,8 +304,25 @@ def main(argv=None) -> int:
         doc["measured_on_b70"] = bool(ok) and all(s.get("measured_on_b70") for s in ok)
         out_path.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
 
+    run_complete: dict[str, bool] = {}
     for s in sets:
         private = s.startswith("private")
+        if is_blind(s):
+            why = blind_gate(s, run_complete, prev, git_rev(), a.allow_blind_rerun)
+            if why:
+                print(f"\n== {s}: not started: {why} ==", flush=True)
+                if s not in prev:
+                    doc["sets"][s] = {"not_started": why, "measured_on_b70": False}
+                save()
+                continue
+        if second is not None and second.crashed:   # restart the child for this set
+            print(f"second reader process had stopped ({second.crashed}); starting it again", flush=True)
+            second.close()
+            try:
+                second = tiered.ProcessReader(str(second_dir), second_dev)
+            except Exception as ex:   # noqa: BLE001  (no second reader for the remaining sets)
+                second = None
+                second_info["note"] = f"second reader could not be restarted: {type(ex).__name__}: {ex}"[:300]
         try:
             _, docs_all = load_inbox(s)
         except FileNotFoundError as ex:
@@ -275,6 +339,9 @@ def main(argv=None) -> int:
             "first": first_info, "second": dict(second_info),
         }
         print(f"\n== {s}: {len(docs)} documents ==", flush=True)
+        if is_blind(s):   # leave a trace before the first document is read
+            doc["sets"][s] = {**rec, "status": "started", "measured_on_b70": False}
+            save()
         try:
             rec["first_only"] = run_mode(tiered.TieredReader(first, None, second_note="not used (first reader alone)",
                                                              escalate=escalate), inbox, exp, private, f"{s} first")
@@ -289,6 +356,11 @@ def main(argv=None) -> int:
         rec["complete"] = ("error" not in rec and len(docs) == len(docs_all) and second is not None
                            and done["first_only"] and done["tiered"])
         complete = rec["complete"]
+        run_complete[s] = bool(complete)
+        crashed = (rec.get("tiered") or {}).get("second_reader_crashed")
+        if crashed:
+            rec["second_reader_crashed"] = crashed
+        rec["status"] = "finished" if complete else "incomplete"
         rec["measured_on_b70"] = bool(on_b70 and not a.dry_run and complete)
         if private:
             rec["private"] = "aggregates only; no document ids, file names or values"
@@ -309,6 +381,8 @@ def main(argv=None) -> int:
         if r.get("error"):
             print(f"  {s:<14} error {r['error']}")
     print(f"  measured_on_b70: {doc['measured_on_b70']}" + ("" if on_b70 else " (not on two B70 cards)"))
+    if second is not None:
+        second.close()
     return 0
 
 
