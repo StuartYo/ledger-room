@@ -1,0 +1,778 @@
+{
+ "synthetic_sets_only_unless_noted": true,
+ "dry_run": false,
+ "escalate_all": false,
+ "escalation_rule": "t1 (2026-11-06)",
+ "escalation_rule_text": "Why the first reading is not good enough on its own. Empty list = keep it.\n\n    reply_unparsed        the model's reply was not readable JSON\n    <field>_unconfirmed   seller UBN, buyer UBN or total is model-only or unconfirmed (for the total: no two\n                          agreeing sources, i.e. not two printed sources that match)\n    amounts_inconsistent  net + tax != total, or tax is not 5% of net (the AMOUNT_MISMATCH hold)",
+ "merge_rule_text": "First reading + second reading -> one reading. Code decides, field by field: - a field the first reading confirmed stays as it is (the second reading cannot overwrite it); - a field the first reading left weak (model-only, unconfirmed, missing) takes the second reading's value only when the reconciliation code confirmed that value from the page; - when the total comes from the second reading, net and tax come with it (code derived them from that total); - when net + tax still do not match the total and the second reading has the same total with net and tax that do match, its net and tax are used (the arithmetic is checked by code, not taken on trust); - when the first reply did not parse at all, the first reading has no model vote, so the second reading's model values fill the empty fields, keeping their own provenance (model-only stays model-only and is still routed to a person by the rules). Everything else stays from the first reading.",
+ "time_definition": "wall_s: whole batch (fresh reads, cache off, OCR + models + rules + evidence crops + log); busy_s: seconds each card's worker spent reading (the first worker's time includes OCR on the CPU); overlap_s: busy time of both workers beyond the read wall clock",
+ "docs_for_person_definition": "documents with any hold or review exception (eval.run_eval.held_docs)",
+ "outputs": "/home/devcloud/ledger-room/data/out/bench_tiered",
+ "inventory": {
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "host": "0007e935143f",
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "Intel(R) Xeon(R) 6787P"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   },
+   {
+    "id": "GPU.1",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   }
+  ]
+ },
+ "sets": {
+  "heldout": {
+   "generated_at": "2026-11-06T16:57:27+00:00",
+   "code_rev": "77fa568",
+   "dry_run": false,
+   "escalate_all": false,
+   "docs_in_set": 47,
+   "docs_used": 47,
+   "answer_key": "eval/expected_heldout.json",
+   "first": {
+    "model": "Qwen3.5-9B-int4-ov",
+    "device": "GPU.0",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 8.9,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)"
+   },
+   "second": {
+    "requested": "Qwen3.5-27B-int4-ov",
+    "used": "Qwen3.5-27B-int4-ov",
+    "substituted": false,
+    "device": "GPU.1",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 16.2,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+    "process": "separate (spawn)"
+   },
+   "first_restart_every": 5,
+   "first_only": {
+    "docs": 47,
+    "docs_for_person": 0,
+    "docs_for_person_rate": 0.0,
+    "exceptions_by_rule": {
+     "BUYER_NOT_CLIENT": 4,
+     "DUP_CROSS_CLIENT": 4,
+     "DUP_CROSS_MONTH": 2,
+     "OVER_LIMIT": 4,
+     "PERIOD_MISMATCH": 4,
+     "S19_NONDEDUCTIBLE": 5,
+     "UBN_CHECKSUM": 5
+    },
+    "read_review_by_field": {},
+    "wall_s": 264.4,
+    "docs_per_hour": 640,
+    "read_wall_s": 264.21,
+    "busy_s": {
+     "card_first": 178.2,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 165.07,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 264.21,
+    "second_tail_s": 0.0,
+    "unsure_docs": 0,
+    "sent_to_second": 0,
+    "escalation_reasons": {},
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [],
+    "second_retries_ok": 0,
+    "second_restarts": [],
+    "first_restarts": [
+     {
+      "after_docs": 5,
+      "after_doc_id": "H01/2026-10/IMG_3241.jpg",
+      "load_s": 9.06
+     },
+     {
+      "after_docs": 10,
+      "after_doc_id": "H01/2026-10/IMG_7331.jpg",
+      "load_s": 9.81
+     },
+     {
+      "after_docs": 15,
+      "after_doc_id": "H02/2026-09/IMG_9648.jpg",
+      "load_s": 9.8
+     },
+     {
+      "after_docs": 20,
+      "after_doc_id": "H03/2026-09/IMG_2287.jpg",
+      "load_s": 9.1
+     },
+     {
+      "after_docs": 25,
+      "after_doc_id": "H03/2026-10/IMG_2112.jpg",
+      "load_s": 9.89
+     },
+     {
+      "after_docs": 30,
+      "after_doc_id": "H04/2026-09/IMG_7284.jpg",
+      "load_s": 9.75
+     },
+     {
+      "after_docs": 35,
+      "after_doc_id": "H04/2026-10/IMG_5819.jpg",
+      "load_s": 9.12
+     },
+     {
+      "after_docs": 40,
+      "after_doc_id": "H05/2026-09/IMG_3686.jpg",
+      "load_s": 9.81
+     },
+     {
+      "after_docs": 45,
+      "after_doc_id": "H05/2026-10/IMG_3220.jpg",
+      "load_s": 9.68
+     }
+    ],
+    "first_reload_s": 86.02,
+    "docs_per_hour_excluding_first_reloads": 949,
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "key_fields_per_field": {
+     "doc_type": "0/47",
+     "invoice_no": "0/35",
+     "date": "0/47",
+     "seller_ubn": "0/47",
+     "buyer_ubn": "0/32",
+     "net": "0/32",
+     "tax": "0/32",
+     "total": "0/47"
+    },
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0,
+    "escalated_docs": [],
+    "run_id": "tiered-heldout first-20261106-165727",
+    "second_note": "not used (first reader alone)"
+   },
+   "tiered": {
+    "docs": 47,
+    "docs_for_person": 0,
+    "docs_for_person_rate": 0.0,
+    "exceptions_by_rule": {
+     "BUYER_NOT_CLIENT": 4,
+     "DUP_CROSS_CLIENT": 4,
+     "DUP_CROSS_MONTH": 2,
+     "OVER_LIMIT": 4,
+     "PERIOD_MISMATCH": 4,
+     "S19_NONDEDUCTIBLE": 5,
+     "UBN_CHECKSUM": 5
+    },
+    "read_review_by_field": {},
+    "wall_s": 256.6,
+    "docs_per_hour": 659,
+    "read_wall_s": 256.47,
+    "busy_s": {
+     "card_first": 174.6,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 164.42,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 256.47,
+    "second_tail_s": 0.0,
+    "unsure_docs": 0,
+    "sent_to_second": 0,
+    "escalation_reasons": {},
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [],
+    "second_retries_ok": 0,
+    "second_restarts": [],
+    "first_restarts": [
+     {
+      "after_docs": 5,
+      "after_doc_id": "H01/2026-10/IMG_3241.jpg",
+      "load_s": 9.32
+     },
+     {
+      "after_docs": 10,
+      "after_doc_id": "H01/2026-10/IMG_7331.jpg",
+      "load_s": 8.61
+     },
+     {
+      "after_docs": 15,
+      "after_doc_id": "H02/2026-09/IMG_9648.jpg",
+      "load_s": 9.01
+     },
+     {
+      "after_docs": 20,
+      "after_doc_id": "H03/2026-09/IMG_2287.jpg",
+      "load_s": 9.41
+     },
+     {
+      "after_docs": 25,
+      "after_doc_id": "H03/2026-10/IMG_2112.jpg",
+      "load_s": 9.54
+     },
+     {
+      "after_docs": 30,
+      "after_doc_id": "H04/2026-09/IMG_7284.jpg",
+      "load_s": 8.85
+     },
+     {
+      "after_docs": 35,
+      "after_doc_id": "H04/2026-10/IMG_5819.jpg",
+      "load_s": 9.58
+     },
+     {
+      "after_docs": 40,
+      "after_doc_id": "H05/2026-09/IMG_3686.jpg",
+      "load_s": 8.49
+     },
+     {
+      "after_docs": 45,
+      "after_doc_id": "H05/2026-10/IMG_3220.jpg",
+      "load_s": 9.06
+     }
+    ],
+    "first_reload_s": 81.87,
+    "docs_per_hour_excluding_first_reloads": 968,
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "key_fields_per_field": {
+     "doc_type": "0/47",
+     "invoice_no": "0/35",
+     "date": "0/47",
+     "seller_ubn": "0/47",
+     "buyer_ubn": "0/32",
+     "net": "0/32",
+     "tax": "0/32",
+     "total": "0/47"
+    },
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0,
+    "escalated_docs": [],
+    "run_id": "tiered-heldout tiered-20261106-170151"
+   },
+   "complete": true,
+   "status": "finished",
+   "measured_on_b70": true
+  },
+  "hard": {
+   "generated_at": "2026-11-06T17:06:35+00:00",
+   "code_rev": "77fa568",
+   "dry_run": false,
+   "escalate_all": false,
+   "docs_in_set": 49,
+   "docs_used": 49,
+   "answer_key": "eval/expected_hard.json",
+   "first": {
+    "model": "Qwen3.5-9B-int4-ov",
+    "device": "GPU.0",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 7.8,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)"
+   },
+   "second": {
+    "requested": "Qwen3.5-27B-int4-ov",
+    "used": "Qwen3.5-27B-int4-ov",
+    "substituted": false,
+    "device": "GPU.1",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 16.2,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+    "process": "separate (spawn)"
+   },
+   "first_restart_every": 5,
+   "first_only": {
+    "docs": 49,
+    "docs_for_person": 18,
+    "docs_for_person_rate": 0.367,
+    "exceptions_by_rule": {
+     "AMOUNT_MISMATCH": 2,
+     "BUYER_NOT_CLIENT": 9,
+     "BUYER_PRESUMED": 3,
+     "NOT_A_VOUCHER": 1,
+     "PERIOD_MISMATCH": 2,
+     "READ_REVIEW": 24
+    },
+    "read_review_by_field": {
+     "invoice_no": 5,
+     "total": 12,
+     "seller_ubn": 5,
+     "buyer_ubn": 2
+    },
+    "wall_s": 271.1,
+    "docs_per_hour": 651,
+    "read_wall_s": 271.01,
+    "busy_s": {
+     "card_first": 187.08,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 172.68,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 271.01,
+    "second_tail_s": 0.0,
+    "unsure_docs": 14,
+    "sent_to_second": 0,
+    "escalation_reasons": {
+     "total_unconfirmed": 12,
+     "seller_ubn_unconfirmed": 4,
+     "buyer_ubn_unconfirmed": 2,
+     "reply_unparsed": 1,
+     "amounts_inconsistent": 2
+    },
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [],
+    "second_retries_ok": 0,
+    "second_restarts": [],
+    "first_restarts": [
+     {
+      "after_docs": 5,
+      "after_doc_id": "W01/2026-09/IMG_9152.jpg",
+      "load_s": 9.32
+     },
+     {
+      "after_docs": 10,
+      "after_doc_id": "W01/2026-10/IMG_9079.jpg",
+      "load_s": 9.13
+     },
+     {
+      "after_docs": 15,
+      "after_doc_id": "W02/2026-09/IMG_3058.jpg",
+      "load_s": 9.09
+     },
+     {
+      "after_docs": 20,
+      "after_doc_id": "W02/2026-10/IMG_4865.jpg",
+      "load_s": 9.39
+     },
+     {
+      "after_docs": 25,
+      "after_doc_id": "W02/2026-10/IMG_9161.jpg",
+      "load_s": 9.05
+     },
+     {
+      "after_docs": 30,
+      "after_doc_id": "W03/2026-09/IMG_3186.jpg",
+      "load_s": 9.91
+     },
+     {
+      "after_docs": 35,
+      "after_doc_id": "W03/2026-09/IMG_8340.jpg",
+      "load_s": 9.26
+     },
+     {
+      "after_docs": 40,
+      "after_doc_id": "W04/2026-09/IMG_8557.jpg",
+      "load_s": 9.22
+     },
+     {
+      "after_docs": 45,
+      "after_doc_id": "W04/2026-10/IMG_3700.jpg",
+      "load_s": 9.56
+     }
+    ],
+    "first_reload_s": 83.93,
+    "docs_per_hour_excluding_first_reloads": 943,
+    "key_fields_wrong": 46,
+    "key_fields_compared": 320,
+    "key_field_error_rate": 0.144,
+    "key_fields_per_field": {
+     "doc_type": "2/49",
+     "invoice_no": "8/37",
+     "date": "7/49",
+     "seller_ubn": "6/49",
+     "buyer_ubn": "6/29",
+     "net": "2/29",
+     "tax": "3/29",
+     "total": "12/49"
+    },
+    "rule_f1": 0.0,
+    "rule_micro": {
+     "tp": 0,
+     "fp": 2,
+     "fn": 0,
+     "precision": 0.0,
+     "recall": null,
+     "f1": 0.0
+    },
+    "clean_docs_flagged": 2,
+    "escalated_docs": [],
+    "run_id": "tiered-hard first-20261106-170635",
+    "second_note": "not used (first reader alone)"
+   },
+   "tiered": {
+    "docs": 49,
+    "docs_for_person": 18,
+    "docs_for_person_rate": 0.367,
+    "exceptions_by_rule": {
+     "AMOUNT_MISMATCH": 3,
+     "BUYER_NOT_CLIENT": 9,
+     "BUYER_PRESUMED": 3,
+     "NOT_A_VOUCHER": 1,
+     "PERIOD_MISMATCH": 2,
+     "READ_REVIEW": 23
+    },
+    "read_review_by_field": {
+     "invoice_no": 5,
+     "total": 11,
+     "seller_ubn": 5,
+     "buyer_ubn": 2
+    },
+    "wall_s": 275.9,
+    "docs_per_hour": 639,
+    "read_wall_s": 275.8,
+    "busy_s": {
+     "card_first": 183.99,
+     "card_second": 104.82
+    },
+    "model_call_s": {
+     "first": 173.52,
+     "second": 77.13
+    },
+    "overlap_s": 13.01,
+    "first_done_s": 270.05,
+    "second_tail_s": 5.76,
+    "unsure_docs": 14,
+    "sent_to_second": 14,
+    "escalation_reasons": {
+     "total_unconfirmed": 12,
+     "seller_ubn_unconfirmed": 4,
+     "buyer_ubn_unconfirmed": 2,
+     "reply_unparsed": 1,
+     "amounts_inconsistent": 2
+    },
+    "fields_taken_from_second": {
+     "buyer_name": 1,
+     "category": 1,
+     "total": 1,
+     "net": 1,
+     "tax": 1
+    },
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [
+     {
+      "doc_id": "W02/2026-10/IMG_2569.jpg",
+      "first_error": "RuntimeError: RuntimeError: Exception from src/inference/src/cpp/infer_request.cpp:224:\nException from src/plugins/intel_gpu/src/runtime/ocl/ocl_stream.cpp:395:\n[GPU] clFinish, error code: -5 CL_OUT_OF_RESOURCES\n\n",
+      "retry": "ok"
+     }
+    ],
+    "second_retries_ok": 1,
+    "second_restarts": [
+     {
+      "reason": "retry after error on a document: RuntimeError: RuntimeError: Exception from src/inference/src/cpp/infer_request.cpp:224:\nException from src/plugins/intel_gpu/src/runtime/ocl/ocl_stream.cpp:395:\n[GPU] clFinish, error code: -5 CL_OUT_OF_RESOURCES\n\n",
+      "after_reads": 5,
+      "load_s": 17.7
+     }
+    ],
+    "first_restarts": [
+     {
+      "after_docs": 5,
+      "after_doc_id": "W01/2026-09/IMG_9152.jpg",
+      "load_s": 9.39
+     },
+     {
+      "after_docs": 10,
+      "after_doc_id": "W01/2026-10/IMG_9079.jpg",
+      "load_s": 9.22
+     },
+     {
+      "after_docs": 15,
+      "after_doc_id": "W02/2026-09/IMG_3058.jpg",
+      "load_s": 9.95
+     },
+     {
+      "after_docs": 20,
+      "after_doc_id": "W02/2026-10/IMG_4865.jpg",
+      "load_s": 9.7
+     },
+     {
+      "after_docs": 25,
+      "after_doc_id": "W02/2026-10/IMG_9161.jpg",
+      "load_s": 9.53
+     },
+     {
+      "after_docs": 30,
+      "after_doc_id": "W03/2026-09/IMG_3186.jpg",
+      "load_s": 9.66
+     },
+     {
+      "after_docs": 35,
+      "after_doc_id": "W03/2026-09/IMG_8340.jpg",
+      "load_s": 9.79
+     },
+     {
+      "after_docs": 40,
+      "after_doc_id": "W04/2026-09/IMG_8557.jpg",
+      "load_s": 9.57
+     },
+     {
+      "after_docs": 45,
+      "after_doc_id": "W04/2026-10/IMG_3700.jpg",
+      "load_s": 9.25
+     }
+    ],
+    "first_reload_s": 86.06,
+    "docs_per_hour_excluding_first_reloads": 929,
+    "key_fields_wrong": 46,
+    "key_fields_compared": 320,
+    "key_field_error_rate": 0.144,
+    "key_fields_per_field": {
+     "doc_type": "2/49",
+     "invoice_no": "8/37",
+     "date": "7/49",
+     "seller_ubn": "6/49",
+     "buyer_ubn": "6/29",
+     "net": "2/29",
+     "tax": "3/29",
+     "total": "12/49"
+    },
+    "rule_f1": 0.0,
+    "rule_micro": {
+     "tp": 0,
+     "fp": 2,
+     "fn": 0,
+     "precision": 0.0,
+     "recall": null,
+     "f1": 0.0
+    },
+    "clean_docs_flagged": 2,
+    "escalated_docs": [
+     "W01/2026-09/IMG_9152.jpg",
+     "W01/2026-09/IMG_9706.jpg",
+     "W01/2026-10/IMG_8179.jpg",
+     "W02/2026-09/IMG_1913.jpg",
+     "W02/2026-10/IMG_2569.jpg",
+     "W02/2026-10/IMG_4704.jpg",
+     "W02/2026-10/IMG_6831.jpg",
+     "W02/2026-10/IMG_7553.jpg",
+     "W03/2026-09/IMG_2234.jpg",
+     "W03/2026-09/IMG_2395.jpg",
+     "W03/2026-09/IMG_3186.jpg",
+     "W03/2026-10/IMG_7725.jpg",
+     "W04/2026-09/IMG_4741.jpg",
+     "W04/2026-10/IMG_9233.jpg"
+    ],
+    "run_id": "tiered-hard tiered-20261106-171106"
+   },
+   "complete": true,
+   "status": "finished",
+   "measured_on_b70": true
+  },
+  "blind3": {
+   "generated_at": "2026-11-06T17:15:54+00:00",
+   "code_rev": "77fa568",
+   "dry_run": false,
+   "escalate_all": false,
+   "docs_in_set": 53,
+   "docs_used": 53,
+   "answer_key": "eval/expected_blind3.json",
+   "first": {
+    "model": "Qwen3.5-9B-int4-ov",
+    "device": "GPU.0",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 8.5,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)"
+   },
+   "second": {
+    "requested": "none",
+    "used": null,
+    "substituted": false,
+    "device": "GPU.1",
+    "note": "none not on disk at /home/devcloud/models; tiered mode skipped"
+   },
+   "first_restart_every": 5,
+   "note": "Attempts 1 and 2 on 2026-11-06 (code 7c3497b) aborted on document 8 of 53 with a GPU driver error (CL_OUT_OF_RESOURCES) before any scoring; no results were produced or seen. This run reloads the 9B every 5 documents and runs the 9B reader alone (the 27B second reader did not change outcomes on heldout or hard).",
+   "first_only": {
+    "docs": 53,
+    "docs_for_person": 11,
+    "docs_for_person_rate": 0.208,
+    "exceptions_by_rule": {
+     "AMOUNT_MISMATCH": 5,
+     "BUYER_NOT_CLIENT": 20,
+     "BUYER_PRESUMED": 1,
+     "DUP_CROSS_CLIENT": 4,
+     "DUP_CROSS_MONTH": 3,
+     "OVER_LIMIT": 4,
+     "PERIOD_MISMATCH": 5,
+     "READ_REVIEW": 12,
+     "S19_NONDEDUCTIBLE": 3,
+     "UBN_CHECKSUM": 9
+    },
+    "read_review_by_field": {
+     "total": 10,
+     "invoice_no": 1,
+     "buyer_ubn": 1
+    },
+    "wall_s": 318.5,
+    "docs_per_hour": 599,
+    "read_wall_s": 318.2,
+    "busy_s": {
+     "card_first": 222.58,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 206.32,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 318.2,
+    "second_tail_s": 0.0,
+    "unsure_docs": 11,
+    "sent_to_second": 0,
+    "escalation_reasons": {
+     "total_unconfirmed": 10,
+     "amounts_inconsistent": 5,
+     "buyer_ubn_unconfirmed": 1
+    },
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [],
+    "second_retries_ok": 0,
+    "second_restarts": [],
+    "first_restarts": [
+     {
+      "after_docs": 5,
+      "after_doc_id": "Q01/2026-07/IMG_20260727_144824.jpg",
+      "load_s": 9.46
+     },
+     {
+      "after_docs": 10,
+      "after_doc_id": "Q01/2026-08/IMG_20260811_144640.jpg",
+      "load_s": 9.48
+     },
+     {
+      "after_docs": 15,
+      "after_doc_id": "Q02/2026-07/IMG_20260717_134125.jpg",
+      "load_s": 9.11
+     },
+     {
+      "after_docs": 20,
+      "after_doc_id": "Q02/2026-08/IMG_20260825_154314.jpg",
+      "load_s": 9.8
+     },
+     {
+      "after_docs": 25,
+      "after_doc_id": "Q03/2026-07/IMG_20260725_135219.jpg",
+      "load_s": 9.8
+     },
+     {
+      "after_docs": 30,
+      "after_doc_id": "Q03/2026-08/IMG_20260826_161117.jpg",
+      "load_s": 9.5
+     },
+     {
+      "after_docs": 35,
+      "after_doc_id": "Q04/2026-07/IMG_20260706_102706.jpg",
+      "load_s": 9.24
+     },
+     {
+      "after_docs": 40,
+      "after_doc_id": "Q04/2026-08/IMG_20260816_132649.jpg",
+      "load_s": 9.73
+     },
+     {
+      "after_docs": 45,
+      "after_doc_id": "Q05/2026-07/IMG_20260717_205125.jpg",
+      "load_s": 9.56
+     },
+     {
+      "after_docs": 50,
+      "after_doc_id": "Q05/2026-08/IMG_20260806_203410.jpg",
+      "load_s": 9.95
+     }
+    ],
+    "first_reload_s": 95.63,
+    "docs_per_hour_excluding_first_reloads": 856,
+    "key_fields_wrong": 40,
+    "key_fields_compared": 326,
+    "key_field_error_rate": 0.123,
+    "key_fields_per_field": {
+     "doc_type": "0/53",
+     "invoice_no": "1/36",
+     "date": "0/53",
+     "seller_ubn": "2/53",
+     "buyer_ubn": "10/26",
+     "net": "10/26",
+     "tax": "7/26",
+     "total": "10/53"
+    },
+    "rule_f1": 0.836,
+    "rule_micro": {
+     "tp": 23,
+     "fp": 5,
+     "fn": 4,
+     "precision": 0.821,
+     "recall": 0.852,
+     "f1": 0.836
+    },
+    "clean_docs_flagged": 1,
+    "escalated_docs": [],
+    "run_id": "tiered-blind3 first-20261106-171554",
+    "second_note": "not used (first reader alone)"
+   },
+   "tiered": {
+    "skipped": "none not on disk at /home/devcloud/models; tiered mode skipped"
+   },
+   "complete": false,
+   "status": "incomplete",
+   "measured_on_b70": false
+  }
+ },
+ "generated_at": "2026-11-06T17:21:12+00:00",
+ "measured_on_b70": false
+}
