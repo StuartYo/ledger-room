@@ -1,0 +1,3006 @@
+{
+ "synthetic": true,
+ "set": "hard",
+ "seed": 90417231,
+ "generator": "synth/hard.py",
+ "generated_at": "2026-11-06T23:27:52+08:00",
+ "purpose": "reading under capture damage; every voucher is clean (no planted issue), so any of the six issue types raised here is a false alarm caused by a misread",
+ "damage_types": [
+  "handwritten",
+  "crease_shadow",
+  "perspective",
+  "stamp_pen",
+  "thermal_fade",
+  "low_light_blur",
+  "occlusion"
+ ],
+ "key_fields": [
+  "doc_type",
+  "invoice_no",
+  "date",
+  "seller_ubn",
+  "buyer_ubn",
+  "net",
+  "tax",
+  "total"
+ ],
+ "readability_rule": "local damage: a field is readable when one printed copy is at least 70% uncovered and not written over (computed from the recorded print positions); whole-page damage: author's eye check (EYE in synth/hard.py)",
+ "n_docs": 49,
+ "n_expect_hold": 15,
+ "by_type": {
+  "handwritten": 7,
+  "crease_shadow": 7,
+  "perspective": 7,
+  "stamp_pen": 7,
+  "thermal_fade": 7,
+  "low_light_blur": 7,
+  "occlusion": 7
+ },
+ "docs": [
+  {
+   "doc_id": "W01/2026-09/IMG_1436.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "88d846e38f3894823549d76adaa6baa8b403b1601dd92b222ab707a77cc5ca44",
+   "synthetic": true,
+   "slot": 28,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "UG49214183",
+    "date": "2026-09-30",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 480
+     }
+    ],
+    "net": 457,
+    "tax": 23,
+    "total": 480,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-09/IMG_2293.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "01948e9d40dd3e3bad52b70300f03d217ab340ed0b55c1d4ea2ca6b25154cbe1",
+   "synthetic": true,
+   "slot": 48,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "other_receipt_header",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "another receipt lying over the page"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "date",
+     "invoice_no"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": false,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "BE42612385",
+    "date": "2026-09-27",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 2,
+      "amount": 280
+     },
+     {
+      "desc": "火腿三明治",
+      "qty": 1,
+      "amount": 140
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 420,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-09/IMG_4123.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "4019560736ff6ae861506a6e6d3214e56249ea2196f1d09bb3adec15016a59ca",
+   "synthetic": true,
+   "slot": 36,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "QF07563571",
+    "date": "2026-09-16",
+    "invoice_period": null,
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "69480503",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "外接硬碟 2TB",
+      "qty": 2,
+      "amount": 4640
+     },
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1930
+     }
+    ],
+    "net": 6570,
+    "tax": 328,
+    "total": 6898,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-09/IMG_4460.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "f0d2cfd9f19dad5aec055d792d9b81eae060f913823017e430ba19d390a3be19",
+   "synthetic": true,
+   "slot": 44,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "finger_total_one",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "finger from the right edge"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "total": 4
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "UZ65932893",
+    "date": "2026-09-12",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 30
+     },
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 80
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 2,
+      "amount": 420
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 530,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-09/IMG_9152.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "ec4f80330d95e71444b491486e462f00bf9b1df4f581047faedacb2fe15d1c6d",
+   "synthetic": true,
+   "slot": 40,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "severe",
+    "layout_family": "A",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "date",
+     "invoice_no",
+     "seller_ubn",
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": false,
+    "seller_ubn": false,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "MQ76245049",
+    "date": "2026-09-10",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 1,
+      "amount": 210
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 2,
+      "amount": 60
+     },
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 160
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 430,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-09/IMG_9706.jpg",
+   "client_id": "W01",
+   "month": "2026-09",
+   "sha256": "722a980e8743255c3bb82f830a9a57edcee718b27535840c9ca85ac9237bd7f8",
+   "synthetic": true,
+   "slot": 20,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "severe",
+    "layout_family": "C",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "date",
+     "seller_ubn",
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": false,
+    "seller_ubn": false,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "FX00381066",
+    "date": "2026-09-10",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 2,
+      "amount": 380
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 50
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 430,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_4328.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "366892298ba81ef7c345718f42cdafd6dfd1aecc1fb3e835a796fd7a2e107cc2",
+   "synthetic": true,
+   "slot": 32,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "UG43133052",
+    "date": "2026-10-17",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 1,
+      "amount": 1150
+     },
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 4410
+     }
+    ],
+    "net": 5295,
+    "tax": 265,
+    "total": 5560,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_6222.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "1b8514c6ba5ad07503ea9cab7aa6a30f9cb887e98c0ecd1e0760fb2653e9f759",
+   "synthetic": true,
+   "slot": 16,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-07",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 3,
+      "amount": 360
+     },
+     {
+      "desc": "美式咖啡",
+      "qty": 1,
+      "amount": 100
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 460,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_8179.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "7f76c45a141c487235b8ee1f977fb36310f6147513294b885f991904f8b00b87",
+   "synthetic": true,
+   "slot": 12,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "severe",
+    "layout_family": "A",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "UA16189253",
+    "date": "2026-10-31",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 3860
+     }
+    ],
+    "net": 3860,
+    "tax": 193,
+    "total": 4053,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_9079.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "72665ea9fc51a927f068015f417b104ba1ec69a2e36b5a00c251d8f47e9f565f",
+   "synthetic": true,
+   "slot": 8,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GS26526472",
+    "date": "2026-10-08",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "29662350",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "名片 2盒",
+      "qty": 2,
+      "amount": 1220
+     },
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7160
+     }
+    ],
+    "net": 8380,
+    "tax": 419,
+    "total": 8799,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_9189.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "ac5fcd1b12a6eb1b2f0a4e1327f7747a2056d617d5452f662cf215ad513e5751",
+   "synthetic": true,
+   "slot": 0,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "fix",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "white-out over '7,920', rewritten by hand"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 4
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZX70102968",
+    "date": "2026-10-03",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "69480503",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "27吋螢幕",
+      "qty": 1,
+      "amount": 7920
+     }
+    ],
+    "net": 7543,
+    "tax": 377,
+    "total": 7920,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_9257.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "037304440a52e2016a147b37b6ecfcdc3c532f4e2ff5fb2f4c277594654aa15a",
+   "synthetic": true,
+   "slot": 24,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "pen_tick",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "pen tick across the total"
+    ],
+    "printed_copies": {
+     "date": 1,
+     "seller_ubn": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-16",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 300
+     },
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 260
+     },
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 2,
+      "amount": 300
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 860,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W01/2026-10/IMG_9260.jpg",
+   "client_id": "W01",
+   "month": "2026-10",
+   "sha256": "1c5084bef716e0e8eb222f4faff66948217bda26fb1a68f551ca71f3a344fde8",
+   "synthetic": true,
+   "slot": 4,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "fix",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "white-out over '8,936', rewritten by hand"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "PN45351687",
+    "date": "2026-10-23",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "樺林景觀工程有限公司",
+    "buyer_ubn": "00668398",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5930
+     },
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 2580
+     }
+    ],
+    "net": 8510,
+    "tax": 426,
+    "total": 8936,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-09/IMG_1913.jpg",
+   "client_id": "W02",
+   "month": "2026-09",
+   "sha256": "20667f361dbfd520e8e764b0cd91d5554d43ccfc5548b284aae18703ddb8ccc3",
+   "synthetic": true,
+   "slot": 45,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "other_receipt_total_all",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "another receipt lying over the page"
+    ],
+    "printed_copies": {
+     "date": 1,
+     "seller_ubn": 1,
+     "total": 3
+    },
+    "fields_affected": [
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-30",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "53307275",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 580
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 580,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-09/IMG_3058.jpg",
+   "client_id": "W02",
+   "month": "2026-09",
+   "sha256": "1ec1851179c4cd3673d8def9b1b3900000e0c57c5e448cb48caa4973ed0c3b48",
+   "synthetic": true,
+   "slot": 25,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "pen_circle",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "pen loop around the total and a line through it"
+    ],
+    "printed_copies": {
+     "date": 1,
+     "seller_ubn": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-25",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 120
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 1,
+      "amount": 220
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 340,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-09/IMG_4934.jpg",
+   "client_id": "W02",
+   "month": "2026-09",
+   "sha256": "e065397f986fdba903218bcebef49d149f3a2f68df52bbc546178dd34b423605",
+   "synthetic": true,
+   "slot": 13,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "severe",
+    "layout_family": "C",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "NN32249256",
+    "date": "2026-09-06",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "51559577",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2480
+     }
+    ],
+    "net": 2362,
+    "tax": 118,
+    "total": 2480,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-09/IMG_8729.jpg",
+   "client_id": "W02",
+   "month": "2026-09",
+   "sha256": "eb9347fa1ced9835ad7c32290b1342eb1583647cc85492c420d5fddc90b320e8",
+   "synthetic": true,
+   "slot": 1,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "fix",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "white-out over '3,538', rewritten by hand"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "VN69176260",
+    "date": "2026-09-14",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "影印紙 A4 一箱",
+      "qty": 2,
+      "amount": 1300
+     },
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 1830
+     },
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 240
+     }
+    ],
+    "net": 3370,
+    "tax": 168,
+    "total": 3538,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_2569.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "81a0186129bbb2ff74eeecd0fadfc27146a47d2b2cd891826185129a55ee9560",
+   "synthetic": true,
+   "slot": 21,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "paid_stamp",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "red PAID stamp, see-through"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "CB68473155",
+    "date": "2026-10-22",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5750
+     },
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 3260
+     }
+    ],
+    "net": 9010,
+    "tax": 450,
+    "total": 9460,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_4704.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "421da97f1fa72459ed192604dbfd601ee917d7cd3dc63146685aa55a80be6796",
+   "synthetic": true,
+   "slot": 5,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "overwrite",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "digit '6' of 2,860 overwritten with '8'",
+     "digit '6' of 2,860 overwritten with '8'"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "EL71432279",
+    "date": "2026-10-07",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "原子筆 12入",
+      "qty": 1,
+      "amount": 140
+     },
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 2490
+     },
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 230
+     }
+    ],
+    "net": 2724,
+    "tax": 136,
+    "total": 2860,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_4865.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "e119b7e9c6c22408ec8b15d7adeec50dc5835bc5b9a917efaa82538f02cf211a",
+   "synthetic": true,
+   "slot": 37,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-08",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 1,
+      "amount": 150
+     },
+     {
+      "desc": "美式咖啡",
+      "qty": 1,
+      "amount": 100
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 250,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_5670.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "5cf7c2bf8714e061dc2be47f0ae999f1a93582e5c07de8f2eb1fd8cad4f1364a",
+   "synthetic": true,
+   "slot": 29,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "BD44026635",
+    "date": "2026-10-02",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "原子筆 12入",
+      "qty": 2,
+      "amount": 300
+     },
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 260
+     }
+    ],
+    "net": 533,
+    "tax": 27,
+    "total": 560,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_6561.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "5cb95003532c24365e5b69c1835f1977610928be57e4bdf6c1957569e96fe29c",
+   "synthetic": true,
+   "slot": 9,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-19",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 120
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 30
+     },
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 3,
+      "amount": 480
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 630,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_6831.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "e9fdebcfb0ec05486f967d56042b39b528f05987312bdc5030354be781709569",
+   "synthetic": true,
+   "slot": 33,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "severe",
+    "layout_family": "B",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "buyer_ubn",
+     "date",
+     "net",
+     "seller_ubn",
+     "tax",
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": false,
+    "seller_ubn": false,
+    "buyer_ubn": false,
+    "net": false,
+    "tax": false,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "GB56594871",
+    "date": "2026-10-30",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "69480503",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": "71477901",
+    "items": [
+     {
+      "desc": "無線滑鼠",
+      "qty": 1,
+      "amount": 590
+     },
+     {
+      "desc": "網路交換器 8埠",
+      "qty": 1,
+      "amount": 1370
+     }
+    ],
+    "net": 1867,
+    "tax": 93,
+    "total": 1960,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_7553.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "91b79534be41f9f035ecb96db1e54f691da4dfbe7fbe13c7b282e6017893613d",
+   "synthetic": true,
+   "slot": 41,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "severe",
+    "layout_family": "B",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "date",
+     "seller_ubn",
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": false,
+    "seller_ubn": false,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-06",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "拿鐵咖啡",
+      "qty": 3,
+      "amount": 450
+     },
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 180
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 630,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W02/2026-10/IMG_9161.jpg",
+   "client_id": "W02",
+   "month": "2026-10",
+   "sha256": "51ad48d1ad81fa26d2a5ffe36f4d7e5c5a17a268469610c6a34769265f99402a",
+   "synthetic": true,
+   "slot": 17,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-24",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "53307275",
+    "buyer_name": "潮汐音響設備有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 440
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 440,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_1689.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "7ebb1f8875fbe11151970ace81244810fb278fe997e082ef547202b6d5f98793",
+   "synthetic": true,
+   "slot": 38,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-17",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "29662350",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "海報輸出 A1",
+      "qty": 1,
+      "amount": 360
+     },
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 6150
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 6510,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_2234.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "9a4b193a41b96df90ba091941f8f8362cd6a387f79c82fade3e75240a69501be",
+   "synthetic": true,
+   "slot": 34,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "severe",
+    "layout_family": "C",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "buyer_ubn",
+     "date",
+     "invoice_no",
+     "net",
+     "seller_ubn",
+     "tax",
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": false,
+    "seller_ubn": false,
+    "buyer_ubn": false,
+    "net": false,
+    "tax": false,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZP58744418",
+    "date": "2026-09-21",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 3200
+     },
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5180
+     }
+    ],
+    "net": 7981,
+    "tax": 399,
+    "total": 8380,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_2388.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "9a5397aba0658e5981e6b7f5bbd489b18bb038189e4305e1a5eafa5a23302990",
+   "synthetic": true,
+   "slot": 18,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "HX22913296",
+    "date": "2026-09-04",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 2140
+     },
+     {
+      "desc": "資料夾 20入",
+      "qty": 1,
+      "amount": 260
+     }
+    ],
+    "net": 2400,
+    "tax": 120,
+    "total": 2520,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_2395.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "76d10d5bf98216b8df590f6c93e5140d3a296a7b7523fd785fb97f49ea592775",
+   "synthetic": true,
+   "slot": 6,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "overwrite",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "digit '9' of 190 overwritten with '6'",
+     "digit '9' of 190 overwritten with '6'"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "PX29522799",
+    "date": "2026-09-10",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 50
+     },
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 140
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 190,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_3186.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "d46b53bc7d184e7f3b4ab82caa123e09733c7ec5893d7a7051b18e5ce381a732",
+   "synthetic": true,
+   "slot": 14,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "BB71942468",
+    "date": "2026-09-07",
+    "invoice_period": null,
+    "seller_name": "印象印刷社",
+    "seller_ubn": "29662350",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "海報輸出 A1",
+      "qty": 2,
+      "amount": 760
+     },
+     {
+      "desc": "名片 2盒",
+      "qty": 2,
+      "amount": 820
+     },
+     {
+      "desc": "型錄印刷 500份",
+      "qty": 1,
+      "amount": 7310
+     }
+    ],
+    "net": 8890,
+    "tax": 444,
+    "total": 9334,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_5932.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "018c3695815dcd46c1e7782b143655f02ff1ce9b6ae1ac8e021de78e247d5cfa",
+   "synthetic": true,
+   "slot": 2,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "fix",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "white-out over '650', rewritten by hand"
+    ],
+    "printed_copies": {
+     "date": 1,
+     "seller_ubn": 1,
+     "total": 5
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-23",
+    "invoice_period": null,
+    "seller_name": "大城衛星車隊",
+    "seller_ubn": "53307275",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "計程車資",
+      "qty": 1,
+      "amount": 650
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 650,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_7321.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "fa3e66faffa1d58cd1133139d4f15be77dc1d2c222b5aececbf09ae31aa43017",
+   "synthetic": true,
+   "slot": 42,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "finger_corner",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "finger from the right edge"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "total": 2
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "AZ99788900",
+    "date": "2026-09-13",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 1,
+      "amount": 60
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 40
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 100,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_7334.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "be16369438ae40575e0f3b6e88104c0a8660e76c3478a50f645dfeee4fb20fec",
+   "synthetic": true,
+   "slot": 10,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-09-19",
+    "invoice_period": null,
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "火腿三明治",
+      "qty": 2,
+      "amount": 320
+     },
+     {
+      "desc": "美式咖啡",
+      "qty": 2,
+      "amount": 240
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 560,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_7831.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "61c1e886be6222f46cf31bff625d4e01b1796ab8ab62b8c73693d8f9ff9e6127",
+   "synthetic": true,
+   "slot": 26,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "scribble_invoice_no",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "black marker scribble"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 4
+    },
+    "fields_affected": [
+     "invoice_no"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "EQ05963059",
+    "date": "2026-09-08",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5990
+     }
+    ],
+    "net": 5705,
+    "tax": 285,
+    "total": 5990,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_8340.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "6455a23e0c50591b2cbdc3bd97f9e6e8892ed8b207b33d7b813519f0501b633b",
+   "synthetic": true,
+   "slot": 30,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "LS81544500",
+    "date": "2026-09-10",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "86522387",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 940
+     },
+     {
+      "desc": "宅配運費",
+      "qty": 3,
+      "amount": 810
+     }
+    ],
+    "net": 1667,
+    "tax": 83,
+    "total": 1750,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-09/IMG_9031.jpg",
+   "client_id": "W03",
+   "month": "2026-09",
+   "sha256": "f72a463b0f2226c2745baca9ac5d12f78bb37a94415cb2d73c59f2c3473d5f2d",
+   "synthetic": true,
+   "slot": 22,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "paid_stamp",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "red PAID stamp, see-through"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 3
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "HS94905288",
+    "date": "2026-09-19",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "星河電腦資訊有限公司",
+    "seller_ubn": "69480503",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "無線滑鼠",
+      "qty": 1,
+      "amount": 880
+     },
+     {
+      "desc": "外接硬碟 2TB",
+      "qty": 2,
+      "amount": 5320
+     },
+     {
+      "desc": "27吋螢幕",
+      "qty": 2,
+      "amount": 11360
+     }
+    ],
+    "net": 16724,
+    "tax": 836,
+    "total": 17560,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W03/2026-10/IMG_7725.jpg",
+   "client_id": "W03",
+   "month": "2026-10",
+   "sha256": "ab973003d148522890c9d7dd4f39042edb2155d4540f11e65062f806a4804a7d",
+   "synthetic": true,
+   "slot": 46,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "other_receipt_total_all",
+    "layout_family": "C",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "another receipt lying over the page"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "total"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": false
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "PY88886735",
+    "date": "2026-10-12",
+    "invoice_period": null,
+    "seller_name": "日光文具行",
+    "seller_ubn": "38278779",
+    "buyer_name": "穀雨食品貿易有限公司",
+    "buyer_ubn": "12998778",
+    "items": [
+     {
+      "desc": "資料夾 20入",
+      "qty": 2,
+      "amount": 500
+     }
+    ],
+    "net": 500,
+    "tax": 25,
+    "total": 525,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-09/IMG_3714.jpg",
+   "client_id": "W04",
+   "month": "2026-09",
+   "sha256": "6427302f1a86d602c511f45d3766ad3f19b76b54a3e630cde8686ecbc0ba1559",
+   "synthetic": true,
+   "slot": 11,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "KN79462375",
+    "date": "2026-09-08",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "51559577",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2350
+     }
+    ],
+    "net": 2238,
+    "tax": 112,
+    "total": 2350,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-09/IMG_4741.jpg",
+   "client_id": "W04",
+   "month": "2026-09",
+   "sha256": "19e20f274f3c86bb12e96d2ef38199b135b09c5e2b7ed40b3d9d5d6c132749c2",
+   "synthetic": true,
+   "slot": 43,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "finger_total_one",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "finger from the right edge"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "tax"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": false,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "XA77438656",
+    "date": "2026-09-26",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 3680
+     },
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 2760
+     }
+    ],
+    "net": 6440,
+    "tax": 322,
+    "total": 6762,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-09/IMG_8557.jpg",
+   "client_id": "W04",
+   "month": "2026-09",
+   "sha256": "7519c9d25785cf6c5c8fe1125e2cfd1925a1b7eb8b16a55a3ed714b3aa3e9ec2",
+   "synthetic": true,
+   "slot": 47,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "occlusion",
+    "variant": "other_receipt_header",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "another receipt lying over the page"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "date",
+     "invoice_no"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": false,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "UU15931582",
+    "date": "2026-09-10",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "快捷通運股份有限公司",
+    "seller_ubn": "86522387",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "宅配運費",
+      "qty": 1,
+      "amount": 150
+     },
+     {
+      "desc": "大型貨運費",
+      "qty": 1,
+      "amount": 1090
+     }
+    ],
+    "net": 1181,
+    "tax": 59,
+    "total": 1240,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-09/IMG_9061.jpg",
+   "client_id": "W04",
+   "month": "2026-09",
+   "sha256": "f5ba7e54881ea9d6c5ac2cf0bb07f1dfaa11ca215e321f9a3707e4e06085fcd3",
+   "synthetic": true,
+   "slot": 31,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "thermal_fade",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "KU18998741",
+    "date": "2026-09-07",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "51559577",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2010
+     }
+    ],
+    "net": 1914,
+    "tax": 96,
+    "total": 2010,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-09/IMG_9334.jpg",
+   "client_id": "W04",
+   "month": "2026-09",
+   "sha256": "108f18ce900e59cc939af1d29f9f2ca70f8ba61aad6bb7a02c2e66f94e00dc71",
+   "synthetic": true,
+   "slot": 15,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "moderate",
+    "layout_family": "B",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "SS92813002",
+    "date": "2026-09-17",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "紅燒牛肉麵",
+      "qty": 2,
+      "amount": 400
+     },
+     {
+      "desc": "酸梅湯",
+      "qty": 1,
+      "amount": 40
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 440,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_2327.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "ccd929f631df8470b877da838519ff57806b7bc7ed565ac12acc1fc1dcaab96e",
+   "synthetic": true,
+   "slot": 3,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "handwritten",
+    "variant": "fix",
+    "layout_family": "A",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "white-out over '120', rewritten by hand"
+    ],
+    "printed_copies": {
+     "date": 1,
+     "seller_ubn": 1,
+     "total": 3
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "receipt",
+    "invoice_no": null,
+    "date": "2026-10-14",
+    "invoice_period": null,
+    "seller_name": "老街牛肉麵",
+    "seller_ubn": "44610819",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "滷味小菜",
+      "qty": 2,
+      "amount": 120
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 120,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_3290.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "4ecc560a1ff3bc23d5803750b32f14e42bcd0d3285af04224c13821e986c5120",
+   "synthetic": true,
+   "slot": 35,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "GQ77370968",
+    "date": "2026-10-20",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "轉角咖啡館",
+    "seller_ubn": "41025671",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "美式咖啡",
+      "qty": 1,
+      "amount": 100
+     },
+     {
+      "desc": "火腿三明治",
+      "qty": 1,
+      "amount": 130
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 230,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_3700.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "acbf620aa288115c0c3aa0c84f5aa19b145795e66e60953dcf4476f2fb01f9a2",
+   "synthetic": true,
+   "slot": 23,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "pen_circle",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "pen loop around the total and a line through it"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 2,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 4
+    },
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "PR26360267",
+    "date": "2026-10-20",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "栖山商旅",
+    "seller_ubn": "51559577",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "住宿 標準雙人房 1晚",
+      "qty": 1,
+      "amount": 2640
+     }
+    ],
+    "net": 2514,
+    "tax": 126,
+    "total": 2640,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_4171.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "6b1ffa68493e5478d36fbeb74fa540def8a9491ad040c93577d6fb79379732cd",
+   "synthetic": true,
+   "slot": 39,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "low_light_blur",
+    "variant": "moderate",
+    "layout_family": "C",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "VR30026500",
+    "date": "2026-10-21",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 3670
+     },
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 1980
+     }
+    ],
+    "net": 5650,
+    "tax": 282,
+    "total": 5932,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_4478.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "485f75b445a05198410b5a03417e77cfbd1061978662935a62d29ecf28820d4a",
+   "synthetic": true,
+   "slot": 27,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "stamp_pen",
+    "variant": "dark_stamp_date",
+    "layout_family": "B",
+    "severity": "local",
+    "readability_basis": "computed: a printed copy at least 70% uncovered and not written over",
+    "notes": [
+     "over-inked dark stamp"
+    ],
+    "printed_copies": {
+     "invoice_no": 1,
+     "date": 1,
+     "seller_ubn": 1,
+     "buyer_ubn": 1,
+     "net": 1,
+     "tax": 1,
+     "total": 2
+    },
+    "fields_affected": [
+     "date"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": false,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "PG88625100",
+    "date": "2026-10-16",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 1,
+      "amount": 1030
+     },
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 5720
+     }
+    ],
+    "net": 6750,
+    "tax": 338,
+    "total": 7088,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_7957.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "e4793d31587858bcd24a79c977a28d783588169a1c31057c361f6de519cdb827",
+   "synthetic": true,
+   "slot": 7,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "crease_shadow",
+    "variant": "moderate",
+    "layout_family": "A",
+    "severity": "moderate",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": []
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": true,
+    "date": true,
+    "seller_ubn": true,
+    "buyer_ubn": true,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": false,
+   "expected_outcome": "read every key field right, or hold",
+   "truth": {
+    "doc_type": "e_invoice",
+    "invoice_no": "QL31125302",
+    "date": "2026-10-09",
+    "invoice_period": "2026-09/2026-10",
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "設計軟體授權 月費",
+      "qty": 2,
+      "amount": 2820
+     },
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 4840
+     }
+    ],
+    "net": 7295,
+    "tax": 365,
+    "total": 7660,
+    "note": null
+   }
+  },
+  {
+   "doc_id": "W04/2026-10/IMG_9233.jpg",
+   "client_id": "W04",
+   "month": "2026-10",
+   "sha256": "b46bc9303c92df79b446fe54d53c01a6a21dcd080d9a8779076356545ea5aae5",
+   "synthetic": true,
+   "slot": 19,
+   "issues": [],
+   "duplicate_of": null,
+   "mutant_of": null,
+   "degradation": {
+    "type": "perspective",
+    "variant": "severe",
+    "layout_family": "B",
+    "severity": "severe",
+    "readability_basis": "author eye check of the whole page",
+    "fields_affected": [
+     "buyer_ubn",
+     "invoice_no",
+     "seller_ubn"
+    ]
+   },
+   "human_readable": {
+    "doc_type": true,
+    "invoice_no": false,
+    "date": true,
+    "seller_ubn": false,
+    "buyer_ubn": false,
+    "net": true,
+    "tax": true,
+    "total": true
+   },
+   "expect_hold": true,
+   "expected_outcome": "HOLD for a person (a key field cannot be read on the image)",
+   "truth": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "DJ99174947",
+    "date": "2026-10-14",
+    "invoice_period": null,
+    "seller_name": "雲帆軟體服務有限公司",
+    "seller_ubn": "62436671",
+    "buyer_name": "朝暉牙材有限公司",
+    "buyer_ubn": "99033334",
+    "items": [
+     {
+      "desc": "雲端備份方案 年費",
+      "qty": 1,
+      "amount": 3760
+     }
+    ],
+    "net": 3760,
+    "tax": 188,
+    "total": 3948,
+    "note": null
+   }
+  }
+ ]
+}
