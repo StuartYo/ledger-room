@@ -141,6 +141,12 @@ def run_mode(tr, inbox: str, exp: dict | None, private: bool, tag: str) -> dict:
         "second_retries": [_private_safe(e, private) for e in st.get("second_retries") or []],
         "second_retries_ok": sum(1 for e in st.get("second_retries") or [] if e.get("retry") == "ok"),
         "second_restarts": st.get("second_restarts") or [],
+        "first_restarts": [{k: v for k, v in r.items() if not (private and k == "after_doc_id")}
+                           for r in st.get("first_restarts") or []],
+        "first_reload_s": st.get("first_reload_s") or 0.0,
+        # wall_s and docs_per_hour include the first reader's reloads; this one leaves them out
+        "docs_per_hour_excluding_first_reloads": (round(3600 * n / (wall - (st.get("first_reload_s") or 0.0)))
+                                                  if wall - (st.get("first_reload_s") or 0.0) > 0 else None),
     }
     if exp is not None:
         expd = {d["doc_id"]: set(d["issues"]) for d in exp["docs"]}
@@ -234,6 +240,10 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--second-restart-every", type=int, default=20,
                     help="restart the second reader's process before every N-th read (0 = never; default 20)")
+    ap.add_argument("--first-restart-every", type=int, default=0,
+                    help="close and reload the first reader before every N-th document of a set, in both modes "
+                         "(0 = never, the default); reload time is reported apart")
+    ap.add_argument("--note", default=None, help="free text stored on each set record of this run")
     ap.add_argument("--allow-blind-rerun", action="store_true",
                     help="read a blind set again although the results file already has a real run of it")
     a = ap.parse_args(argv)
@@ -272,6 +282,9 @@ def main(argv=None) -> int:
 
     t = time.time()
     first = Reader(str(first_dir), first_dev)
+
+    def load_first():
+        return Reader(str(first_dir), first_dev)
     first_info = {"model": first.model_id, "device": first.device, "device_name": devs.get(first.device),
                   "load_s": round(time.time() - t, 1), "thinking": first.thinking}
     print(f"first reader {first.model_id} on {first.device} ({first_info['load_s']} s)", flush=True)
@@ -350,19 +363,34 @@ def main(argv=None) -> int:
             "first": first_info, "second": dict(second_info),
         }
         print(f"\n== {s}: {len(docs)} documents ==", flush=True)
+        rec["first_restart_every"] = a.first_restart_every
+        if a.note:
+            rec["note"] = a.note
         if is_blind(s):   # leave a trace before the first document is read
             doc["sets"][s] = {**rec, "status": "started", "measured_on_b70": False}
             save()
+        restart = {"first_factory": load_first, "first_restart_every": a.first_restart_every}
+        tr = None
         try:
-            rec["first_only"] = run_mode(tiered.TieredReader(first, None, second_note="not used (first reader alone)",
-                                                             escalate=escalate), inbox, exp, private, f"{s} first")
+            # the TieredReader owns the first reader during a pass (it may reload it); take it back afterwards
+            tr = tiered.TieredReader(first, None, second_note="not used (first reader alone)", escalate=escalate,
+                                     **restart)
+            first = None
+            rec["first_only"] = run_mode(tr, inbox, exp, private, f"{s} first")
+            first, tr = tr.first, None
             if second is not None:
-                rec["tiered"] = run_mode(tiered.TieredReader(first, second, escalate=escalate), inbox, exp, private,
-                                         f"{s} tiered")
+                tr = tiered.TieredReader(first, second, escalate=escalate, **restart)
+                first = None
+                rec["tiered"] = run_mode(tr, inbox, exp, private, f"{s} tiered")
+                first, tr = tr.first, None
             else:
                 rec["tiered"] = {"skipped": second_info.get("note")}
         except Exception as ex:   # record and go on (e.g. out of GPU memory)
             rec["error"] = f"{type(ex).__name__}: {ex}"[:500]
+        finally:
+            if tr is not None:
+                first = tr.first if tr.first is not None else load_first()
+                tr = None
         done = {m: isinstance(rec.get(m), dict) and rec[m].pop("_complete", False) for m in ("first_only", "tiered")}
         rec["complete"] = ("error" not in rec and len(docs) == len(docs_all) and second is not None
                            and done["first_only"] and done["tiered"])

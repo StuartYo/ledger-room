@@ -13,6 +13,7 @@ unconfirmed after both readings keeps its provenance, so the rule engine sends i
 from __future__ import annotations
 
 import copy
+import gc
 import importlib
 import json
 import multiprocessing as mp
@@ -284,10 +285,18 @@ def _model_s(res: dict) -> float:
 
 class TieredReader:
     """Use with pipeline.audit(set, tr, read_fn=tr.read_docs). second=None runs the first reader alone (the
-    "9B only" mode, or a tiered run whose second model is missing); unsure documents are then only counted."""
+    "9B only" mode, or a tiered run whose second model is missing); unsure documents are then only counted.
 
-    def __init__(self, first, second=None, *, second_note: str | None = None, escalate=escalation_reasons):
+    first_restart_every=N with first_factory: close the first reader and load it again (first_factory()) before
+    every N-th document of a call. On the B70 host the main process aborted with CL_OUT_OF_RESOURCES after a run of
+    calls that each work on their own in a fresh process (2026-11-07). The reload changes no model input; its time is
+    kept apart (stats first_reload_s, first_restarts). After the call, .first holds the reader now loaded."""
+
+    def __init__(self, first, second=None, *, second_note: str | None = None, escalate=escalation_reasons,
+                 first_factory=None, first_restart_every: int = 0):
         self.first, self.second = first, second
+        self.first_factory = first_factory
+        self.first_restart_every = max(0, int(first_restart_every or 0)) if first_factory is not None else 0
         self.second_note = second_note
         self.escalate = escalate
         self.model_id = first.model_id if second is None else f"{first.model_id}+{second.model_id}"
@@ -298,6 +307,7 @@ class TieredReader:
     def read_docs(self, docs: list[dict], reader=None, *, cache=True, progress=None, model_id=None) -> dict[str, dict]:
         t_start = time.perf_counter()
         restarts0 = len(getattr(self.second, "restarts", None) or [])
+        first_restarts: list[dict] = []
         out: dict[str, dict] = {}
         q: queue.Queue = queue.Queue()
         lock = threading.Lock()
@@ -367,7 +377,9 @@ class TieredReader:
             th = threading.Thread(target=second_worker, name="tier2-reader", daemon=True)
             th.start()
         try:
-            for d in docs:
+            for i, d in enumerate(docs):
+                if self.first_restart_every and i and i % self.first_restart_every == 0:
+                    first_restarts.append(self._reload_first(i, docs[i - 1]["doc_id"]))
                 t = time.perf_counter()
                 res = pipeline.read_docs([d], self.first, cache=cache)[d["doc_id"]]
                 busy["first"] += time.perf_counter() - t
@@ -403,6 +415,8 @@ class TieredReader:
             "second_retries": retries,
             "second_restarts": list(getattr(self.second, "restarts", None) or [])[restarts0:],
             "read_wall_s": round(wall, 2),
+            "first_restarts": first_restarts,
+            "first_reload_s": round(sum(r["load_s"] for r in first_restarts), 2),
             "first_done_s": round(t_marks.get("first_done", t_end) - t_start, 2),
             "second_tail_s": round(max(0.0, t_end - t_marks.get("first_done", t_end)), 2),
             "busy_s": {"first": round(busy["first"], 2), "second": round(busy["second"], 2)},
@@ -411,6 +425,15 @@ class TieredReader:
             "overlap_s": round(max(0.0, busy["first"] + busy["second"] - wall), 2),
         }
         return {d["doc_id"]: out[d["doc_id"]] for d in docs}
+
+    def _reload_first(self, after_docs: int, after_doc_id: str) -> dict:
+        """Free the first reader (its GPU memory and queues), then load a fresh one."""
+        t = time.perf_counter()
+        old, self.first = self.first, None
+        del old
+        gc.collect()
+        self.first = self.first_factory()
+        return {"after_docs": after_docs, "after_doc_id": after_doc_id, "load_s": round(time.perf_counter() - t, 2)}
 
     def _second_read(self, d: dict, first_res: dict, cache: bool) -> dict:
         """The second reader on one document, with the first read's OCR lines. Cached next to the pipeline's own

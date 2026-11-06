@@ -400,3 +400,39 @@ def test_bench_error_details_hide_doc_ids_only_in_private_sets():
     from eval import bench_tiered as bt
     e = {"doc_id": "A/2026-10/c.jpg", "error": "RuntimeError: x"}
     assert bt._private_safe(e, False) == e and bt._private_safe(e, True) == {"error": "RuntimeError: x"}
+
+
+# ---- reloading the first reader every N documents ------------------------------------------------------------------
+def test_first_reader_reload_every_n_documents(inbox):
+    made = []
+
+    def factory():
+        r = FakeReader(f"f{len(made) + 1}", "GPU.0", {"c.jpg": reading(provenance={"total": "unconfirmed"})})
+        made.append(r)
+        return r
+
+    first = factory()
+    tr = tiered.TieredReader(first, FakeReader("s", "GPU.1", {}), first_factory=factory, first_restart_every=2)
+    del first
+    reads = tr.read_docs(inbox, cache=False)
+    st = tr.stats
+    assert [(r["after_docs"], r["after_doc_id"]) for r in st["first_restarts"]] == [(2, "A/2026-10/b.jpg"),
+                                                                                    (4, "A/2026-10/d.jpg")]
+    assert st["first_reload_s"] >= 0 and tr.first is made[-1] and len(made) == 3
+    assert [r.seen for r in made] == [["a.jpg", "b.jpg"], ["c.jpg", "d.jpg"], ["e.jpg"]]
+    assert reads["A/2026-10/c.jpg"]["fields"]["total"] == 500          # same flow after a reload
+    plain = tiered.TieredReader(FakeReader("f", "GPU.0", {}), None, first_restart_every=2)   # no factory: no reload
+    plain.read_docs(inbox, cache=False)
+    assert plain.stats["first_restarts"] == []
+
+
+def test_bench_reports_reload_time_apart_and_hides_doc_ids_in_private_sets(inbox):
+    from eval import bench_tiered
+    factory = lambda: FakeReader("f", "GPU.0", {})   # noqa: E731
+    tr = tiered.TieredReader(factory(), None, first_factory=factory, first_restart_every=2)
+    out = bench_tiered.run_mode(tr, "t", None, True, "private reload")
+    assert len(out["first_restarts"]) == 2 and all("after_doc_id" not in r for r in out["first_restarts"])
+    assert out["docs_per_hour_excluding_first_reloads"] >= out["docs_per_hour"]
+    out = bench_tiered.run_mode(tiered.TieredReader(factory(), None, first_factory=factory, first_restart_every=3),
+                                "t", None, False, "reload")
+    assert out["first_restarts"][0]["after_doc_id"] == "A/2026-10/c.jpg"
