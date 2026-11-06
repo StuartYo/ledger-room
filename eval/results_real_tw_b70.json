@@ -1,0 +1,91 @@
+{
+ "Qwen3.5-9B-int4-ov": {
+  "set": "real_tw",
+  "generated_at": "2026-11-06T15:59:37+00:00",
+  "code_rev": "99f36fc",
+  "dry_run": false,
+  "labels": "labels by Claude (a different model from the readers under test), from the image only",
+  "photos": 41,
+  "photo_files": "all",
+  "conditions": {
+   "ocr_only": {
+    "photos": 41,
+    "fields_scored": 164,
+    "fields_wrong": 29,
+    "field_error_rate": 0.177,
+    "by_field": {
+     "invoice_no": "6 wrong / 41",
+     "date": "6 wrong / 40",
+     "seller_ubn": "7 wrong / 40",
+     "total": "9 wrong / 41",
+     "net": "0 wrong / 1",
+     "tax": "1 wrong / 1"
+    },
+    "values_not_printed": {
+     "seller_ubn": 1
+    },
+    "fields_unreadable_not_scored": 1,
+    "photos_with_a_wrong_field": 19,
+    "photos_sent_to_a_person": 38,
+    "wrong_and_not_held": 1,
+    "held_with_all_fields_right": 20,
+    "hold_rules": {
+     "READ_REVIEW": 37,
+     "NOT_A_VOUCHER": 3
+    },
+    "sec_per_photo": 0.21
+   },
+   "model_only": {
+    "photos": 41,
+    "fields_scored": 164,
+    "fields_wrong": 28,
+    "field_error_rate": 0.171,
+    "by_field": {
+     "invoice_no": "15 wrong / 41",
+     "date": "1 wrong / 40",
+     "seller_ubn": "8 wrong / 40",
+     "total": "4 wrong / 41",
+     "net": "0 wrong / 1",
+     "tax": "0 wrong / 1"
+    },
+    "values_not_printed": {},
+    "fields_unreadable_not_scored": 1,
+    "photos_with_a_wrong_field": 20,
+    "photos_sent_to_a_person": 0,
+    "wrong_and_not_held": 20,
+    "note": "no checks: every value is accepted as read"
+   },
+   "ledger_room": {
+    "photos": 41,
+    "fields_scored": 164,
+    "fields_wrong": 13,
+    "field_error_rate": 0.079,
+    "by_field": {
+     "invoice_no": "5 wrong / 41",
+     "date": "0 wrong / 40",
+     "seller_ubn": "4 wrong / 40",
+     "total": "4 wrong / 41",
+     "net": "0 wrong / 1",
+     "tax": "0 wrong / 1"
+    },
+    "values_not_printed": {
+     "seller_ubn": 1
+    },
+    "fields_unreadable_not_scored": 1,
+    "photos_with_a_wrong_field": 10,
+    "photos_sent_to_a_person": 5,
+    "wrong_and_not_held": 5,
+    "held_with_all_fields_right": 0,
+    "hold_rules": {
+     "READ_REVIEW": 4,
+     "NOT_A_VOUCHER": 1
+    },
+    "sec_per_photo": 3.33
+   }
+  },
+  "model": "Qwen3.5-9B-int4-ov",
+  "device": "GPU.0",
+  "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+  "first_run": true
+ }
+}

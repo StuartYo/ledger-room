@@ -1,0 +1,47 @@
+{
+ "Qwen3.5-9B-int4-ov": {
+  "set": "real_intl/cord_v2",
+  "generated_at": "2026-11-06T16:05:05+00:00",
+  "dry_run": false,
+  "model": "Qwen3.5-9B-int4-ov",
+  "device": "GPU.0",
+  "truth": "total = gt_parse.total.total_price from the dataset's own ground truth",
+  "source": "naver-clova-ix/cord-v2 (Hugging Face), CC BY 4.0; validation + test splits",
+  "scope": "Total only. Taiwanese rules (UBN checksum, invoice period, duplicates, Art. 19) do not apply to these receipts and are not run. Ledger Room's own reader is not run either (Taiwanese prompt and labels; its amount parser reads '60.000' as 60). The OCR + model column is this script's version of Ledger Room's idea: accept a total only when two printed sources agree, otherwise send the receipt to a person.",
+  "receipts": 193,
+  "splits": {
+   "validation": 98,
+   "test": 95
+  },
+  "conditions": {
+   "ocr_only": {
+    "receipts": 193,
+    "total_right": 129,
+    "total_wrong_or_missing": 64,
+    "error_rate": 0.332,
+    "sent_to_a_person": 0,
+    "wrong_and_not_held": 64
+   },
+   "model_only": {
+    "receipts": 193,
+    "total_right": 190,
+    "total_wrong_or_missing": 3,
+    "error_rate": 0.016,
+    "sent_to_a_person": 0,
+    "wrong_and_not_held": 3
+   },
+   "ocr_plus_model": {
+    "receipts": 193,
+    "total_right": 127,
+    "total_wrong_or_missing": 66,
+    "error_rate": 0.342,
+    "sent_to_a_person": 65,
+    "wrong_and_not_held": 1,
+    "held_but_right": 63,
+    "note": "a held receipt counts as not read (a person fills the total in)"
+   }
+  },
+  "model_answer_printed_on_page": 180,
+  "sec_per_receipt": 0.6
+ }
+}
