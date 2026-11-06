@@ -1,0 +1,144 @@
+{
+ "synthetic_sets_only_unless_noted": true,
+ "dry_run": false,
+ "escalate_all": false,
+ "escalation_rule": "t1 (2026-11-06)",
+ "escalation_rule_text": "Why the first reading is not good enough on its own. Empty list = keep it.\n\n    reply_unparsed        the model's reply was not readable JSON\n    <field>_unconfirmed   seller UBN, buyer UBN or total is model-only or unconfirmed (for the total: no two\n                          agreeing sources, i.e. not two printed sources that match)\n    amounts_inconsistent  net + tax != total, or tax is not 5% of net (the AMOUNT_MISMATCH hold)",
+ "merge_rule_text": "First reading + second reading -> one reading. Code decides, field by field: - a field the first reading confirmed stays as it is (the second reading cannot overwrite it); - a field the first reading left weak (model-only, unconfirmed, missing) takes the second reading's value only when the reconciliation code confirmed that value from the page; - when the total comes from the second reading, net and tax come with it (code derived them from that total); - when net + tax still do not match the total and the second reading has the same total with net and tax that do match, its net and tax are used (the arithmetic is checked by code, not taken on trust); - when the first reply did not parse at all, the first reading has no model vote, so the second reading's model values fill the empty fields, keeping their own provenance (model-only stays model-only and is still routed to a person by the rules). Everything else stays from the first reading.",
+ "time_definition": "wall_s: whole batch (fresh reads, cache off, OCR + models + rules + evidence crops + log); busy_s: seconds each card's worker spent reading (the first worker's time includes OCR on the CPU); overlap_s: busy time of both workers beyond the read wall clock",
+ "docs_for_person_definition": "documents with any hold or review exception (eval.run_eval.held_docs)",
+ "outputs": "/home/devcloud/ledger-room/data/out/bench_tiered",
+ "inventory": {
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "host": "0007e935143f",
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "Intel(R) Xeon(R) 6787P"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   },
+   {
+    "id": "GPU.1",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   }
+  ]
+ },
+ "sets": {
+  "heldout": {
+   "generated_at": "2026-11-06T17:23:19+00:00",
+   "code_rev": "77fa568",
+   "dry_run": false,
+   "escalate_all": false,
+   "docs_in_set": 47,
+   "docs_used": 47,
+   "answer_key": "eval/expected_heldout.json",
+   "first": {
+    "model": "Qwen3.5-9B-int4-ov",
+    "device": "GPU.0",
+    "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "load_s": 7.7,
+    "thinking": "off (template default was on; prompt wrapped by Ledger Room)"
+   },
+   "second": {
+    "requested": "none",
+    "used": null,
+    "substituted": false,
+    "device": "GPU.1",
+    "note": "none not on disk at /home/devcloud/models; tiered mode skipped"
+   },
+   "first_restart_every": 0,
+   "first_only": {
+    "docs": 47,
+    "docs_for_person": 0,
+    "docs_for_person_rate": 0.0,
+    "exceptions_by_rule": {
+     "BUYER_NOT_CLIENT": 4,
+     "DUP_CROSS_CLIENT": 4,
+     "DUP_CROSS_MONTH": 2,
+     "OVER_LIMIT": 4,
+     "PERIOD_MISMATCH": 4,
+     "S19_NONDEDUCTIBLE": 5,
+     "UBN_CHECKSUM": 5
+    },
+    "read_review_by_field": {},
+    "wall_s": 168.2,
+    "docs_per_hour": 1006,
+    "read_wall_s": 168.02,
+    "busy_s": {
+     "card_first": 168.01,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 151.3,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 168.02,
+    "second_tail_s": 0.0,
+    "unsure_docs": 0,
+    "sent_to_second": 0,
+    "escalation_reasons": {},
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "second_reader_crashed": 0,
+    "second_reader_crash": null,
+    "second_error_details": [],
+    "second_retries": [],
+    "second_retries_ok": 0,
+    "second_restarts": [],
+    "first_restarts": [],
+    "first_reload_s": 0.0,
+    "docs_per_hour_excluding_first_reloads": 1006,
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "key_fields_per_field": {
+     "doc_type": "0/47",
+     "invoice_no": "0/35",
+     "date": "0/47",
+     "seller_ubn": "0/47",
+     "buyer_ubn": "0/32",
+     "net": "0/32",
+     "tax": "0/32",
+     "total": "0/47"
+    },
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0,
+    "escalated_docs": [],
+    "run_id": "tiered-heldout first-20261106-172319",
+    "second_note": "not used (first reader alone)"
+   },
+   "tiered": {
+    "skipped": "none not on disk at /home/devcloud/models; tiered mode skipped"
+   },
+   "complete": false,
+   "status": "incomplete",
+   "measured_on_b70": false
+  }
+ },
+ "generated_at": "2026-11-06T17:26:07+00:00",
+ "measured_on_b70": false
+}
