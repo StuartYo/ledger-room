@@ -137,6 +137,10 @@ def run_mode(tr, inbox: str, exp: dict | None, private: bool, tag: str) -> dict:
         "second_errors": len(st.get("second_errors") or []),
         "second_reader_crashed": st.get("second_reader_crashed") or 0,
         "second_reader_crash": st.get("second_reader_crash"),
+        "second_error_details": [_private_safe(e, private) for e in st.get("second_errors") or []],
+        "second_retries": [_private_safe(e, private) for e in st.get("second_retries") or []],
+        "second_retries_ok": sum(1 for e in st.get("second_retries") or [] if e.get("retry") == "ok"),
+        "second_restarts": st.get("second_restarts") or [],
     }
     if exp is not None:
         expd = {d["doc_id"]: set(d["issues"]) for d in exp["docs"]}
@@ -163,6 +167,11 @@ def run_mode(tr, inbox: str, exp: dict | None, private: bool, tag: str) -> dict:
         out["second_note"] = st["second_note"]
     out["_complete"] = n > 0 and not st.get("second_errors") and not st.get("second_reader_crashed")
     return out
+
+
+def _private_safe(e: dict, private: bool) -> dict:
+    """Error records keep the document id, except in a private set (the message itself never holds field values)."""
+    return {k: v for k, v in e.items() if not (private and k == "doc_id")}
 
 
 BLIND_PREREQS = ("heldout", "hard")
@@ -223,6 +232,8 @@ def main(argv=None) -> int:
     ap.add_argument("--escalate-all", action="store_true",
                     help="dry run only: send every document to the second reader, to check the two-card path")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--second-restart-every", type=int, default=20,
+                    help="restart the second reader's process before every N-th read (0 = never; default 20)")
     ap.add_argument("--allow-blind-rerun", action="store_true",
                     help="read a blind set again although the results file already has a real run of it")
     a = ap.parse_args(argv)
@@ -266,7 +277,7 @@ def main(argv=None) -> int:
     print(f"first reader {first.model_id} on {first.device} ({first_info['load_s']} s)", flush=True)
     second = None
     if second_dir is not None:
-        second = tiered.ProcessReader(str(second_dir), second_dev)
+        second = tiered.ProcessReader(str(second_dir), second_dev, restart_every=a.second_restart_every)
         second_info.update(used=second.model_id, device=second.device, device_name=devs.get(second.device),
                            load_s=second.load_s, thinking=second.thinking, process="separate (spawn)")
         print(f"second reader {second.model_id} on {second.device}, own process {second.pid} "
@@ -319,7 +330,7 @@ def main(argv=None) -> int:
             print(f"second reader process had stopped ({second.crashed}); starting it again", flush=True)
             second.close()
             try:
-                second = tiered.ProcessReader(str(second_dir), second_dev)
+                second = tiered.ProcessReader(str(second_dir), second_dev, restart_every=a.second_restart_every)
             except Exception as ex:   # noqa: BLE001  (no second reader for the remaining sets)
                 second = None
                 second_info["note"] = f"second reader could not be restarted: {type(ex).__name__}: {ex}"[:300]

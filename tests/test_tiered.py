@@ -2,6 +2,8 @@
 import json
 import threading
 
+from pathlib import Path
+
 import pytest
 from PIL import Image
 
@@ -278,6 +280,13 @@ class ProcFakeReader:
         import os
         if self.model_dir == "boom" and path.name == "b.jpg":
             os._exit(134)
+        if self.model_dir.startswith("flaky|") and path.name == "c.jpg":   # fails once, then works after a restart
+            marker = Path(self.model_dir.split("|", 1)[1])
+            if not marker.exists():
+                marker.write_text("failed once")
+                raise RuntimeError("clFinish CL_OUT_OF_RESOURCES (fake)")
+        if self.model_dir == "always-fails" and path.name == "c.jpg":
+            raise RuntimeError("clFinish CL_OUT_OF_RESOURCES (fake)")
         r = reading(fields={"total": 500}, provenance={"total": "ocr-label+model"})
         r["model"], r["device"] = self.model_id, self.device
         return r
@@ -338,3 +347,56 @@ def test_blind_sets_run_last_and_only_after_clean_runs():
     ran = {"blind3": {"dry_run": False, "status": "started", "generated_at": "x"}}
     assert "already" in bt.blind_gate("blind3", {"heldout": True, "hard": True}, ran, "abc", False)
     assert bt.blind_gate("blind3", {"heldout": True, "hard": True}, ran, "abc", True) is None
+
+
+def test_second_read_error_restarts_the_child_and_retries_once(inbox, tmp_path):
+    unsure = {"c.jpg": reading(fields={"total": 480}, provenance={"total": "unconfirmed"})}
+    second = tiered.ProcessReader(f"flaky|{tmp_path / 'marker'}", "GPU.1", factory="tests.test_tiered:make_proc_fake",
+                                  poll_s=0.2)
+    pid0 = second.pid
+    try:
+        tr = tiered.TieredReader(FakeReader("f", "GPU.0", unsure), second)
+        reads = tr.read_docs(inbox, cache=False)
+    finally:
+        second.close()
+    assert second.pid != pid0
+    st = tr.stats
+    assert st["second_errors"] == [] and len(st["second_retries"]) == 1
+    r = st["second_retries"][0]
+    assert r["doc_id"] == "A/2026-10/c.jpg" and "CL_OUT_OF_RESOURCES" in r["first_error"] and r["retry"] == "ok"
+    assert st["second_restarts"][0]["reason"].startswith("retry after error")
+    assert reads["A/2026-10/c.jpg"]["fields"]["total"] == 500
+
+
+def test_second_read_failing_twice_goes_to_a_person_with_the_message(inbox):
+    unsure = {"c.jpg": reading(fields={"total": 480}, provenance={"total": "unconfirmed"})}
+    second = tiered.ProcessReader("always-fails", "GPU.1", factory="tests.test_tiered:make_proc_fake", poll_s=0.2)
+    try:
+        tr = tiered.TieredReader(FakeReader("f", "GPU.0", unsure), second)
+        run = pipeline.audit("t", tr, run_id="retry-test", cache=False, read_fn=tr.read_docs)
+    finally:
+        second.close()
+    st = tr.stats
+    assert len(st["second_errors"]) == 1 and "CL_OUT_OF_RESOURCES" in st["second_errors"][0]["error"]
+    assert st["second_retries"][0]["retry"].startswith("failed")
+    review = {e["doc_id"] for e in run["exceptions"] if e["rule_id"] == "READ_REVIEW"}
+    assert "A/2026-10/c.jpg" in review     # total still unconfirmed: a person checks it
+
+
+def test_second_reader_restarts_every_n_reads(inbox):
+    unsure = {n: reading(fields={"total": 480}, provenance={"total": "unconfirmed"}) for n in ("a.jpg", "b.jpg", "c.jpg")}
+    second = tiered.ProcessReader("ok", "GPU.1", factory="tests.test_tiered:make_proc_fake", poll_s=0.2,
+                                  restart_every=2)
+    try:
+        tr = tiered.TieredReader(FakeReader("f", "GPU.0", unsure), second)
+        reads = tr.read_docs(inbox, cache=False)
+    finally:
+        second.close()
+    assert [r["after_reads"] for r in tr.stats["second_restarts"]] == [2]
+    assert all(reads[f"A/2026-10/{n}"]["fields"]["total"] == 500 for n in ("a.jpg", "b.jpg", "c.jpg"))
+
+
+def test_bench_error_details_hide_doc_ids_only_in_private_sets():
+    from eval import bench_tiered as bt
+    e = {"doc_id": "A/2026-10/c.jpg", "error": "RuntimeError: x"}
+    assert bt._private_safe(e, False) == e and bt._private_safe(e, True) == {"error": "RuntimeError: x"}

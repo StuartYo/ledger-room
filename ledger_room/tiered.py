@@ -185,27 +185,51 @@ class ProcessReader:
     """Stand-in for a Reader whose model lives in a separate process (multiprocessing, spawn), bound to its own
     device. On the B70 host, two VLMPipelines in one process used from two threads aborted the whole process inside
     the GPU plugin (ocl_stream.cpp, 2026-11-06). With the second reader in a child process, a crash there ends only
-    the child: read_with_ocr then raises SecondReaderCrashed and the main process goes on."""
+    the child: read_with_ocr then raises SecondReaderCrashed and the main process goes on.
+
+    GPU resources also seem to build up over many calls in one process (CL_OUT_OF_RESOURCES on the B70 host after
+    about 110 reads, 2026-11-07), so the child can be restarted: on demand (restart()) and, with restart_every=N,
+    before every N-th read. Each restart is recorded in .restarts."""
 
     def __init__(self, model_dir: str, device: str, *, factory: str = "ledger_room.reader:Reader",
-                 load_timeout_s: float = 900.0, poll_s: float = 1.0):
+                 load_timeout_s: float = 900.0, poll_s: float = 1.0, restart_every: int = 0):
+        self._args = (factory, str(model_dir), device)
+        self.load_timeout_s, self.poll_s = load_timeout_s, poll_s
+        self.restart_every = max(0, int(restart_every or 0))
+        self.restarts: list[dict] = []
+        self.reads_since_start = 0
+        self._lock = threading.Lock()
+        self._start()
+
+    def _start(self) -> None:
         ctx = mp.get_context("spawn")
         self.req_q, self.resp_q = ctx.Queue(), ctx.Queue()
-        self.poll_s = poll_s
         self.proc = ctx.Process(target=_second_process_main, name="tier2-reader",
-                                args=(factory, str(model_dir), device, self.req_q, self.resp_q), daemon=True)
+                                args=(*self._args, self.req_q, self.resp_q), daemon=True)
         self.proc.start()
         self.pid = self.proc.pid
         self.crashed: str | None = None
         self._rid = 0
-        self._lock = threading.Lock()
-        msg = self._wait(lambda m: m[0] in ("ready", "load_error"), load_timeout_s)
+        self.reads_since_start = 0
+        msg = self._wait(lambda m: m[0] in ("ready", "load_error"), self.load_timeout_s)
         if msg[0] == "load_error":
             self.close()
             raise RuntimeError(f"second reader failed to load: {msg[1]}")
         info = msg[1]
         self.model_id, self.device = info["model_id"], info["device"]
         self.thinking, self.load_s = info.get("thinking"), info.get("load_s")
+
+    def restart(self, reason: str) -> None:
+        """Stop the child and load the model again in a fresh process."""
+        with self._lock:
+            self._restart(reason)
+
+    def _restart(self, reason: str) -> None:
+        reads = self.reads_since_start
+        self.close()
+        t = time.time()
+        self._start()
+        self.restarts.append({"reason": reason, "after_reads": reads, "load_s": round(time.time() - t, 1)})
 
     def _wait(self, want, timeout_s: float | None = None) -> tuple:
         t0 = time.time()
@@ -230,6 +254,9 @@ class ProcessReader:
         with self._lock:
             if self.crashed:
                 raise SecondReaderCrashed(self.crashed)
+            if self.restart_every and self.reads_since_start >= self.restart_every:
+                self._restart(f"precaution: every {self.restart_every} reads")
+            self.reads_since_start += 1
             self._rid += 1
             rid = self._rid
             self.req_q.put((rid, str(path), ocr_lines, raw))
@@ -270,6 +297,7 @@ class TieredReader:
     # pipeline.read_docs signature, so audit() can call it in its place
     def read_docs(self, docs: list[dict], reader=None, *, cache=True, progress=None, model_id=None) -> dict[str, dict]:
         t_start = time.perf_counter()
+        restarts0 = len(getattr(self.second, "restarts", None) or [])
         out: dict[str, dict] = {}
         q: queue.Queue = queue.Queue()
         lock = threading.Lock()
@@ -280,6 +308,7 @@ class TieredReader:
         escalated: list[str] = []
         errors: list[dict] = []
         crashed: list[str] = []
+        retries: list[dict] = []
         done = [0]
         t_marks = {}
 
@@ -299,7 +328,23 @@ class TieredReader:
                 d, res, reasons = item
                 t = time.perf_counter()
                 try:
-                    r2 = self._second_read(d, res, cache)
+                    try:
+                        r2 = self._second_read(d, res, cache)
+                    except SecondReaderCrashed:
+                        raise
+                    except Exception as ex1:   # restart the child and try this document once more
+                        if not hasattr(self.second, "restart"):
+                            raise
+                        msg1 = f"{type(ex1).__name__}: {ex1}"[:300]
+                        retry = {"doc_id": d["doc_id"], "first_error": msg1}
+                        retries.append(retry)
+                        self.second.restart(f"retry after error on a document: {msg1}")
+                        try:
+                            r2 = self._second_read(d, res, cache)
+                            retry["retry"] = "ok"
+                        except Exception as ex2:
+                            retry["retry"] = f"failed: {type(ex2).__name__}: {ex2}"[:300]
+                            raise
                     model_s["second"] += _model_s(r2)
                     merged = merge(res, r2, reasons)
                     taken_n.update(merged["tier"]["taken_from_second"])
@@ -355,6 +400,8 @@ class TieredReader:
             "second_errors": errors,
             "second_reader_crashed": len(crashed), "second_reader_crashed_docs": crashed,
             "second_reader_crash": getattr(self.second, "crashed", None),
+            "second_retries": retries,
+            "second_restarts": list(getattr(self.second, "restarts", None) or [])[restarts0:],
             "read_wall_s": round(wall, 2),
             "first_done_s": round(t_marks.get("first_done", t_end) - t_start, 2),
             "second_tail_s": round(max(0.0, t_end - t_marks.get("first_done", t_end)), 2),
