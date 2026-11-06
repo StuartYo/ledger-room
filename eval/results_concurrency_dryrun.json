@@ -1,0 +1,228 @@
+{
+ "generated_at": "2026-11-07T01:58:25+08:00",
+ "code_rev": "281fe57",
+ "dry_run": true,
+ "command": "python -m eval.bench_concurrency --dry-run --idle-s 0 --settle-s 1",
+ "set": "heldout",
+ "docs_in_set": 47,
+ "docs_used": 3,
+ "answer_key": "eval/expected_heldout.json",
+ "model": "Qwen3.5-2B-int4-ov",
+ "devices": [
+  "CPU"
+ ],
+ "factory": "ledger_room.reader:Reader",
+ "inventory": {
+  "os": "Windows-11-10.0.26200-SP0",
+  "host": "DESKTOP-G62O404",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "ram_gb": 31.6,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "13th Gen Intel(R) Core(TM) i7-13620H"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) UHD Graphics (iGPU)",
+    "type": "Type.INTEGRATED",
+    "memory_gb": 14.4,
+    "driver": "",
+    "uarch": "12.3.0",
+    "pci": "{domain: 0 bus: 0 device: 0x2 function: 0}"
+   },
+   {
+    "id": "GPU.1",
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 6.0,
+    "driver": "",
+    "uarch": "8.9.0",
+    "pci": "{domain: 0 bus: 1 device: 0x0 function: 0}"
+   }
+  ],
+  "kernel": null
+ },
+ "xpu_smi_discovery": null,
+ "definitions": {
+  "docs_per_hour": "documents / read wall clock (all workers loaded -> last document back; reloads after a crash included, first loads not)",
+  "latency_s": "per document, seconds the worker spent on it (OCR + model + post-processing); the queue wait is not in it",
+  "wh_per_1000_docs": "mean xpu-smi power summed over the cards in use x read wall clock / documents x 1000; marginal_wh_per_1000_docs subtracts the idle power measured just before",
+  "memory": "xpu_smi_peak_used_gb: device memory used (whole card, all processes), peak over load + run; per_worker_gb_est = (peak - idle) / workers on that card; fdinfo_*: the workers' own DRM fdinfo drm-total-vram (Linux)",
+  "scoring": "pipeline.audit on the collected reads, then eval.read_accuracy and eval.run_eval.score (as bench_tiered); same_scoring_as_k1 compares key_fields_wrong, rule_f1, docs_for_person",
+  "supervisor": "a worker that dies is restarted and its document retried once; a second failure on the same document sends it to a person (READ_REVIEW, reason reader_crash); no fixed reloads"
+ },
+ "notes": [
+  "CPU workers: no xpu-smi power or device memory",
+  "OCR runs on the CPU inside each worker, so K workers also share the CPU"
+ ],
+ "rows": [
+  {
+   "k": 1,
+   "worker_devices": [
+    "CPU"
+   ],
+   "workers_per_device": {
+    "CPU": 1
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "CPU",
+     "state": "idle",
+     "model_id": "Qwen3.5-2B-int4-ov",
+     "pid": 30616,
+     "thinking": "off",
+     "load_s": 11.86
+    }
+   ],
+   "load_wall_s": 12.4,
+   "workers_loaded": 1,
+   "docs": 3,
+   "docs_read": 3,
+   "docs_not_read": 0,
+   "wall_s": 120.8,
+   "docs_per_hour": 89,
+   "latency_s": {
+    "mean": 40.28,
+    "p50": 32.35,
+    "p95": 65.31,
+    "max": 65.31,
+    "n": 3,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 3
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": null,
+    "fdinfo_peak_vram_gb_by_worker": null,
+    "xpu_smi_peak_used_gb": null
+   },
+   "power": {
+    "idle_s": 0.0,
+    "mean_w_total": null,
+    "energy_wh": null,
+    "wh_per_1000_docs": null,
+    "note": "power not measured: no xpu-smi id"
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k1-20261107-020039",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 21,
+    "key_field_error_rate": 0.0,
+    "rule_f1": null,
+    "rule_micro": {
+     "tp": 0,
+     "fp": 0,
+     "fn": 0,
+     "precision": null,
+     "recall": null,
+     "f1": null
+    },
+    "clean_docs_flagged": 0
+   }
+  },
+  {
+   "k": 2,
+   "worker_devices": [
+    "CPU",
+    "CPU"
+   ],
+   "workers_per_device": {
+    "CPU": 2
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "CPU",
+     "state": "idle",
+     "model_id": "Qwen3.5-2B-int4-ov",
+     "pid": 32312,
+     "thinking": "off",
+     "load_s": 2.92
+    },
+    {
+     "worker": 1,
+     "device": "CPU",
+     "state": "idle",
+     "model_id": "Qwen3.5-2B-int4-ov",
+     "pid": 42976,
+     "thinking": "off",
+     "load_s": 3.17
+    }
+   ],
+   "load_wall_s": 7.0,
+   "workers_loaded": 2,
+   "docs": 3,
+   "docs_read": 3,
+   "docs_not_read": 0,
+   "wall_s": 85.7,
+   "docs_per_hour": 126,
+   "latency_s": {
+    "mean": 49.4,
+    "p50": 62.5,
+    "p95": 62.51,
+    "max": 62.51,
+    "n": 3,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 2,
+    "1": 1
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "speedup_vs_k1": 1.42,
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": null,
+    "fdinfo_peak_vram_gb_by_worker": null,
+    "xpu_smi_peak_used_gb": null
+   },
+   "power": {
+    "idle_s": 0.0,
+    "mean_w_total": null,
+    "energy_wh": null,
+    "wh_per_1000_docs": null,
+    "note": "power not measured: no xpu-smi id"
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k2-20261107-020214",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 21,
+    "key_field_error_rate": 0.0,
+    "rule_f1": null,
+    "rule_micro": {
+     "tp": 0,
+     "fp": 0,
+     "fn": 0,
+     "precision": null,
+     "recall": null,
+     "f1": null
+    },
+    "clean_docs_flagged": 0
+   },
+   "same_scoring_as_k1": true,
+   "docs_fields_differ_vs_k1": 0
+  }
+ ],
+ "measured_on_b70": false
+}

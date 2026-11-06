@@ -210,14 +210,18 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
             registry=registry.label if registry is not None else None)
     t0 = time.time()
     reads = (read_fn or read_docs)(docs, reader, cache=cache, progress=progress, model_id=model_id)
+    # a read_fn may mark a document it could not read at all ({"read_failed": {"reason", "detail"}}, e.g. the
+    # reader process died on it twice): no rules run on it, it goes to a person as READ_REVIEW with that reason
+    failed = {d["doc_id"]: reads[d["doc_id"]]["read_failed"] for d in docs if reads[d["doc_id"]].get("read_failed")}
     for d in docs:
         r = reads[d["doc_id"]]
         log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"),
-                **({"tier": r["tier"]} if "tier" in r else {}))
+                **({"tier": r["tier"]} if "tier" in r else {}),
+                **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}))
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
-             for d in docs]
+             for d in docs if d["doc_id"] not in failed]
     excs = rules.run_rules(rdocs, clients, registry=registry)
     for d in docs:   # tiered mode: the second reader's process died before re-reading this document
         crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
@@ -225,10 +229,17 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
             excs.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
                                          "The second reader stopped before it could re-read this document "
                                          f"({crash}); check it by eye.", ["total"], confidence="low"))
+        f = failed.get(d["doc_id"])
+        if f:
+            excs.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
+                                         f"This document was not read ({f.get('reason')}: {f.get('detail')}); "
+                                         "check it by eye.", [], confidence="low"))
     by_id = {d["doc_id"]: d for d in docs}
     out_ex = []
     for k, e in enumerate(excs):
         ed = e.to_dict()
+        if e.rule_id == "READ_REVIEW" and e.doc_id in failed:
+            ed["reason"] = failed[e.doc_id].get("reason")
         r = reads[e.doc_id]
         fields = EVIDENCE.get(e.rule_id) or e.evidence_fields
         ev = []
