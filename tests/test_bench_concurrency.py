@@ -136,7 +136,30 @@ STATS_TABLE = textwrap.dedent("""\
     """)
 
 
-def test_parse_xpu_smi_dump():
+# exactly as printed on the B70 host (2026-11-07): whitespace-aligned, timestamp truncated with "..."
+HOST_DUMP = textwrap.dedent("""\
+    Timestamp      DeviceId    power.draw (W)    memory.used (MiB)
+    18:03:53...           0             76.83         1547.6328125
+    18:03:54...           0             76.10         1547.6640625
+    """)
+
+HOST_STATS = json.dumps({
+    "device_index": 0, "pci_bdf": "0000:17:00.0", "device_type": "discrete",
+    "timestamps": {"start": "18:10:01", "end": "18:10:02", "elapsed_seconds": 1.0},
+    "power": {"gpu_power_w": {"tile_0": {"avg": 75.9, "min": 75.1, "max": 77.0, "current": 76.4}},
+              "energy_consumed_j": 13.03},
+    "frequency": {"gpu_frequency_mhz": {"tile_0": {"current": 2400}}}})
+
+
+def test_parse_xpu_smi_dump_host_format():
+    rows = C.parse_dump(HOST_DUMP)
+    assert [r["power_w"] for r in rows] == [76.83, 76.10]
+    assert rows[0]["mem_gb"] == pytest.approx(1547.6328125 / 1024, abs=1e-3)
+    cols = C.dump_columns(HOST_DUMP.splitlines()[0])
+    assert cols["names"] == ["Timestamp", "DeviceId", "power.draw (W)", "memory.used (MiB)"]
+
+
+def test_parse_xpu_smi_dump_old_csv_names():
     rows = C.parse_dump(DUMP)
     assert [r["power_w"] for r in rows] == [41.52, 180.25, None]
     assert rows[1]["mem_gb"] == pytest.approx(17300 / 1024, abs=1e-3)
@@ -149,10 +172,23 @@ def test_parse_xpu_smi_dump():
         [{"power_w": None, "mem_gb": None}]
 
 
-def test_parse_xpu_smi_stats_json_and_table():
-    assert C.parse_stats(STATS_JSON) == {"power_w": 172.4, "mem_gb": 24.0}
-    assert C.parse_stats(STATS_TABLE) == {"power_w": 165.0, "mem_gb": 16.0}
-    assert C.parse_stats("xpu-smi: device not found") == {"power_w": None, "mem_gb": None}
+def test_dump_command_uses_long_flags():
+    cmd = C.XpuSampler({"GPU.0": "0"}, cmd=["xpu-smi-x"]).dump_cmd("1")
+    assert cmd[:2] == ["xpu-smi-x", "dump"]
+    assert all(not (c.startswith("-") and not c.startswith("--")) for c in cmd[2:])
+    assert cmd[cmd.index("--device") + 1] == "1" and cmd[cmd.index("--metrics") + 1] == "1,18"
+    assert "--interval" in cmd and "--number" in cmd
+
+
+def test_parse_xpu_smi_stats_host_json_old_json_and_table():
+    assert C.parse_stats(HOST_STATS) == {"power_w": 76.4, "mem_gb": None, "energy_j": 13.03}
+    two_tiles = json.loads(HOST_STATS)
+    two_tiles["power"]["gpu_power_w"]["tile_1"] = {"avg": 20.0, "current": 20.0}
+    two_tiles["memory"] = {"memory_used_mib": 8192}
+    assert C.parse_stats(json.dumps(two_tiles)) == {"power_w": 96.4, "mem_gb": 8.0, "energy_j": 13.03}
+    assert C.parse_stats(STATS_JSON) == {"power_w": 172.4, "mem_gb": 24.0, "energy_j": None}
+    assert C.parse_stats(STATS_TABLE) == {"power_w": 165.0, "mem_gb": 16.0, "energy_j": None}
+    assert C.parse_stats("xpu-smi: device not found") == {"power_w": None, "mem_gb": None, "energy_j": None}
 
 
 def test_energy_per_thousand_documents():
@@ -165,6 +201,28 @@ def test_energy_per_thousand_documents():
     assert C.pct([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], 0.95) == 19
 
 
+def test_energy_counter_preferred_then_fallback():
+    by_dev = {"GPU.0": {"mean_w": 200.0}}
+    # counter: 72,000 J over 360 s (200 W) = 20 Wh; 100 docs -> 200 Wh per 1,000
+    e = C.combine_energy({"GPU.0": {"energy_j": 1000.0, "t": 0.0}}, {"GPU.0": {"energy_j": 73000.0, "t": 360.0}},
+                         by_dev, 200.0, 360.0, 100)
+    assert e["energy_source"].startswith("xpu-smi energy counter")
+    assert (e["energy_wh"], e["wh_per_1000_docs"]) == (20.0, 200.0)
+    assert (e["sampled_energy_wh"], e["sampled_wh_per_1000_docs"]) == (20.0, 200.0)
+    # counter went backwards (reset) -> sampled mean W
+    e = C.combine_energy({"GPU.0": {"energy_j": 5000.0, "t": 0.0}}, {"GPU.0": {"energy_j": 13.0, "t": 360.0}},
+                         by_dev, 200.0, 360.0, 100)
+    assert e["energy_source"].startswith("sampled") and e["wh_per_1000_docs"] == 200.0
+    assert "did not increase" in e["energy_counter"]["GPU.0"]["status"]
+    # a per-window value, not a counter (13 J -> 14 J over 360 s = 0.003 W vs 200 W sampled) -> sampled
+    e = C.combine_energy({"GPU.0": {"energy_j": 13.0, "t": 0.0}}, {"GPU.0": {"energy_j": 14.0, "t": 360.0}},
+                         by_dev, 200.0, 360.0, 100)
+    assert e["energy_source"].startswith("sampled")
+    # no counter, no samples -> nothing invented
+    e = C.combine_energy({}, {}, {"GPU.0": {"mean_w": None}}, None, 360.0, 100)
+    assert e["energy_source"] is None and e["wh_per_1000_docs"] is None
+
+
 def test_smi_ids_default_and_override():
     assert C.parse_smi_ids(None, ["GPU.0", "GPU.1"]) == {"GPU.0": "0", "GPU.1": "1"}
     assert C.parse_smi_ids("GPU.0=1,GPU.1=0", ["GPU.0", "GPU.1"]) == {"GPU.0": "1", "GPU.1": "0"}
@@ -175,9 +233,14 @@ def test_sampler_streams_a_fake_xpu_smi(tmp_path):
     script = tmp_path / "fake_xpu_smi.py"
     script.write_text(textwrap.dedent("""\
         import sys, time
-        print("Timestamp, DeviceId, GPU Power (W), GPU Memory Used (MiB)", flush=True)
+        args = sys.argv[1:]
+        if any(a in ("-d", "-m", "-i", "-n") for a in args):   # like the host build
+            print("[Error] The following arguments were not expected: " + " ".join(args), flush=True)
+            sys.exit(1)
+        dev = args[args.index("--device") + 1]
+        print("Timestamp      DeviceId    power.draw (W)    memory.used (MiB)", flush=True)
         for i in range(50):
-            print(f"06:14:{i:02d}.000, {sys.argv[3]}, {100 + i}.0, 4096", flush=True)
+            print(f"18:03:{i:02d}...           {dev}             {100 + i}.00         4096.0", flush=True)
             time.sleep(0.05)
         """), encoding="utf-8")
     s = C.XpuSampler({"GPU.0": "0"}, cmd=[sys.executable, str(script)]).start()

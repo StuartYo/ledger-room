@@ -330,33 +330,46 @@ class Supervisor:
 # =================================================================================================================
 # xpu-smi: power (W) and device memory
 # =================================================================================================================
-# What this relies on (Intel XPU Manager's xpu-smi; check on the host first, the raw head of each stream is stored in
-# the results file under power.raw_head):
+# What this relies on (Intel xpu-smi as installed on the B70 host, checked there 2026-11-07; the raw head of each
+# stream is also stored in the results file under power.raw_head):
 #
-#   xpu-smi dump -d <id> -m 1,18 -i 1          (with `stdbuf -oL` in front when stdbuf exists, so rows are not held
-#                                               in a pipe buffer)
-#     metric 1  = "GPU Power (W)"         (xpu-smi dump --help)
-#     metric 18 = "GPU Memory Used (MiB)"
-#     prints a CSV header, then one row per interval, e.g.
-#       Timestamp, DeviceId, GPU Power (W), GPU Memory Used (MiB)
-#       06:14:46.000,    0, 41.52, 8650.12
-#     Columns are found by header name, never by position: power = a header holding "Power" and "(W)";
-#     memory = a header holding "Memory Used" (unit from the parentheses: MiB / GiB / MB / KiB / B; MiB if none).
-#     "N/A" or an empty cell -> no value for that sample.
+#   xpu-smi dump --device <id> --metrics 1,18 --interval 1 --number 1000000
+#     (long flags only: this build rejects -m / -i / -n; `stdbuf -oL` in front when stdbuf exists so rows are not
+#      held in a pipe buffer; the process is terminated when the K run ends)
+#     metric 1 = power, metric 18 = memory used. Output: a whitespace-aligned table (older builds: CSV), e.g.
+#       Timestamp      DeviceId    power.draw (W)    memory.used (MiB)
+#       18:03:53...           0             76.83         1547.6328125
+#     (the timestamp is truncated with "..."; it is not used, samples are stamped on arrival)
+#     Columns are found by header name, never by position: power = a header holding "power" and "(W)"
+#     ("power.draw (W)", old "GPU Power (W)"); memory = "memory.used" / "Memory Used" (unit from the parentheses:
+#     MiB / GiB / MB / KiB / B; MiB if none). Header cells are split on commas or on 2+ spaces, data rows on commas
+#     or any whitespace. "N/A" or an empty cell -> no value for that sample.
 #
-#   fallback when dump gives no row (exits or unknown option): poll `xpu-smi stats -d <id> -j` every interval:
-#     JSON  device_level[] items {"metrics_type": "XPUM_STATS_POWER", "value": W}
-#                                {"metrics_type": "XPUM_STATS_MEMORY_USED", "value": MiB (taken as bytes if > 1e7)}
-#     and, if that is not JSON, the text table rows "| GPU Power (W) | 41 |" and "| GPU Memory Used (MiB) | 8650 |".
+#   xpu-smi stats -d <id> -j    (JSON) read at the start and end of each K run for the energy counter, and polled
+#                               every interval if dump gives no row:
+#     {"device_index": 0, "pci_bdf": "0000:17:00.0", "timestamps": {...},
+#      "power": {"gpu_power_w": {"tile_0": {"avg", "min", "max", "current"}}, "energy_consumed_j": 13.03}, ...}
+#     power_w   = sum over tiles of "current" (else "avg"); a plain number is taken as is
+#     energy_j  = power.energy_consumed_j. Used only if it behaves as a running counter over the K run (end > start
+#                 and the implied mean power agrees with the sampled one within 0.5x..2x, or lies in 1..1000 W when
+#                 nothing was sampled); otherwise Wh comes from the sampled mean W (recorded as energy_source).
+#     memory    not seen yet on the host: any numeric key holding "used" inside a "memory" object (unit from the key:
+#               _mib / _gib / _kib / _bytes / _b, else MiB, else bytes if > 1e7). Older JSON with
+#               device_level[] {"metrics_type": "XPUM_STATS_POWER" / "XPUM_STATS_MEMORY_USED"} and the text table
+#               ("| GPU Power (W) | 41 |") are still read.
 #
-#   xpu-smi discovery   stored raw (first 4000 chars) to check which xpu-smi id is which OpenVINO GPU.N.
-_UNIT_GB = {"b": 1 / 2**30, "kib": 1 / 2**20, "kb": 1e3 / 2**30, "mib": 1 / 2**10, "mb": 1e6 / 2**30,
-            "gib": 1.0, "gb": 1e9 / 2**30}
+#   xpu-smi discovery   stored raw (first 4000 chars). On the host: device 0 = PCI 0000:17:00.0, device 1 =
+#                       0000:ba:00.0, both "Intel(R) Arc(TM) Pro B70 Graphics". GPU.N -> N is assumed; compare
+#                       inventory.devices[].pci (OpenVINO) and override with --xpu-smi-ids if they differ.
+_UNIT_GB = {"b": 1 / 2**30, "bytes": 1 / 2**30, "kib": 1 / 2**20, "kb": 1e3 / 2**30, "mib": 1 / 2**10,
+            "mb": 1e6 / 2**30, "gib": 1.0, "gb": 1e9 / 2**30}
 
 
 def _num(s) -> float | None:
-    if s is None:
+    if s is None or isinstance(s, bool):
         return None
+    if isinstance(s, (int, float)):
+        return float(s)
     m = re.search(r"-?\d+(?:\.\d+)?", str(s))
     if not m or "n/a" in str(s).lower():
         return None
@@ -368,17 +381,21 @@ def _mem_unit(header: str) -> float:
     return _UNIT_GB.get(m.group(1).lower(), 1 / 2**10) if m else 1 / 2**10
 
 
+_MEM_RE = re.compile(r"memory[ ._]used", re.I)
+
+
 def dump_columns(header_line: str) -> dict | None:
-    """Column positions in an xpu-smi dump CSV header, by name. None if the line is not a header."""
-    cols = [c.strip() for c in header_line.split(",")]
-    if not any("timestamp" in c.lower() for c in cols):
+    """Column positions in an xpu-smi dump header, by name. None if the line is not a header."""
+    sep = r"\s*,\s*" if "," in header_line else r"\s{2,}"
+    cols = [c.strip() for c in re.split(sep, header_line.strip()) if c.strip()]
+    if not any(c.lower().startswith("timestamp") for c in cols):
         return None
     out = {"names": cols}
     for i, c in enumerate(cols):
         lc = c.lower()
         if "power" in lc and "(w)" in lc and "power" not in out:
             out["power"] = i
-        elif "memory used" in lc and "memory" not in out:
+        elif _MEM_RE.search(c) and "memory" not in out:
             out["memory"], out["memory_to_gb"] = i, _mem_unit(c)
         elif lc.startswith("timestamp"):
             out["timestamp"] = i
@@ -386,7 +403,7 @@ def dump_columns(header_line: str) -> dict | None:
 
 
 def parse_dump_row(cols: dict, line: str) -> dict | None:
-    cells = [c.strip() for c in line.split(",")]
+    cells = [c.strip() for c in (line.split(",") if "," in line else line.split())]
     if len(cells) < 2 or not re.match(r"^\d", cells[0]):
         return None
     p = _num(cells[cols["power"]]) if "power" in cols and cols["power"] < len(cells) else None
@@ -407,36 +424,99 @@ def parse_dump(text: str) -> list[dict]:
     return rows
 
 
+def _tile_power(v) -> float | None:
+    if isinstance(v, dict):
+        if any(k in v for k in ("current", "avg")):
+            return _num(v.get("current", v.get("avg")))
+        tiles = [_tile_power(x) for x in v.values()]
+        tiles = [t for t in tiles if t is not None]
+        return round(sum(tiles), 3) if tiles else None
+    return _num(v)
+
+
+def _mem_from_json(obj) -> float | None:
+    """GB from the first numeric key holding 'used' inside a 'memory' object (searched at any depth)."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if "memory" in str(k).lower() and isinstance(v, dict):
+                for kk, vv in v.items():
+                    lk = str(kk).lower()
+                    val = vv.get("current", vv.get("avg")) if isinstance(vv, dict) else vv
+                    val = None if isinstance(val, (dict, list)) else _num(val)
+                    if "used" not in lk or "util" in lk or val is None:
+                        continue
+                    unit = next((u for u in ("mib", "gib", "kib", "bytes", "mb", "gb", "kb") if lk.endswith(u)),
+                                "b" if lk.endswith("_b") else None)
+                    if unit is None:
+                        unit = "bytes" if val > 1e7 else "mib"
+                    return round(val * _UNIT_GB[unit], 3)
+            r = _mem_from_json(v)
+            if r is not None:
+                return r
+    elif isinstance(obj, list):
+        for v in obj:
+            r = _mem_from_json(v)
+            if r is not None:
+                return r
+    return None
+
+
 def parse_stats(text: str) -> dict:
     """One sample from `xpu-smi stats -d <id> -j` (JSON) or its text table. Missing fields -> None."""
-    out = {"power_w": None, "mem_gb": None}
+    out = {"power_w": None, "mem_gb": None, "energy_j": None}
     try:
         js = json.loads(text)
     except ValueError:
         js = None
     if isinstance(js, dict):
-        for it in js.get("device_level") or []:
+        pw = js.get("power")
+        if isinstance(pw, dict):
+            out["power_w"] = _tile_power(pw.get("gpu_power_w"))
+            e = pw.get("energy_consumed_j")
+            out["energy_j"] = None if isinstance(e, (dict, list)) else _num(e)
+        for it in js.get("device_level") or []:   # older xpu-smi JSON
             t = str(it.get("metrics_type", "")).upper()
-            v = it.get("value", it.get("avg"))
-            v = _num(v) if v is not None else None
+            v = _num(it.get("value", it.get("avg")))
             if v is None:
                 continue
-            if t == "XPUM_STATS_POWER":
+            if t == "XPUM_STATS_POWER" and out["power_w"] is None:
                 out["power_w"] = v
-            elif t == "XPUM_STATS_MEMORY_USED":
+            elif t == "XPUM_STATS_MEMORY_USED" and out["mem_gb"] is None:
                 out["mem_gb"] = round(v / 2**30 if v > 1e7 else v / 2**10, 3)
+            elif t == "XPUM_STATS_ENERGY" and out["energy_j"] is None:
+                out["energy_j"] = v
+        if out["mem_gb"] is None:
+            out["mem_gb"] = _mem_from_json(js)
         return out
     for line in text.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
         if len(cells) < 2:
             continue
         key = cells[0].lower()
-        if "gpu power" in key and "(w)" in key and out["power_w"] is None:
+        if "power" in key and "(w)" in key and out["power_w"] is None:
             out["power_w"] = _num(cells[1])
-        elif "memory used" in key and out["mem_gb"] is None:
+        elif _MEM_RE.search(key) and out["mem_gb"] is None:
             v = _num(cells[1])
             out["mem_gb"] = round(v * _mem_unit(cells[0]), 3) if v is not None else None
     return out
+
+
+def energy_from_counter(start_j: float | None, end_j: float | None, wall_s: float,
+                        sampled_mean_w: float | None) -> tuple[float | None, str]:
+    """Joules over the run from a running energy counter, or (None, why not)."""
+    if start_j is None or end_j is None:
+        return None, "energy counter not available"
+    d = end_j - start_j
+    if d <= 0 or wall_s <= 0:
+        return None, f"energy counter did not increase ({start_j} -> {end_j} J): not a running counter or it reset"
+    implied = d / wall_s
+    if sampled_mean_w:
+        if not 0.5 <= implied / sampled_mean_w <= 2.0:
+            return None, (f"energy counter implies {implied:.1f} W but samples average {sampled_mean_w:.1f} W: "
+                          "not used")
+    elif not 1.0 <= implied <= 1000.0:
+        return None, f"energy counter implies {implied:.1f} W: not plausible, not used"
+    return d, "ok"
 
 
 class XpuSampler:
@@ -460,7 +540,8 @@ class XpuSampler:
 
     def dump_cmd(self, smi_id: str) -> list[str]:
         pre = ["stdbuf", "-oL"] if self.cmd == ["xpu-smi"] and shutil.which("stdbuf") else []
-        return pre + self.cmd + ["dump", "-d", str(smi_id), "-m", self.metrics, "-i", str(max(1, round(self.interval_s)))]
+        return pre + self.cmd + ["dump", "--device", str(smi_id), "--metrics", self.metrics,
+                                 "--interval", str(max(1, round(self.interval_s))), "--number", "1000000"]
 
     def stats_cmd(self, smi_id: str) -> list[str]:
         return self.cmd + ["stats", "-d", str(smi_id), "-j"]
@@ -528,9 +609,32 @@ class XpuSampler:
                 p.terminate()
                 p.wait(timeout=5)
             except Exception:   # noqa: BLE001
-                pass
+                try:
+                    p.kill()
+                    p.wait(timeout=5)
+                except Exception:   # noqa: BLE001
+                    pass
         for th in self._threads:
             th.join(timeout=12)
+
+    def read_energy(self) -> dict[str, dict]:
+        """power.energy_consumed_j of every device now (one `xpu-smi stats -d <id> -j` each, in parallel)."""
+        out: dict[str, dict] = {}
+
+        def one(dev, sid):
+            try:
+                txt = subprocess.run(self.stats_cmd(sid), capture_output=True, text=True, timeout=30).stdout
+                out[dev] = {"energy_j": parse_stats(txt)["energy_j"], "t": time.time()}
+            except (OSError, subprocess.SubprocessError) as ex:
+                out[dev] = {"energy_j": None, "t": time.time(), "error": str(ex)[:200]}
+        if not self.available():
+            return {}
+        ths = [threading.Thread(target=one, args=(d, s), daemon=True) for d, s in self.smi_ids.items()]
+        for th in ths:
+            th.start()
+        for th in ths:
+            th.join(timeout=40)
+        return out
 
     def window(self, t0: float, t1: float) -> dict:
         """Per device, samples with t0 <= time <= t1 (time.time() clock)."""
@@ -560,6 +664,32 @@ def energy(mean_w_total: float | None, wall_s: float, n_docs: int) -> dict:
         return {"energy_wh": None, "wh_per_1000_docs": None}
     wh = mean_w_total * wall_s / 3600
     return {"energy_wh": round(wh, 3), "wh_per_1000_docs": round(wh / n_docs * 1000, 2)}
+
+
+def combine_energy(e0: dict, e1: dict, sampled_mean_w: dict, mean_w_total: float | None, wall_s: float,
+                   n_docs: int) -> dict:
+    """Wh per 1,000 documents: from the energy counter delta when it is usable on every card in use, else from the
+    sampled mean power x read wall clock. Both are kept."""
+    sampled = energy(mean_w_total, wall_s, n_docs)
+    per_dev, joules, ok = {}, 0.0, bool(sampled_mean_w)
+    for d in sampled_mean_w:
+        a, b = (e0.get(d) or {}), (e1.get(d) or {})
+        span = (b.get("t") or 0) - (a.get("t") or 0)
+        dj, why = energy_from_counter(a.get("energy_j"), b.get("energy_j"), span, (sampled_mean_w.get(d) or {}).get("mean_w"))
+        per_dev[d] = {"start_j": a.get("energy_j"), "end_j": b.get("energy_j"), "span_s": round(span, 1),
+                      "delta_j": round(dj, 1) if dj is not None else None, "status": why}
+        ok = ok and dj is not None
+        joules += dj or 0.0
+    out = {"energy_counter": per_dev, "sampled_energy_wh": sampled["energy_wh"],
+           "sampled_wh_per_1000_docs": sampled["wh_per_1000_docs"]}
+    if ok and n_docs > 0:
+        wh = joules / 3600
+        out.update(energy_source="xpu-smi energy counter (power.energy_consumed_j, end - start)",
+                   energy_wh=round(wh, 3), wh_per_1000_docs=round(wh / n_docs * 1000, 2))
+    else:
+        out.update(energy_source="sampled mean W x read wall clock" if sampled["energy_wh"] is not None else None,
+                   **sampled)
+    return out
 
 
 # ---- per-process GPU memory from DRM fdinfo (Linux; xe / i915) --------------------------------------------------
@@ -715,9 +845,11 @@ def run_k(k: int, a, model_dir: str, docs: list[dict], inbox: str, exp, private:
             row["error"] = "no worker could load: " + "; ".join(e["error"] for e in sup.load_errors)[:500]
             return row
         model_id = next(w["model_id"] for w in row["workers"] if w.get("model_id"))
+        e0 = sampler.read_energy() if sampler is not None else {}
         t_run0 = time.time()
         res = sup.run(docs)
         t_run1 = time.time()
+        e1 = sampler.read_energy() if sampler is not None else {}
     finally:
         fd.stop()
         sup.close()
@@ -768,7 +900,7 @@ def run_k(k: int, a, model_dir: str, docs: list[dict], inbox: str, exp, private:
         itot = [x["mean_w"] for x in idle_by_dev.values()]
         idle_total = round(sum(itot), 2) if itot and all(x is not None for x in itot) else None
         pw.update({"by_device": by_dev, "idle_by_device": idle_by_dev, "mean_w_total": mean_total,
-                   "idle_w_total": idle_total, **energy(mean_total, wall, n_read),
+                   "idle_w_total": idle_total, **combine_energy(e0, e1, by_dev, mean_total, wall, n_read),
                    "marginal_wh_per_1000_docs": energy(mean_total - idle_total, wall, n_read)["wh_per_1000_docs"]
                    if mean_total is not None and idle_total is not None else None,
                    "source": sampler.mode, "raw_head": sampler.raw_head, "xpu_smi_ids": smi_ids,
@@ -900,7 +1032,9 @@ def main(argv=None) -> int:
                              "crash included, first loads not)",
             "latency_s": "per document, seconds the worker spent on it (OCR + model + post-processing); the queue "
                          "wait is not in it",
-            "wh_per_1000_docs": "mean xpu-smi power summed over the cards in use x read wall clock / documents x 1000; "
+            "wh_per_1000_docs": "energy over the run / documents read x 1000; energy from the xpu-smi energy counter "
+                                "(end - start, all cards in use) when it behaves as a running counter, else mean "
+                                "sampled power x read wall clock (energy_source says which; sampled_* always kept); "
                                 "marginal_wh_per_1000_docs subtracts the idle power measured just before",
             "memory": "xpu_smi_peak_used_gb: device memory used (whole card, all processes), peak over load + run; "
                       "per_worker_gb_est = (peak - idle) / workers on that card; fdinfo_*: the workers' own DRM "
