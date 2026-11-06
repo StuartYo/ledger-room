@@ -196,8 +196,9 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 
 
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
-          registry=None, operator: str | None = None, model_id: str | None = None) -> dict:
-    """registry: optional business-registration lookup (registry.py); the evaluation never passes one."""
+          registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None) -> dict:
+    """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
+    read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode."""
     clients, docs = load_inbox(set_name)
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     rdir = OUT / "runs" / run_id
@@ -208,12 +209,13 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
             network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE,
             registry=registry.label if registry is not None else None)
     t0 = time.time()
-    reads = read_docs(docs, reader, cache=cache, progress=progress, model_id=model_id)
+    reads = (read_fn or read_docs)(docs, reader, cache=cache, progress=progress, model_id=model_id)
     for d in docs:
         r = reads[d["doc_id"]]
         log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
-                seconds=r["timing"].get("total_s"), provenance=r.get("provenance"))
+                seconds=r["timing"].get("total_s"), provenance=r.get("provenance"),
+                **({"tier": r["tier"]} if "tier" in r else {}))
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
              for d in docs]
     excs = rules.run_rules(rdocs, clients, registry=registry)
@@ -262,7 +264,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                   "image": f"{set_name}/clients/{d['doc_id']}", "fields": reads[d["doc_id"]]["fields"],
                   "provenance": reads[d["doc_id"]]["provenance"], "boxes": reads[d["doc_id"]]["boxes"],
                   "image_size": reads[d["doc_id"]].get("image_size"),
-                  "timing": reads[d["doc_id"]]["timing"]} for d in docs],
+                  "timing": reads[d["doc_id"]]["timing"],
+                  **({"tier": reads[d["doc_id"]]["tier"]} if "tier" in reads[d["doc_id"]] else {})} for d in docs],
         "exceptions": out_ex,
         "rules": rules.RULES,
         "audit_log": str((rdir / "audit_log.jsonl").relative_to(OUT)).replace("\\", "/"),

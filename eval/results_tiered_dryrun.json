@@ -1,0 +1,191 @@
+{
+ "synthetic_sets_only_unless_noted": true,
+ "dry_run": true,
+ "escalate_all": true,
+ "escalation_rule": "t1 (2026-11-06)",
+ "escalation_rule_text": "Why the first reading is not good enough on its own. Empty list = keep it.\n\n    reply_unparsed        the model's reply was not readable JSON\n    <field>_unconfirmed   seller UBN, buyer UBN or total is model-only or unconfirmed (for the total: no two\n                          agreeing sources, i.e. not two printed sources that match)\n    amounts_inconsistent  net + tax != total, or tax is not 5% of net (the AMOUNT_MISMATCH hold)",
+ "merge_rule_text": "First reading + second reading -> one reading. Code decides, field by field: - a field the first reading confirmed stays as it is (the second reading cannot overwrite it); - a field the first reading left weak (model-only, unconfirmed, missing) takes the second reading's value only when the reconciliation code confirmed that value from the page; - when the total comes from the second reading, net and tax come with it (code derived them from that total); - when net + tax still do not match the total and the second reading has the same total with net and tax that do match, its net and tax are used (the arithmetic is checked by code, not taken on trust); - when the first reply did not parse at all, the first reading has no model vote, so the second reading's model values fill the empty fields, keeping their own provenance (model-only stays model-only and is still routed to a person by the rules). Everything else stays from the first reading.",
+ "time_definition": "wall_s: whole batch (fresh reads, cache off, OCR + models + rules + evidence crops + log); busy_s: seconds each card's worker spent reading (the first worker's time includes OCR on the CPU); overlap_s: busy time of both workers beyond the read wall clock",
+ "docs_for_person_definition": "documents with any hold or review exception (eval.run_eval.held_docs)",
+ "outputs": "E:\\projects\\ledger-room\\data\\out\\bench_tiered",
+ "inventory": {
+  "os": "Windows-11-10.0.26200-SP0",
+  "host": "DESKTOP-G62O404",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "ram_gb": 31.6,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "13th Gen Intel(R) Core(TM) i7-13620H"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) UHD Graphics (iGPU)",
+    "type": "Type.INTEGRATED",
+    "memory_gb": 14.4,
+    "driver": "",
+    "uarch": "12.3.0"
+   },
+   {
+    "id": "GPU.1",
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 6.0,
+    "driver": "",
+    "uarch": "8.9.0"
+   }
+  ]
+ },
+ "sets": {
+  "heldout": {
+   "generated_at": "2026-11-06T23:11:05+08:00",
+   "code_rev": "bc75216",
+   "dry_run": true,
+   "escalate_all": true,
+   "docs_in_set": 47,
+   "docs_used": 4,
+   "answer_key": "eval/expected_heldout.json",
+   "first": {
+    "model": "Qwen3.5-2B-int4-ov",
+    "device": "CPU",
+    "device_name": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "load_s": 17.2,
+    "thinking": "off"
+   },
+   "second": {
+    "requested": "Qwen3.5-27B-int4-ov",
+    "used": "Qwen3.5-2B-int4-ov",
+    "substituted": true,
+    "device": "GPU.0",
+    "note": "Qwen3.5-27B-int4-ov not on disk at E:\\models; 2b used instead",
+    "device_name": "Intel(R) UHD Graphics (iGPU)",
+    "load_s": 42.4,
+    "thinking": "off"
+   },
+   "first_only": {
+    "docs": 4,
+    "docs_for_person": 0,
+    "docs_for_person_rate": 0.0,
+    "exceptions_by_rule": {
+     "BUYER_NOT_CLIENT": 1,
+     "DUP_CROSS_MONTH": 1
+    },
+    "read_review_by_field": {},
+    "wall_s": 172.2,
+    "docs_per_hour": 84,
+    "read_wall_s": 171.93,
+    "busy_s": {
+     "card_first": 171.93,
+     "card_second": 0.0
+    },
+    "model_call_s": {
+     "first": 160.25,
+     "second": 0.0
+    },
+    "overlap_s": 0.0,
+    "first_done_s": 171.93,
+    "second_tail_s": 0.0,
+    "unsure_docs": 4,
+    "sent_to_second": 0,
+    "escalation_reasons": {
+     "escalate_all (dry run)": 4
+    },
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "key_fields_wrong": 0,
+    "key_fields_compared": 29,
+    "key_field_error_rate": 0.0,
+    "key_fields_per_field": {
+     "doc_type": "0/4",
+     "invoice_no": "0/4",
+     "date": "0/4",
+     "seller_ubn": "0/4",
+     "buyer_ubn": "0/3",
+     "net": "0/3",
+     "tax": "0/3",
+     "total": "0/4"
+    },
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 1,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0,
+    "escalated_docs": [],
+    "run_id": "tiered-heldout first-20261106-231105",
+    "second_note": "not used (first reader alone)"
+   },
+   "tiered": {
+    "docs": 4,
+    "docs_for_person": 0,
+    "docs_for_person_rate": 0.0,
+    "exceptions_by_rule": {
+     "BUYER_NOT_CLIENT": 1,
+     "DUP_CROSS_MONTH": 1
+    },
+    "read_review_by_field": {},
+    "wall_s": 182.1,
+    "docs_per_hour": 79,
+    "read_wall_s": 181.92,
+    "busy_s": {
+     "card_first": 154.03,
+     "card_second": 88.74
+    },
+    "model_call_s": {
+     "first": 149.68,
+     "second": 88.31
+    },
+    "overlap_s": 60.84,
+    "first_done_s": 154.03,
+    "second_tail_s": 27.89,
+    "unsure_docs": 4,
+    "sent_to_second": 4,
+    "escalation_reasons": {
+     "escalate_all (dry run)": 4
+    },
+    "fields_taken_from_second": {},
+    "second_errors": 0,
+    "key_fields_wrong": 0,
+    "key_fields_compared": 29,
+    "key_field_error_rate": 0.0,
+    "key_fields_per_field": {
+     "doc_type": "0/4",
+     "invoice_no": "0/4",
+     "date": "0/4",
+     "seller_ubn": "0/4",
+     "buyer_ubn": "0/3",
+     "net": "0/3",
+     "tax": "0/3",
+     "total": "0/4"
+    },
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 1,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0,
+    "escalated_docs": [
+     "H01/2026-09/IMG_2321.jpg",
+     "H01/2026-09/IMG_4011.jpg",
+     "H01/2026-09/IMG_6918.jpg",
+     "H01/2026-10/IMG_1765.jpg"
+    ],
+    "run_id": "tiered-heldout tiered-20261106-231357"
+   },
+   "complete": false,
+   "measured_on_b70": false
+  }
+ },
+ "generated_at": "2026-11-06T23:16:59+08:00",
+ "measured_on_b70": false
+}
