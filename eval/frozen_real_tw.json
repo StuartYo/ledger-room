@@ -6,7 +6,7 @@
  "pre_freeze_checks": "images opened and resized only; labels checked against the UBN checksum (all seller UBNs pass). No OCR, no model.",
  "expected": {
   "path": "eval/expected_real_tw.json",
-  "sha256": "16219acd5e9c91d67bebc3c84f6214bd8ca7252bde59aafad8be9e92b33b0157"
+  "sha256": "7606ee6190d72517cd176935efcddb575b4f40fd21ca4bee36f0025ba9aaf632"
  },
  "clients_json": {
   "path": "data/real_tw/clients.json",
