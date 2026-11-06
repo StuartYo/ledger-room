@@ -48,6 +48,37 @@ Results: TBD.
   tested. Triplicate invoices (三聯式) are missing: every one in the sample had a person's name in its stamp.
 - Some Commons file names contain the invoice number. The readers never see the file name (photos are renamed).
 
+### Found on the first real_tw run, fixed afterwards
+
+The first full run showed photos where a required field came back blank and the photo was not sent to a person:
+
+- TW013: invoice number blank (the key has LF16191539).
+- TW014: invoice number and seller UBN blank.
+- TW034: seller UBN blank.
+
+The rules skipped a missing seller UBN without a word, and nothing checked a missing invoice number. A blank total
+already went to a person; a blank invoice number or seller UBN did not.
+
+What changed (`ledger_room/rules.py`, tests in `tests/test_missing_ids.py`): on a document that is supposed to print
+both numbers, a blank invoice number or a blank seller UBN now raises READ_REVIEW ("Invoice number not found on the
+page; fill it in by eye.", "Seller UBN not found on the page; fill it in by eye."). Those documents are uniform
+invoices (e-invoice proof, triplicate, two-part register) and, for the seller UBN, a document of unknown type that
+carries an invoice number. Plain receipts, payment slips and transaction details are not flagged: a taxi receipt
+prints neither number, and slips are already held as NOT_A_VOUCHER. READ_REVIEW stays a routing note, outside the six
+evaluated issue types.
+
+The first-run numbers above remain the official ones. Any number computed after this change is labelled
+after-the-fix. After-the-fix re-scores on cached reads (no model run):
+
+- Synthetic main, heldout, heldout2 and the positive control (Qwen3.5-2B reads; OCR-only reads for main and
+  heldout): no number moved (issue F1, documents with exactly the right flags, clean documents flagged, documents
+  held).
+- Hard set, OCR only: documents held 30 to 32. Both new holds are vouchers whose invoice number a person cannot read
+  either (expect hold, not held: 3 to 1). Held although readable stays 18.
+- real_tw, OCR only: photos sent to a person 38 to 39 (TW034).
+- Not checked: whether the fix catches TW013 and TW014 in the model run. Their reads from that run are not on this
+  machine. If the reader typed one of them as a plain receipt, this check does not fire on it.
+
 ## Foreign receipts (real_intl)
 
 - CORD v2 (Indonesian receipts, CC BY 4.0): the validation and test splits, 200 photos, with the dataset's own total

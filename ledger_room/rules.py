@@ -330,6 +330,16 @@ def small_business_receipt(ocr_text: str) -> bool:
     return any(k in ocr_text.replace(" ", "") for k in SMALL_RECEIPT_KW)
 
 
+def prints_invoice_ids(d: Doc) -> bool:
+    """Whether this document is supposed to print an invoice number and the seller's UBN: a uniform invoice
+    (e-invoice proof, triplicate, two-part register), or a document of unknown type that carries an invoice number.
+    Plain receipts (a taxi receipt prints neither) and payment slips / transaction details (held as NOT_A_VOUCHER)
+    are not."""
+    if d.doc_kind:
+        return False
+    return d.doc_type in TAX_VOUCHERS or (d.doc_type is None and bool(d.invoice_no))
+
+
 def buyer_presumed(d: Doc, client: dict) -> bool:
     """Buyer UBN unreadable on a triplicate invoice, but the printed buyer name looks like this client."""
     return (d.buyer_ubn is None and d.doc_type == "triplicate_invoice"
@@ -379,6 +389,11 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
                                   f"Total not confirmed on the page (read NT${d.total:,}); check it by eye." if d.total
                                   else "Total not found on the page; fill it in by eye.", ["total"], confidence="low"))
+        # 0b. a uniform invoice always prints its number and the seller's UBN: a blank one goes to a person
+        if prints_invoice_ids(d) and not d.invoice_no:
+            out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                  "Invoice number not found on the page; fill it in by eye.", ["invoice_no"],
+                                  confidence="low"))
         # 1. UBN checksum (+ optional registration lookup)
         for role in ("seller", "buyer"):
             if d.doc_kind == "payment_slip":
@@ -391,6 +406,10 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                                       [f"{role}_ubn"], confidence="low"))
                 continue
             if not v:
+                if role == "seller" and prints_invoice_ids(d):
+                    out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                          "Seller UBN not found on the page; fill it in by eye.", ["seller_ubn"],
+                                          confidence="low"))
                 continue
             chk = ubnlib.check(v)
             if chk.well_formed and not chk.valid_new:
