@@ -9,11 +9,11 @@
    "device": "CPU (OCR only)",
    "dry_run": false,
    "note": null,
-   "generated_at": "2026-11-06T23:29:37+08:00",
-   "code_rev": "bc75216",
-   "host": "DESKTOP-G62O404",
+   "generated_at": "2026-11-06T15:48:10+00:00",
+   "code_rev": "8a0fc91",
+   "host": "0007e935143f",
    "n_docs": 49,
-   "run_id": "hard-ocr-20261106-232936",
+   "run_id": "hard-ocr-20261106-154800",
    "overall": {
     "docs": 49,
     "fields_compared": 283,
@@ -30,46 +30,46 @@
     ],
     "wrong_value_not_held": 0,
     "wrong_value_not_held_docs": [],
-    "fields_missing": 23,
+    "fields_missing": 21,
     "false_alarms": 0,
-    "sec_per_doc_mean": 0.83
+    "sec_per_doc_mean": 0.2
    },
    "per_type": {
     "handwritten": {
      "docs": 7,
      "fields_compared": 43,
-     "fields_wrong": 2,
-     "field_error_rate": 0.047,
-     "docs_held": 4,
+     "fields_wrong": 3,
+     "field_error_rate": 0.07,
+     "docs_held": 5,
      "docs_expect_hold": 2,
      "expect_hold_and_held": 2,
      "expect_hold_not_held": 0,
-     "held_although_readable": 2,
+     "held_although_readable": 3,
      "wrong_not_held": 0,
      "wrong_not_held_docs": [],
      "wrong_value_not_held": 0,
      "wrong_value_not_held_docs": [],
      "fields_missing": 0,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.9
+     "sec_per_doc_mean": 0.16
     },
     "crease_shadow": {
      "docs": 7,
      "fields_compared": 48,
-     "fields_wrong": 3,
-     "field_error_rate": 0.062,
-     "docs_held": 5,
+     "fields_wrong": 1,
+     "field_error_rate": 0.021,
+     "docs_held": 4,
      "docs_expect_hold": 0,
      "expect_hold_and_held": 0,
      "expect_hold_not_held": 0,
-     "held_although_readable": 5,
+     "held_although_readable": 4,
      "wrong_not_held": 0,
      "wrong_not_held_docs": [],
      "wrong_value_not_held": 0,
      "wrong_value_not_held_docs": [],
-     "fields_missing": 3,
+     "fields_missing": 1,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.87
+     "sec_per_doc_mean": 0.17
     },
     "perspective": {
      "docs": 7,
@@ -87,7 +87,7 @@
      "wrong_value_not_held_docs": [],
      "fields_missing": 11,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.9
+     "sec_per_doc_mean": 0.21
     },
     "stamp_pen": {
      "docs": 7,
@@ -105,7 +105,7 @@
      "wrong_value_not_held_docs": [],
      "fields_missing": 1,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.98
+     "sec_per_doc_mean": 0.17
     },
     "thermal_fade": {
      "docs": 7,
@@ -123,7 +123,7 @@
      "wrong_value_not_held_docs": [],
      "fields_missing": 4,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.87
+     "sec_per_doc_mean": 0.35
     },
     "low_light_blur": {
      "docs": 7,
@@ -143,13 +143,13 @@
      "wrong_value_not_held_docs": [],
      "fields_missing": 3,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.59
+     "sec_per_doc_mean": 0.14
     },
     "occlusion": {
      "docs": 7,
      "fields_compared": 36,
-     "fields_wrong": 1,
-     "field_error_rate": 0.028,
+     "fields_wrong": 2,
+     "field_error_rate": 0.056,
      "docs_held": 5,
      "docs_expect_hold": 5,
      "expect_hold_and_held": 4,
@@ -161,7 +161,7 @@
      "wrong_value_not_held_docs": [],
      "fields_missing": 1,
      "false_alarms": 0,
-     "sec_per_doc_mean": 0.72
+     "sec_per_doc_mean": 0.17
     }
    },
    "per_doc": [
@@ -179,7 +179,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 1.46
+     "seconds": 1.54
     },
     {
      "doc_id": "W01/2026-09/IMG_2293.jpg",
@@ -207,7 +207,7 @@
       "BUYER_NOT_CLIENT",
       "READ_REVIEW"
      ],
-     "seconds": 0.24
+     "seconds": 0.2
     },
     {
      "doc_id": "W01/2026-09/IMG_4123.jpg",
@@ -232,7 +232,7 @@
      "routing_flags": [
       "BUYER_NOT_CLIENT"
      ],
-     "seconds": 0.3
+     "seconds": 0.22
     },
     {
      "doc_id": "W01/2026-09/IMG_4460.jpg",
@@ -250,7 +250,7 @@
      "routing_flags": [
       "BUYER_NOT_CLIENT"
      ],
-     "seconds": 0.28
+     "seconds": 0.19
     },
     {
      "doc_id": "W01/2026-09/IMG_9152.jpg",
@@ -293,7 +293,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.16
+     "seconds": 0.15
     },
     {
      "doc_id": "W01/2026-09/IMG_9706.jpg",
@@ -338,7 +338,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.39
+     "seconds": 0.16
     },
     {
      "doc_id": "W01/2026-10/IMG_4328.jpg",
@@ -354,7 +354,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 1.09
+     "seconds": 0.22
     },
     {
      "doc_id": "W01/2026-10/IMG_6222.jpg",
@@ -372,7 +372,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.81
+     "seconds": 0.2
     },
     {
      "doc_id": "W01/2026-10/IMG_8179.jpg",
@@ -387,12 +387,6 @@
        "read": null,
        "truth": "00668398",
        "kind": "missing"
-      },
-      {
-       "field": "net",
-       "read": null,
-       "truth": 3860,
-       "kind": "missing"
       }
      ],
      "unreadable_fields": {},
@@ -404,7 +398,7 @@
       "BUYER_PRESUMED",
       "READ_REVIEW"
      ],
-     "seconds": 0.95
+     "seconds": 0.2
     },
     {
      "doc_id": "W01/2026-10/IMG_9079.jpg",
@@ -420,7 +414,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.93
+     "seconds": 0.21
     },
     {
      "doc_id": "W01/2026-10/IMG_9189.jpg",
@@ -436,7 +430,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.84
+     "seconds": 0.16
     },
     {
      "doc_id": "W01/2026-10/IMG_9257.jpg",
@@ -454,23 +448,32 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.98
+     "seconds": 0.19
     },
     {
      "doc_id": "W01/2026-10/IMG_9260.jpg",
      "type": "handwritten",
      "variant": "fix",
      "expect_hold": false,
-     "held": false,
+     "held": true,
      "fields_compared": 8,
-     "wrong": [],
+     "wrong": [
+      {
+       "field": "tax",
+       "read": 23,
+       "truth": 426,
+       "kind": "wrong_value"
+      }
+     ],
      "unreadable_fields": {},
      "wrong_not_held": false,
      "wrong_value_not_held": false,
      "expect_hold_not_held": false,
      "false_alarms": [],
-     "routing_flags": [],
-     "seconds": 1.1
+     "routing_flags": [
+      "AMOUNT_MISMATCH"
+     ],
+     "seconds": 0.25
     },
     {
      "doc_id": "W02/2026-09/IMG_1913.jpg",
@@ -493,7 +496,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.85
+     "seconds": 0.15
     },
     {
      "doc_id": "W02/2026-09/IMG_3058.jpg",
@@ -509,32 +512,23 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.79
+     "seconds": 0.12
     },
     {
      "doc_id": "W02/2026-09/IMG_4934.jpg",
      "type": "crease_shadow",
      "variant": "severe",
      "expect_hold": false,
-     "held": true,
+     "held": false,
      "fields_compared": 8,
-     "wrong": [
-      {
-       "field": "net",
-       "read": null,
-       "truth": 2362,
-       "kind": "missing"
-      }
-     ],
+     "wrong": [],
      "unreadable_fields": {},
      "wrong_not_held": false,
      "wrong_value_not_held": false,
      "expect_hold_not_held": false,
      "false_alarms": [],
-     "routing_flags": [
-      "AMOUNT_MISMATCH"
-     ],
-     "seconds": 0.93
+     "routing_flags": [],
+     "seconds": 0.2
     },
     {
      "doc_id": "W02/2026-09/IMG_8729.jpg",
@@ -565,7 +559,7 @@
      "routing_flags": [
       "AMOUNT_MISMATCH"
      ],
-     "seconds": 1.15
+     "seconds": 0.18
     },
     {
      "doc_id": "W02/2026-10/IMG_2569.jpg",
@@ -590,7 +584,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 1.38
+     "seconds": 0.25
     },
     {
      "doc_id": "W02/2026-10/IMG_4704.jpg",
@@ -611,9 +605,10 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [
-      "AMOUNT_MISMATCH"
+      "AMOUNT_MISMATCH",
+      "READ_REVIEW"
      ],
-     "seconds": 0.93
+     "seconds": 0.15
     },
     {
      "doc_id": "W02/2026-10/IMG_4865.jpg",
@@ -629,7 +624,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.85
+     "seconds": 0.11
     },
     {
      "doc_id": "W02/2026-10/IMG_5670.jpg",
@@ -654,7 +649,7 @@
      "routing_flags": [
       "AMOUNT_MISMATCH"
      ],
-     "seconds": 0.91
+     "seconds": 0.17
     },
     {
      "doc_id": "W02/2026-10/IMG_6561.jpg",
@@ -672,7 +667,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.97
+     "seconds": 0.15
     },
     {
      "doc_id": "W02/2026-10/IMG_6831.jpg",
@@ -729,7 +724,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.37
+     "seconds": 0.06
     },
     {
      "doc_id": "W02/2026-10/IMG_7553.jpg",
@@ -768,7 +763,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.31
+     "seconds": 0.08
     },
     {
      "doc_id": "W02/2026-10/IMG_9161.jpg",
@@ -786,7 +781,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.94
+     "seconds": 0.2
     },
     {
      "doc_id": "W03/2026-09/IMG_1689.jpg",
@@ -804,7 +799,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.78
+     "seconds": 0.15
     },
     {
      "doc_id": "W03/2026-09/IMG_2234.jpg",
@@ -859,7 +854,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.42
+     "seconds": 0.12
     },
     {
      "doc_id": "W03/2026-09/IMG_2388.jpg",
@@ -890,7 +885,7 @@
      "routing_flags": [
       "AMOUNT_MISMATCH"
      ],
-     "seconds": 1.26
+     "seconds": 0.29
     },
     {
      "doc_id": "W03/2026-09/IMG_2395.jpg",
@@ -914,7 +909,7 @@
       "BUYER_NOT_CLIENT",
       "READ_REVIEW"
      ],
-     "seconds": 0.88
+     "seconds": 0.16
     },
     {
      "doc_id": "W03/2026-09/IMG_3186.jpg",
@@ -953,7 +948,7 @@
       "BUYER_PRESUMED",
       "READ_REVIEW"
      ],
-     "seconds": 1.54
+     "seconds": 0.32
     },
     {
      "doc_id": "W03/2026-09/IMG_5932.jpg",
@@ -971,7 +966,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.81
+     "seconds": 0.12
     },
     {
      "doc_id": "W03/2026-09/IMG_7321.jpg",
@@ -990,7 +985,7 @@
       "BUYER_NOT_CLIENT",
       "READ_REVIEW"
      ],
-     "seconds": 0.75
+     "seconds": 0.12
     },
     {
      "doc_id": "W03/2026-09/IMG_7334.jpg",
@@ -1008,7 +1003,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.61
+     "seconds": 0.1
     },
     {
      "doc_id": "W03/2026-09/IMG_7831.jpg",
@@ -1029,7 +1024,7 @@
      "expect_hold_not_held": true,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.76
+     "seconds": 0.13
     },
     {
      "doc_id": "W03/2026-09/IMG_8340.jpg",
@@ -1045,7 +1040,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 1.11
+     "seconds": 0.22
     },
     {
      "doc_id": "W03/2026-09/IMG_9031.jpg",
@@ -1061,7 +1056,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 1.03
+     "seconds": 0.14
     },
     {
      "doc_id": "W03/2026-10/IMG_7725.jpg",
@@ -1070,7 +1065,14 @@
      "expect_hold": true,
      "held": true,
      "fields_compared": 7,
-     "wrong": [],
+     "wrong": [
+      {
+       "field": "tax",
+       "read": 12,
+       "truth": 25,
+       "kind": "wrong_value"
+      }
+     ],
      "unreadable_fields": {
       "total": {
        "read": null,
@@ -1084,7 +1086,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 1.02
+     "seconds": 0.22
     },
     {
      "doc_id": "W04/2026-09/IMG_3714.jpg",
@@ -1100,7 +1102,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.94
+     "seconds": 0.19
     },
     {
      "doc_id": "W04/2026-09/IMG_4741.jpg",
@@ -1131,7 +1133,7 @@
       "AMOUNT_MISMATCH",
       "READ_REVIEW"
      ],
-     "seconds": 0.98
+     "seconds": 0.12
     },
     {
      "doc_id": "W04/2026-09/IMG_8557.jpg",
@@ -1156,7 +1158,7 @@
      "expect_hold_not_held": true,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.89
+     "seconds": 0.17
     },
     {
      "doc_id": "W04/2026-09/IMG_9061.jpg",
@@ -1172,7 +1174,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.75
+     "seconds": 0.12
     },
     {
      "doc_id": "W04/2026-09/IMG_9334.jpg",
@@ -1198,7 +1200,7 @@
       "BUYER_NOT_CLIENT",
       "READ_REVIEW"
      ],
-     "seconds": 0.78
+     "seconds": 0.19
     },
     {
      "doc_id": "W04/2026-10/IMG_2327.jpg",
@@ -1214,7 +1216,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.62
+     "seconds": 0.11
     },
     {
      "doc_id": "W04/2026-10/IMG_3290.jpg",
@@ -1232,7 +1234,7 @@
      "routing_flags": [
       "BUYER_NOT_CLIENT"
      ],
-     "seconds": 0.68
+     "seconds": 0.12
     },
     {
      "doc_id": "W04/2026-10/IMG_3700.jpg",
@@ -1248,7 +1250,7 @@
      "expect_hold_not_held": false,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 0.81
+     "seconds": 0.18
     },
     {
      "doc_id": "W04/2026-10/IMG_4171.jpg",
@@ -1273,7 +1275,7 @@
      "routing_flags": [
       "AMOUNT_MISMATCH"
      ],
-     "seconds": 1.05
+     "seconds": 0.18
     },
     {
      "doc_id": "W04/2026-10/IMG_4478.jpg",
@@ -1294,7 +1296,7 @@
      "expect_hold_not_held": true,
      "false_alarms": [],
      "routing_flags": [],
-     "seconds": 1.08
+     "seconds": 0.18
     },
     {
      "doc_id": "W04/2026-10/IMG_7957.jpg",
@@ -1312,7 +1314,7 @@
      "routing_flags": [
       "READ_REVIEW"
      ],
-     "seconds": 0.73
+     "seconds": 0.13
     },
     {
      "doc_id": "W04/2026-10/IMG_9233.jpg",
@@ -1375,7 +1377,7 @@
       "NOT_A_VOUCHER",
       "READ_REVIEW"
      ],
-     "seconds": 0.6
+     "seconds": 0.11
     }
    ]
   },
@@ -1579,6 +1581,1235 @@
      "false_alarms": [],
      "routing_flags": [],
      "seconds": 27.05
+    }
+   ]
+  },
+  "Qwen3.5-9B-int4-ov + OCR": {
+   "reader": "Qwen3.5-9B-int4-ov + OCR",
+   "model": "Qwen3.5-9B-int4-ov",
+   "device": "GPU.0",
+   "dry_run": false,
+   "note": null,
+   "generated_at": "2026-11-06T15:47:59+00:00",
+   "code_rev": "8a0fc91",
+   "host": "0007e935143f",
+   "n_docs": 49,
+   "run_id": "hard-Qwen3_5-9B-int4-ov-20261106-154500",
+   "overall": {
+    "docs": 49,
+    "fields_compared": 283,
+    "fields_wrong": 10,
+    "field_error_rate": 0.035,
+    "docs_held": 15,
+    "docs_expect_hold": 15,
+    "expect_hold_and_held": 11,
+    "expect_hold_not_held": 4,
+    "held_although_readable": 4,
+    "wrong_not_held": 0,
+    "wrong_not_held_docs": [],
+    "wrong_value_not_held": 0,
+    "wrong_value_not_held_docs": [],
+    "fields_missing": 8,
+    "false_alarms": 2,
+    "sec_per_doc_mean": 3.62
+   },
+   "per_type": {
+    "handwritten": {
+     "docs": 7,
+     "fields_compared": 43,
+     "fields_wrong": 0,
+     "field_error_rate": 0.0,
+     "docs_held": 2,
+     "docs_expect_hold": 2,
+     "expect_hold_and_held": 2,
+     "expect_hold_not_held": 0,
+     "held_although_readable": 0,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 0,
+     "false_alarms": 0,
+     "sec_per_doc_mean": 3.73
+    },
+    "crease_shadow": {
+     "docs": 7,
+     "fields_compared": 48,
+     "fields_wrong": 1,
+     "field_error_rate": 0.021,
+     "docs_held": 1,
+     "docs_expect_hold": 0,
+     "expect_hold_and_held": 0,
+     "expect_hold_not_held": 0,
+     "held_although_readable": 1,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 1,
+     "false_alarms": 0,
+     "sec_per_doc_mean": 3.55
+    },
+    "perspective": {
+     "docs": 7,
+     "fields_compared": 36,
+     "fields_wrong": 3,
+     "field_error_rate": 0.083,
+     "docs_held": 3,
+     "docs_expect_hold": 2,
+     "expect_hold_and_held": 2,
+     "expect_hold_not_held": 0,
+     "held_although_readable": 1,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 3,
+     "false_alarms": 0,
+     "sec_per_doc_mean": 3.85
+    },
+    "stamp_pen": {
+     "docs": 7,
+     "fields_compared": 46,
+     "fields_wrong": 1,
+     "field_error_rate": 0.022,
+     "docs_held": 1,
+     "docs_expect_hold": 2,
+     "expect_hold_and_held": 0,
+     "expect_hold_not_held": 2,
+     "held_although_readable": 1,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 1,
+     "false_alarms": 0,
+     "sec_per_doc_mean": 3.53
+    },
+    "thermal_fade": {
+     "docs": 7,
+     "fields_compared": 43,
+     "fields_wrong": 3,
+     "field_error_rate": 0.07,
+     "docs_held": 2,
+     "docs_expect_hold": 2,
+     "expect_hold_and_held": 2,
+     "expect_hold_not_held": 0,
+     "held_although_readable": 0,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 1,
+     "false_alarms": 1,
+     "sec_per_doc_mean": 3.5
+    },
+    "low_light_blur": {
+     "docs": 7,
+     "fields_compared": 31,
+     "fields_wrong": 1,
+     "field_error_rate": 0.032,
+     "docs_held": 3,
+     "docs_expect_hold": 2,
+     "expect_hold_and_held": 2,
+     "expect_hold_not_held": 0,
+     "held_although_readable": 1,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 1,
+     "false_alarms": 1,
+     "sec_per_doc_mean": 3.35
+    },
+    "occlusion": {
+     "docs": 7,
+     "fields_compared": 36,
+     "fields_wrong": 1,
+     "field_error_rate": 0.028,
+     "docs_held": 3,
+     "docs_expect_hold": 5,
+     "expect_hold_and_held": 3,
+     "expect_hold_not_held": 2,
+     "held_although_readable": 0,
+     "wrong_not_held": 0,
+     "wrong_not_held_docs": [],
+     "wrong_value_not_held": 0,
+     "wrong_value_not_held_docs": [],
+     "fields_missing": 1,
+     "false_alarms": 0,
+     "sec_per_doc_mean": 3.86
+    }
+   },
+   "per_doc": [
+    {
+     "doc_id": "W01/2026-09/IMG_1436.jpg",
+     "type": "thermal_fade",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 5.11
+    },
+    {
+     "doc_id": "W01/2026-09/IMG_2293.jpg",
+     "type": "occlusion",
+     "variant": "other_receipt_header",
+     "expect_hold": true,
+     "held": false,
+     "fields_compared": 3,
+     "wrong": [],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "date": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": true,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT"
+     ],
+     "seconds": 3.3
+    },
+    {
+     "doc_id": "W01/2026-09/IMG_4123.jpg",
+     "type": "low_light_blur",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": true,
+     "fields_compared": 8,
+     "wrong": [
+      {
+       "field": "buyer_ubn",
+       "read": null,
+       "truth": "00668398",
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_PRESUMED"
+     ],
+     "seconds": 4.18
+    },
+    {
+     "doc_id": "W01/2026-09/IMG_4460.jpg",
+     "type": "occlusion",
+     "variant": "finger_total_one",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 5,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT"
+     ],
+     "seconds": 3.56
+    },
+    {
+     "doc_id": "W01/2026-09/IMG_9152.jpg",
+     "type": "low_light_blur",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 1,
+     "wrong": [],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": "MQ76245949",
+       "read_right_anyway": false
+      },
+      "date": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT",
+      "READ_REVIEW"
+     ],
+     "seconds": 1.75
+    },
+    {
+     "doc_id": "W01/2026-09/IMG_9706.jpg",
+     "type": "perspective",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 2,
+     "wrong": [
+      {
+       "field": "invoice_no",
+       "read": null,
+       "truth": "FX00381066",
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {
+      "date": {
+       "read": "2026-09-19",
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": "2200000000",
+       "read_right_anyway": false
+      },
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT",
+      "READ_REVIEW"
+     ],
+     "seconds": 3.81
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_4328.jpg",
+     "type": "thermal_fade",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.57
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_6222.jpg",
+     "type": "perspective",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.22
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_8179.jpg",
+     "type": "crease_shadow",
+     "variant": "severe",
+     "expect_hold": false,
+     "held": true,
+     "fields_compared": 8,
+     "wrong": [
+      {
+       "field": "buyer_ubn",
+       "read": null,
+       "truth": "00668398",
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_PRESUMED",
+      "READ_REVIEW"
+     ],
+     "seconds": 3.74
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_9079.jpg",
+     "type": "crease_shadow",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.86
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_9189.jpg",
+     "type": "handwritten",
+     "variant": "fix",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.25
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_9257.jpg",
+     "type": "stamp_pen",
+     "variant": "pen_tick",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.55
+    },
+    {
+     "doc_id": "W01/2026-10/IMG_9260.jpg",
+     "type": "handwritten",
+     "variant": "fix",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.96
+    },
+    {
+     "doc_id": "W02/2026-09/IMG_1913.jpg",
+     "type": "occlusion",
+     "variant": "other_receipt_total_all",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 3,
+     "wrong": [],
+     "unreadable_fields": {
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "READ_REVIEW"
+     ],
+     "seconds": 5.6
+    },
+    {
+     "doc_id": "W02/2026-09/IMG_3058.jpg",
+     "type": "stamp_pen",
+     "variant": "pen_circle",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.45
+    },
+    {
+     "doc_id": "W02/2026-09/IMG_4934.jpg",
+     "type": "crease_shadow",
+     "variant": "severe",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 2.2
+    },
+    {
+     "doc_id": "W02/2026-09/IMG_8729.jpg",
+     "type": "handwritten",
+     "variant": "fix",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 4.31
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_2569.jpg",
+     "type": "stamp_pen",
+     "variant": "paid_stamp",
+     "expect_hold": false,
+     "held": true,
+     "fields_compared": 8,
+     "wrong": [
+      {
+       "field": "total",
+       "read": null,
+       "truth": 9460,
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "READ_REVIEW"
+     ],
+     "seconds": 4.48
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_4704.jpg",
+     "type": "handwritten",
+     "variant": "overwrite",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 7,
+     "wrong": [],
+     "unreadable_fields": {
+      "total": {
+       "read": 2,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "AMOUNT_MISMATCH",
+      "READ_REVIEW"
+     ],
+     "seconds": 4.67
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_4865.jpg",
+     "type": "low_light_blur",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.64
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_5670.jpg",
+     "type": "thermal_fade",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.7
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_6561.jpg",
+     "type": "crease_shadow",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 4.18
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_6831.jpg",
+     "type": "thermal_fade",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 2,
+     "wrong": [
+      {
+       "field": "doc_type",
+       "read": "receipt",
+       "truth": "e_invoice",
+       "kind": "wrong_value"
+      },
+      {
+       "field": "invoice_no",
+       "read": null,
+       "truth": "GB56594871",
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {
+      "date": {
+       "read": "2016-09-10",
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": "20160910",
+       "read_right_anyway": false
+      },
+      "buyer_ubn": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "net": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "tax": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [
+      "PERIOD_MISMATCH"
+     ],
+     "routing_flags": [
+      "READ_REVIEW"
+     ],
+     "seconds": 2.13
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_7553.jpg",
+     "type": "low_light_blur",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 1,
+     "wrong": [],
+     "unreadable_fields": {
+      "date": {
+       "read": "2024-09-10",
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": "582500000",
+       "read_right_anyway": false
+      },
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [
+      "PERIOD_MISMATCH"
+     ],
+     "routing_flags": [
+      "READ_REVIEW"
+     ],
+     "seconds": 2.15
+    },
+    {
+     "doc_id": "W02/2026-10/IMG_9161.jpg",
+     "type": "perspective",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.53
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_1689.jpg",
+     "type": "low_light_blur",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.87
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_2234.jpg",
+     "type": "thermal_fade",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 1,
+     "wrong": [
+      {
+       "field": "doc_type",
+       "read": "receipt",
+       "truth": "e_invoice",
+       "kind": "wrong_value"
+      }
+     ],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "date": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "buyer_ubn": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "net": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "tax": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "NOT_A_VOUCHER",
+      "READ_REVIEW"
+     ],
+     "seconds": 2.69
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_2388.jpg",
+     "type": "perspective",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 4.43
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_2395.jpg",
+     "type": "handwritten",
+     "variant": "overwrite",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {
+      "total": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT",
+      "READ_REVIEW"
+     ],
+     "seconds": 3.75
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_3186.jpg",
+     "type": "perspective",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": true,
+     "fields_compared": 8,
+     "wrong": [
+      {
+       "field": "buyer_ubn",
+       "read": null,
+       "truth": "12998778",
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_PRESUMED",
+      "READ_REVIEW"
+     ],
+     "seconds": 4.76
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_5932.jpg",
+     "type": "handwritten",
+     "variant": "fix",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.25
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_7321.jpg",
+     "type": "occlusion",
+     "variant": "finger_corner",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 5,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT"
+     ],
+     "seconds": 3.14
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_7334.jpg",
+     "type": "crease_shadow",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.81
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_7831.jpg",
+     "type": "stamp_pen",
+     "variant": "scribble_invoice_no",
+     "expect_hold": true,
+     "held": false,
+     "fields_compared": 7,
+     "wrong": [],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": true,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 2.9
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_8340.jpg",
+     "type": "thermal_fade",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.96
+    },
+    {
+     "doc_id": "W03/2026-09/IMG_9031.jpg",
+     "type": "stamp_pen",
+     "variant": "paid_stamp",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.82
+    },
+    {
+     "doc_id": "W03/2026-10/IMG_7725.jpg",
+     "type": "occlusion",
+     "variant": "other_receipt_total_all",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 7,
+     "wrong": [],
+     "unreadable_fields": {
+      "total": {
+       "read": 500,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "AMOUNT_MISMATCH",
+      "READ_REVIEW"
+     ],
+     "seconds": 3.75
+    },
+    {
+     "doc_id": "W04/2026-09/IMG_3714.jpg",
+     "type": "crease_shadow",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.46
+    },
+    {
+     "doc_id": "W04/2026-09/IMG_4741.jpg",
+     "type": "occlusion",
+     "variant": "finger_total_one",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 7,
+     "wrong": [
+      {
+       "field": "total",
+       "read": null,
+       "truth": 6762,
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {
+      "tax": {
+       "read": 0,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "READ_REVIEW"
+     ],
+     "seconds": 4.25
+    },
+    {
+     "doc_id": "W04/2026-09/IMG_8557.jpg",
+     "type": "occlusion",
+     "variant": "other_receipt_header",
+     "expect_hold": true,
+     "held": false,
+     "fields_compared": 6,
+     "wrong": [],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "date": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": true,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.42
+    },
+    {
+     "doc_id": "W04/2026-09/IMG_9061.jpg",
+     "type": "thermal_fade",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.32
+    },
+    {
+     "doc_id": "W04/2026-09/IMG_9334.jpg",
+     "type": "perspective",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 5,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT"
+     ],
+     "seconds": 4.16
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_2327.jpg",
+     "type": "handwritten",
+     "variant": "fix",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 4,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 2.92
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_3290.jpg",
+     "type": "low_light_blur",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 5,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT"
+     ],
+     "seconds": 3.68
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_3700.jpg",
+     "type": "stamp_pen",
+     "variant": "pen_circle",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 2.49
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_4171.jpg",
+     "type": "low_light_blur",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 4.21
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_4478.jpg",
+     "type": "stamp_pen",
+     "variant": "dark_stamp_date",
+     "expect_hold": true,
+     "held": false,
+     "fields_compared": 7,
+     "wrong": [],
+     "unreadable_fields": {
+      "date": {
+       "read": "2026-10-16",
+       "read_right_anyway": true
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": true,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 4.01
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_7957.jpg",
+     "type": "crease_shadow",
+     "variant": "moderate",
+     "expect_hold": false,
+     "held": false,
+     "fields_compared": 8,
+     "wrong": [],
+     "unreadable_fields": {},
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [],
+     "seconds": 3.58
+    },
+    {
+     "doc_id": "W04/2026-10/IMG_9233.jpg",
+     "type": "perspective",
+     "variant": "severe",
+     "expect_hold": true,
+     "held": true,
+     "fields_compared": 5,
+     "wrong": [
+      {
+       "field": "total",
+       "read": null,
+       "truth": 3948,
+       "kind": "missing"
+      }
+     ],
+     "unreadable_fields": {
+      "invoice_no": {
+       "read": null,
+       "read_right_anyway": false
+      },
+      "seller_ubn": {
+       "read": "99033033",
+       "read_right_anyway": false
+      },
+      "buyer_ubn": {
+       "read": null,
+       "read_right_anyway": false
+      }
+     },
+     "wrong_not_held": false,
+     "wrong_value_not_held": false,
+     "expect_hold_not_held": false,
+     "false_alarms": [],
+     "routing_flags": [
+      "BUYER_NOT_CLIENT",
+      "READ_REVIEW"
+     ],
+     "seconds": 3.05
     }
    ]
   }
