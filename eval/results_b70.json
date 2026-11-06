@@ -1,0 +1,542 @@
+{
+ "synthetic": true,
+ "generated_at": "2026-11-06T13:55:41+00:00",
+ "code_rev": "3524145",
+ "dry_run": false,
+ "set": "heldout",
+ "docs_used": "all",
+ "device": "GPU.0",
+ "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+ "measured_on_b70": true,
+ "targets_binding": true,
+ "targets_source": "README.md, 'Stage II targets on the B70' (frozen 2026-10-14)",
+ "time_definition": "OCR + model + zoomed re-reads for one document, averaged over the set (fresh reads, cache off)",
+ "outputs": "/home/devcloud/ledger-room/data/out/bench_b70",
+ "inventory": {
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "python": "3.12.16",
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "cpu_logical": 344,
+  "ram_gb": 251.5,
+  "host": "0007e935143f",
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "Intel(R) Xeon(R) 6787P"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   },
+   {
+    "id": "GPU.1",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0"
+   }
+  ],
+  "openvino_telemetry": {
+   "consent_file": "~/intel/openvino_telemetry",
+   "consent_file_content": "0",
+   "env_CI_true": true,
+   "sends_on_import": false,
+   "set_by_ledger_room": true,
+   "turn_off": "on by default: ledger_room/__init__.py sets CI=true before openvino is imported; opt_in_out --opt_out also writes 0 to the per-user consent file"
+  },
+  "models_root": "/home/devcloud/models",
+  "disk_free_gb": 796.5,
+  "dri_render_nodes": [
+   "/dev/dri/renderD128",
+   "/dev/dri/renderD129"
+  ],
+  "kernel": "7.0.0-34-generic"
+ },
+ "models": {
+  "OpenVINO/Qwen3.5-9B-int4-ov": {
+   "repo": "OpenVINO/Qwen3.5-9B-int4-ov",
+   "dir": "/home/devcloud/models/Qwen3.5-9B-int4-ov",
+   "present": true,
+   "expected_size_gb": 5.85
+  },
+  "OpenVINO/Qwen3.5-27B-int4-ov": {
+   "repo": "OpenVINO/Qwen3.5-27B-int4-ov",
+   "dir": "/home/devcloud/models/Qwen3.5-27B-int4-ov",
+   "present": true,
+   "expected_size_gb": 14.87
+  }
+ },
+ "results": {
+  "Qwen3.5-9B-int4-ov": {
+   "model": "Qwen3.5-9B-int4-ov",
+   "device_requested": "GPU.0",
+   "n_docs": 47,
+   "device": "GPU.0",
+   "load_s": 8.6,
+   "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+   "ledger_room": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "docs_exact": 47,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 3.7,
+     "median": 3.5,
+     "max": 6.0,
+     "n": 47
+    },
+    "sec_per_doc_excluding_first": {
+     "mean": 3.7,
+     "median": 3.5,
+     "max": 4.5,
+     "n": 46
+    },
+    "wall_s": 175.5,
+    "run_id": "b70-Qwen3.5-9B-int4-ov-20261106-135549"
+   },
+   "docs_per_hour": 973,
+   "reading": {
+    "docs": 47,
+    "field_error_rate": 0.0,
+    "fields_wrong": 0,
+    "fields_compared": 319,
+    "docs_all_key_fields_right": 47,
+    "docs_items_right": 28,
+    "per_field": {
+     "doc_type": "0/47",
+     "invoice_no": "0/35",
+     "date": "0/47",
+     "seller_ubn": "0/47",
+     "buyer_ubn": "0/32",
+     "net": "0/32",
+     "tax": "0/32",
+     "total": "0/47"
+    },
+    "amount_check": {
+     "docs_with_amount_error": 0,
+     "held_by_amount_rule": 0,
+     "held_with_correct_amounts": 0
+    }
+   },
+   "pure_model": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 5,
+      "fp": 38,
+      "fn": 0,
+      "precision": 0.116,
+      "recall": 1.0,
+      "f1": 0.208
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 1,
+      "fp": 19,
+      "fn": 1,
+      "precision": 0.05,
+      "recall": 0.5,
+      "f1": 0.091
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 1,
+      "fp": 7,
+      "fn": 3,
+      "precision": 0.125,
+      "recall": 0.25,
+      "f1": 0.167
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 2,
+      "fp": 2,
+      "fn": 3,
+      "precision": 0.5,
+      "recall": 0.4,
+      "f1": 0.444
+     },
+     "OVER_LIMIT": {
+      "tp": 1,
+      "fp": 3,
+      "fn": 3,
+      "precision": 0.25,
+      "recall": 0.25,
+      "f1": 0.25
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 3,
+      "fp": 22,
+      "fn": 1,
+      "precision": 0.12,
+      "recall": 0.75,
+      "f1": 0.207
+     }
+    },
+    "micro": {
+     "tp": 13,
+     "fp": 91,
+     "fn": 11,
+     "precision": 0.125,
+     "recall": 0.542,
+     "f1": 0.203
+    },
+    "docs_exact": 4,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 23,
+    "sec_per_doc": {
+     "mean": 1.8,
+     "median": 1.7,
+     "max": 2.5,
+     "n": 47
+    },
+    "unparsed_replies": 0
+   },
+   "peak_memory": {
+    "process_rss_gb": 3.29,
+    "gpu_total_system_gb": 0.29,
+    "gpu_resident_system_gb": 0.01,
+    "gpu_total_gtt_gb": 4.77,
+    "gpu_resident_gtt_gb": 4.77,
+    "gpu_total_vram0_gb": 7.99,
+    "gpu_resident_vram0_gb": 7.99
+   }
+  },
+  "Qwen3.5-27B-int4-ov": {
+   "model": "Qwen3.5-27B-int4-ov",
+   "device_requested": "GPU.0",
+   "n_docs": 47,
+   "device": "GPU.0",
+   "load_s": 19.6,
+   "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+   "ledger_room": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     }
+    },
+    "micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "docs_exact": 47,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 0,
+    "sec_per_doc": {
+     "mean": 5.2,
+     "median": 5.2,
+     "max": 7.0,
+     "n": 47
+    },
+    "sec_per_doc_excluding_first": {
+     "mean": 5.2,
+     "median": 5.2,
+     "max": 6.5,
+     "n": 46
+    },
+    "wall_s": 246.8,
+    "run_id": "b70-Qwen3.5-27B-int4-ov-20261106-140028"
+   },
+   "docs_per_hour": 692,
+   "reading": {
+    "docs": 47,
+    "field_error_rate": 0.0,
+    "fields_wrong": 0,
+    "fields_compared": 319,
+    "docs_all_key_fields_right": 47,
+    "docs_items_right": 39,
+    "per_field": {
+     "doc_type": "0/47",
+     "invoice_no": "0/35",
+     "date": "0/47",
+     "seller_ubn": "0/47",
+     "buyer_ubn": "0/32",
+     "net": "0/32",
+     "tax": "0/32",
+     "total": "0/47"
+    },
+    "amount_check": {
+     "docs_with_amount_error": 0,
+     "held_by_amount_rule": 0,
+     "held_with_correct_amounts": 0
+    }
+   },
+   "pure_model": {
+    "per_type": {
+     "UBN_CHECKSUM": {
+      "tp": 4,
+      "fp": 10,
+      "fn": 1,
+      "precision": 0.286,
+      "recall": 0.8,
+      "f1": 0.421
+     },
+     "DUP_CROSS_MONTH": {
+      "tp": 1,
+      "fp": 2,
+      "fn": 1,
+      "precision": 0.333,
+      "recall": 0.5,
+      "f1": 0.4
+     },
+     "DUP_CROSS_CLIENT": {
+      "tp": 0,
+      "fp": 5,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+     },
+     "S19_NONDEDUCTIBLE": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1": 0.889
+     },
+     "OVER_LIMIT": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+     },
+     "PERIOD_MISMATCH": {
+      "tp": 4,
+      "fp": 14,
+      "fn": 0,
+      "precision": 0.222,
+      "recall": 1.0,
+      "f1": 0.364
+     }
+    },
+    "micro": {
+     "tp": 17,
+     "fp": 31,
+     "fn": 7,
+     "precision": 0.354,
+     "recall": 0.708,
+     "f1": 0.472
+    },
+    "docs_exact": 16,
+    "n_docs": 47,
+    "clean_docs": 23,
+    "clean_docs_flagged": 23,
+    "sec_per_doc": {
+     "mean": 3.3,
+     "median": 3.2,
+     "max": 4.0,
+     "n": 47
+    },
+    "unparsed_replies": 0
+   },
+   "peak_memory": {
+    "process_rss_gb": 5.44,
+    "gpu_total_system_gb": 0.67,
+    "gpu_resident_system_gb": 0.01,
+    "gpu_total_gtt_gb": 13.97,
+    "gpu_resident_gtt_gb": 13.97,
+    "gpu_total_vram0_gb": 17.04,
+    "gpu_resident_vram0_gb": 17.04
+   }
+  }
+ },
+ "targets": [
+  {
+   "model": "Qwen3.5-9B-int4-ov",
+   "target": "Key fields wrong, held-out",
+   "threshold": "<= 0.0693 (laptop 9B 20/337 + 1 point)",
+   "value": 0.0,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-9B-int4-ov",
+   "target": "Ledger Room micro F1, held-out",
+   "threshold": ">= 0.95",
+   "value": 1.0,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-9B-int4-ov",
+   "target": "Read time per document, whole pipeline (mean s)",
+   "threshold": "<= 6.0",
+   "value": 3.7,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-9B-int4-ov",
+   "target": "Read time per document, goal (mean s)",
+   "threshold": "<= 3.0",
+   "value": 3.7,
+   "pass": false,
+   "binding": true,
+   "note": "goal, not the pass line"
+  },
+  {
+   "model": "Qwen3.5-9B-int4-ov",
+   "target": "Pure-model baseline with the same model",
+   "threshold": "reported next to Ledger Room",
+   "value": 0.203,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-27B-int4-ov",
+   "target": "Key fields wrong, held-out",
+   "threshold": "< 0.0 (B70 9B, same run)",
+   "value": 0.0,
+   "pass": false,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-27B-int4-ov",
+   "target": "Ledger Room micro F1, held-out",
+   "threshold": ">= 0.95",
+   "value": 1.0,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-27B-int4-ov",
+   "target": "Read time per document, whole pipeline (mean s)",
+   "threshold": "<= 12.0",
+   "value": 5.2,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  },
+  {
+   "model": "Qwen3.5-27B-int4-ov",
+   "target": "Pure-model baseline with the same model",
+   "threshold": "reported next to Ledger Room",
+   "value": 0.472,
+   "pass": true,
+   "binding": true,
+   "note": ""
+  }
+ ]
+}
