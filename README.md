@@ -7,6 +7,8 @@ return. Client data never leaves the office network.
 
 ### Evidence
 
+**113 real invoices: the old ledger let 15 wrong rows through, Ledger Room let 0.**
+
 Three headline facts, all on real documents (definitions: *let through* = a voucher with a wrong field accepted
 without a person; *sent to a person* = held for a bookkeeper to check):
 
@@ -19,7 +21,7 @@ without a person; *sent to a person* = held for a bookkeeper to check):
 2. **Public real Taiwan photos, strict reading: 0 let through** on 41 (real_tw, re-scored after the fix: the strict
    rule was written after seeing this set) and 0 on 17 (real_tw2, first run, key frozen before any read).
    `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` → `conditions.strict`
-3. **Why the B70: the bigger reader is the accurate one, and only the B70 runs it fast.** Same real documents,
+3. **Why the B70: the bigger reader is the accurate one, and it needs a workstation GPU: 3.7 s a voucher on the B70, 78 s on a laptop CPU.** Same real documents,
    strict reading, Qwen3.5-2B against Qwen3.5-9B:
 
    | Same real documents, strict reading | 2B | 9B |
