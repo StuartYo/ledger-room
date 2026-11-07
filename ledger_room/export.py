@@ -41,7 +41,9 @@ from . import rules
 
 FORMAT_CODE = {"triplicate_invoice": "21", "e_invoice": "25", "two_part_register": "22"}
 BLOCKING = {"UBN_CHECKSUM", "DUP_CROSS_MONTH", "DUP_CROSS_CLIENT", "READ_REVIEW", "AMOUNT_MISMATCH", "BUYER_PRESUMED",
-            "RECEIPT_TAX_UNVERIFIED", "CUSTOMS_KEY_BY_HAND", "VOID_ON_PLATFORM"}
+            "RECEIPT_TAX_UNVERIFIED", "CUSTOMS_KEY_BY_HAND", "VOID_ON_PLATFORM",
+            # period check (period_check.py): never in a run's own exceptions, listed so every caller holds them
+            "DUP_PRIOR_FILING", "PLATFORM_AMOUNT_DIFF", "PLATFORM_RECORD_CONFLICT"}
 STATUS_LABEL = {
     "READY": "pre-checked (a bookkeeper still signs off every line)",
     "HOLD": "on hold: resolve the exceptions first",

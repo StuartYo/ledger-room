@@ -235,6 +235,40 @@ RULES["IN_PLATFORM"] = {
                             "period, which is imported on its own; entering the photo too would claim the same input tax "
                             "twice (VAT Act Art. 51(1)(5)).", "url": LAW + "G0340080&flno=51"}],
 }
+# Period check (period_check.py): rules that need the whole period at once, the platform download, the client's
+# earlier filed media files and the paper together. Not among the six evaluated issue types.
+MEDIA_RULE_URL = "https://law-out.mof.gov.tw/LawContent.aspx?id=GL009478"
+RULES["DUP_PRIOR_FILING"] = {
+    "title": "Already claimed in an earlier period's filing",
+    "severity": "high",
+    "citations": [
+        {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax "
+                  "(虛報進項稅額), fined up to 5x the tax evaded. The voucher number (and seller UBN) is in a media file "
+                  "this client already filed for an earlier period", "url": LAW + "G0340080&flno=51"},
+        {"label": "VAT Enforcement Rules Art. 29: a voucher not claimed in its own period may be claimed later; one that "
+                  "was already claimed may not be claimed again", "url": LAW + "G0340081&flno=29"},
+    ],
+}
+RULES["PLATFORM_AMOUNT_DIFF"] = {
+    "title": "Hold: the photographed invoice and the platform record disagree",
+    "severity": "hold",
+    "citations": [
+        {"label": "營業稅電子資料申報繳稅作業要點 第二十點 and 附件五: the input record carries the voucher's own sales "
+                  "amount and tax. The platform line and the paper copy of the same invoice number show different "
+                  "amounts or sellers, so one of them is wrong; held until checked against the paper and the seller",
+         "url": MEDIA_RULE_URL},
+        CITE_ART67,
+    ],
+}
+RULES["PLATFORM_RECORD_CONFLICT"] = {
+    "title": "Hold: the same invoice appears twice in the platform downloads with different amounts",
+    "severity": "hold",
+    "citations": [
+        {"label": "VAT Act Art. 51(1)(5): filing both records would claim the invoice's input tax twice; the downloads "
+                  "disagree (for example a later download after the seller corrected the invoice), so a person picks "
+                  "the right one", "url": LAW + "G0340080&flno=51"},
+    ],
+}
 
 # --- category lexicon (auditable keyword table; the model's category is only a fallback) ---
 S19_LEXICON: list[tuple[str, str, list[str]]] = [
