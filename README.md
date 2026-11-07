@@ -23,9 +23,10 @@ labelled: **Stage II** numbers were measured on the organiser's host with two In
 
 Organiser's host: Intel Xeon 6787P, 251.5 GB RAM, two Intel Arc Pro B70 cards (`GPU.0`, `GPU.1`), OpenVINO
 2026.4.1, Linux. Reader Qwen3.5-9B INT4 (`OpenVINO/Qwen3.5-9B-int4-ov`), thinking mode off, fresh reads (cache off).
-Every number below was copied from the results file named in its row; synthetic sets are synthetic. All rows use
-reader r8 (code 3524145 to 77fa568). The head of `main` (reader r9, 2aead27) changed reading after the first blind3
-run and has no B70 numbers yet.
+Every number below was copied from the results file named in its row; synthetic sets are synthetic. Rows up to the
+offline check use reader r8 (code 3524145 to 77fa568). The two readers-per-card rows use reader r9 (2aead27), which
+reads the held-out set the same way (0 fields wrong under both). Reader r9 changed reading after the first blind3
+run; its blind3 and hard-set numbers are in the after-the-fix table below the notes.
 
 | What was run | Result | Source (file → key) |
 |---|---|---|
@@ -37,7 +38,9 @@ run and has no B70 numbers yet.
 | **Real receipts, CORD v2** (193 receipts, validation + test splits, CC BY 4.0; total only, against the dataset's own ground truth; Taiwanese rules and Ledger Room's own reader not run) | 9B on its own: 3 of 193 totals wrong, none stopped. OCR + 9B, a total accepted only when two printed sources agree: 1 wrong and not stopped, 65 sent to a person (63 of those had been read right) | `eval/results_real_intl_cord_b70.json` → `["Qwen3.5-9B-int4-ov"].conditions` |
 | **Two cards at once**, one 9B per card, started together, each card reading the same 47 held-out docs | 1,006 + 1,002 documents per hour (whole batch, wall clock); F1 1.00 and 0/319 fields wrong on both cards; no model reloads | `eval/results_dualcard_gpu0.json`, `eval/results_dualcard_gpu1.json` → `sets.heldout.first_only` (code 77fa568) |
 | **27B as second reader** on the second card (the 9B reads everything, the 27B re-reads what the 9B is unsure of) | No gain. Hard set: 14 documents went to the 27B and 5 fields were taken from it, but still 18 of 49 to a person and 46/320 fields wrong, the same as the 9B alone. The unsure fields on that set are damaged on the image itself (covered, faded, written over), so a bigger reader has nothing more to read. Held-out: the 9B was unsure of no document. With the 27B as the only reader on held-out: F1 1.00, 0/319, 5.2 s per document against 3.7 s for the 9B | `eval/results_tiered.json` → `sets.hard.tiered` vs `sets.hard.first_only`; `eval/results_b70.json` → `results["Qwen3.5-27B-int4-ov"]` |
-| **GPU driver error and workaround** | The first two blind3 attempts (code 7c3497b) stopped at document 8 of 53 with a GPU driver error (`CL_OUT_OF_RESOURCES`), before any scoring. Since then the bench reloads the 9B every 5 documents (`--first-restart-every 5`, about 9 s a reload). Counting the reloads, one card read 599 to 659 documents an hour (blind3 599, held-out 640, hard 651); leaving reload time out, 856 to 968 | `eval/results_tiered.json` → `sets.blind3.note`, `sets.*.first_only` / `sets.*.tiered`: `docs_per_hour`, `docs_per_hour_excluding_first_reloads`, `first_restarts` |
+| **GPU driver error and workaround** | The first two blind3 attempts (code 7c3497b) stopped at document 8 of 53 with a GPU driver error (`CL_OUT_OF_RESOURCES`), before any scoring. Since then the bench reloads the 9B every 5 documents (`--first-restart-every 5`, about 9 s a reload). Counting the reloads, one card read 599 to 659 documents an hour (blind3 599, held-out 640, hard 651); leaving reload time out, 856 to 968. Replaced since by a fresh reader only after an error (after-the-fix table) | `eval/results_tiered.json` → `sets.blind3.note`, `sets.*.first_only` / `sets.*.tiered`: `docs_per_hour`, `docs_per_hour_excluding_first_reloads`, `first_restarts` |
+| **Readers per card**, one B70, 1 to 4 copies of the 9B reading one queue of the 47 held-out docs (code 34f5246) | 1 reader: 1,034/h; 2 readers: 1,013/h; 3 readers: 993/h; 4 readers: 976/h: one reader already keeps the card busy. Card memory 6.59 GB per reader (6.63 GB peak with one, 25.41 GB with four). Card power while reading 193.59 W, idle 64.18 W; 187.25 Wh per 1,000 documents (sampled power × read wall clock; the card's energy counter did not move). Scoring the same at every count: F1 1.00, 0/319 fields wrong, 0 sent to a person; no crashes | `eval/results_concurrency.json` → `rows[]`: `docs_per_hour`, `memory`, `power`, `scoring` |
+| **Readers per card, both B70s**, the same queue split over two cards | 1 per card: 1,991/h; 2 per card: 1,944/h; 3 per card: 1,896/h; 4 per card: 1,857/h. One reader per card: 188.59 + 181.77 W while reading, 186.04 Wh per 1,000 documents. Same scoring as one card; no crashes | `eval/results_concurrency_2cards.json` → `rows[]` |
 | **Offline check** on the B70 | PASS: 47 documents read live, 175.8 s watched, 0 connections to a non-local address. The network adapter stayed up (a cloud host cannot unplug it), so this is not a cable-pulled test | `eval/results_offline_b70.json` |
 
 **Hard set, why two rows.** Both runs are the 9B with reader r8 on the same 49 documents. `eval/hard_eval.py` (first
@@ -54,13 +57,26 @@ was changed afterwards because of what this run showed (an invoice number split 
 amounts written one digit per box, a seller UBN equal to the client's own). Anything measured with r9 is labelled
 "after the fix" and does not replace the rows above.
 
-**Documents per hour, plainly.** One B70 with the 9B: about 1,000 an hour on held-out when no reload is needed (973
-from the mean time per document in `results_b70.json`, 1,006 wall clock in `results_dualcard_gpu0.json`), and 600 to
-660 an hour with the reload every 5 documents that the longer runs needed. Two B70s, one 9B each: 1,006 + 1,002 an
-hour on held-out without reloads; two cards with reloads have not been measured. Each run is 47 to 53 documents, not a
+**Documents per hour, plainly.** One B70 with the 9B reads about 1,000 documents an hour (1,034 with one
+reader on held-out). More readers on the same card do not help (1,013, 993, 976 with 2, 3, 4):
+one reader keeps the card busy, so the rate grows with cards: 1,991 an hour with one reader on each
+of the two B70s. A card draws about 190 W while reading, about 0.19 kWh per 1,000 documents.
+The 32 GB on a B70 is headroom (the 9B needs about 6.59 GB, the 27B fits), not a reason to
+stack readers. The 599 to 659 an hour in the reload row above was the old workaround for the GPU driver error.
+The bench now starts a fresh reader only after an error and retries that document: blind3 after the fix read
+883 an hour over 53 documents, one restart included. Each run is 47 to 53 documents, not a
 night-long batch.
 
 <!-- r9 after-fix rows go here -->
+
+**After the fix: reader r9 (2aead27).** Not an independent test any more: r9 was changed because of what the first
+blind3 run showed. The first-run rows above stay the headline.
+
+| What was run | Result | Source (file → key) |
+|---|---|---|
+| Held-out, 47 docs, 9B alone | F1 1.00, 0/319 key fields wrong, 0 of 47 sent to a person | `eval/results_after_fix_r9.json` → `sets.heldout.first_only` |
+| Hard set, 49 docs, 9B alone (first reader only; the 27B pass was not run, which is why the file says incomplete) | 45/320 key fields wrong, 18 of 49 sent to a person, 2 clean documents flagged | `eval/results_after_fix_r9.json` → `sets.hard.first_only` |
+| blind3, 53 docs, 9B alone, restart-on-error bench (7d00d4d) | F1 1.00 (found 27, missed 0, 0 false alarms), 18/326 key fields wrong, 12 of 53 sent to a person, 0 clean documents flagged; 883 documents an hour; one reader error (`CL_OUT_OF_RESOURCES`) recovered by a fresh process, no fixed reloads. A first attempt (bench 34f5246) reused the broken process and was discarded | `eval/results_after_fix_r9_blind3.json` → `rows[0]` |
 
 ## Why a bookkeeping firm needs this
 
@@ -499,11 +515,12 @@ not results.
 - Synthetic UBNs are random numbers that satisfy the checksum; the evaluation never loads the business register.
   The register lookup is tested on a small fixture only.
 - Laptop timings use an Intel UHD iGPU. B70 timings come from runs of 47 to 53 documents, not a night-long batch.
-  Longer runs on one process hit a GPU driver error (`CL_OUT_OF_RESOURCES`), worked around by reloading the model every
-  5 documents, which costs about a third of the throughput; the cause is not found yet.
+  Longer runs on one process hit a GPU driver error (`CL_OUT_OF_RESOURCES`); after it the process cannot use the GPU
+  again. The bench used to reload the model every 5 documents (about a third of the throughput); it now starts a fresh
+  reader only after an error. The cause is not found yet.
 - New layouts hurt reading: on blind3 (first official run) 40 of 326 key fields were wrong against 0 of 319 on the
-  held-out layouts, and 2 documents were accepted with wrong UBNs. The r9 changes that address this have not been
-  measured on the B70 yet.
+  held-out layouts, and 2 documents were accepted with wrong UBNs. After the r9 changes blind3 gave
+  18/326, but that run is no longer blind.
 
 ## Licenses
 
