@@ -210,5 +210,35 @@
   },
   "note": "Not a person-versus-machine race: the old ledger is one way a small company actually kept its books. On all six scored fields the 9B let 1 of the 113 through (a seller tax ID), which the old ledger does not record."
  },
- "computed": "2026-11-07, from per-voucher held sets re-derived from the saved reads (no model run) and the frozen key; private per-voucher files stay outside git"
+ "computed": "2026-11-07, from per-voucher held sets re-derived from the saved reads (no model run) and the frozen key; private per-voucher files stay outside git",
+ "after_fix_utility_routing": {
+  "label": "AFTER THE FIX, not a first run: the utility-bill keywords (commit 1d7a07c) were written after seeing this set; same saved reads, no model run",
+  "what": "A recognised utility bill is not booked from paper: its input tax comes from the utility's e-invoice on the MOF platform, the bill is kept as payment proof. It is neither held nor exported.",
+  "utility_bills_recognised": "155 of 155, 0 false (eval/results_utility_detect.json)",
+  "Qwen3.5-9B-int4-ov": {
+   "strict": {
+    "sent_to_a_person": 112,
+    "wrong_and_not_held_excluding_bills": 2
+   },
+   "default": {
+    "sent_to_a_person": 109,
+    "wrong_and_not_held_excluding_bills": 2
+   }
+  },
+  "Qwen3.5-2B-int4-ov": {
+   "strict": {
+    "sent_to_a_person": 157,
+    "wrong_and_not_held_excluding_bills": 4
+   },
+   "default": {
+    "sent_to_a_person": 114,
+    "wrong_and_not_held_excluding_bills": 27
+   }
+  },
+  "before_the_fix_9B_strict": {
+   "sent_to_a_person": 257,
+   "wrong_and_not_held": 11,
+   "of_which_utility_bills": 9
+  }
+ }
 }
