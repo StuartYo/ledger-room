@@ -1,0 +1,652 @@
+{
+ "generated_at": "2026-11-06T18:35:58+00:00",
+ "code_rev": "34f5246",
+ "dry_run": false,
+ "command": "python -m eval.bench_concurrency --set heldout --k 1,2,3,4 --devices GPU.0 --models-root /home/devcloud/models",
+ "set": "heldout",
+ "docs_in_set": 47,
+ "docs_used": 47,
+ "answer_key": "eval/expected_heldout.json",
+ "model": "Qwen3.5-9B-int4-ov",
+ "devices": [
+  "GPU.0"
+ ],
+ "factory": "ledger_room.reader:Reader",
+ "inventory": {
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "host": "0007e935143f",
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "Intel(R) Xeon(R) 6787P"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0",
+    "pci": "{domain: 0 bus: 23 device: 0x0 function: 0}"
+   },
+   {
+    "id": "GPU.1",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0",
+    "pci": "{domain: 0 bus: 186 device: 0x0 function: 0}"
+   }
+  ],
+  "kernel": "7.0.0-34-generic"
+ },
+ "xpu_smi_discovery": "                                                                  \n  Device ID     Device Information                                \n  0             Device Name: Intel(R) Arc(TM) Pro B70 Graphics    \n                Device State: normal                              \n                Vendor Name: Intel(R) Corporation                 \n                SOC UUID: 00000000-0000-0017-0000-0000e2238086    \n                PCI BDF Address: 0000:17:00.0                     \n                DRM Device: /dev/dri/card1                        \n                Function Type: physical                           \n                                                                  \n  1             Device Name: Intel(R) Arc(TM) Pro B70 Graphics    \n                Device State: normal                              \n                Vendor Name: Intel(R) Corporation                 \n                SOC UUID: 00000000-0000-00ba-0000-0000e2238086    \n                PCI BDF Address: 0000:ba:00.0                     \n                DRM Device: /dev/dri/card2                        \n                Function Type: physical                           \n                                                                  \n",
+ "definitions": {
+  "docs_per_hour": "documents read / read wall clock (all workers loaded -> last document back; reloads after a crash included, first loads not)",
+  "latency_s": "per document, seconds the worker spent on it (OCR + model + post-processing); the queue wait is not in it",
+  "wh_per_1000_docs": "energy over the run / documents read x 1000; energy from the xpu-smi energy counter (end - start, all cards in use) when it behaves as a running counter, else mean sampled power x read wall clock (energy_source says which; sampled_* always kept); marginal_wh_per_1000_docs subtracts the idle power measured just before",
+  "memory": "xpu_smi_peak_used_gb: device memory used (whole card, all processes), peak over load + run; per_worker_gb_est = (peak - idle) / workers on that card; fdinfo_*: the workers' own DRM fdinfo drm-total-vram (Linux)",
+  "scoring": "pipeline.audit on the collected reads, then eval.read_accuracy and eval.run_eval.score (as bench_tiered); same_scoring_as_k1 compares key_fields_wrong, rule_f1, docs_for_person",
+  "supervisor": "a worker that dies is restarted and its document retried once; a second failure on the same document sends it to a person (READ_REVIEW, reason reader_crash); no fixed reloads"
+ },
+ "notes": [
+  "OCR runs on the CPU inside each worker, so K workers also share the CPU"
+ ],
+ "rows": [
+  {
+   "k": 1,
+   "worker_devices": [
+    "GPU.0"
+   ],
+   "workers_per_device": {
+    "GPU.0": 1
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4081263,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 9.03
+    }
+   ],
+   "load_wall_s": 9.3,
+   "workers_loaded": 1,
+   "docs": 47,
+   "docs_read": 47,
+   "docs_not_read": 0,
+   "wall_s": 163.7,
+   "docs_per_hour": 1034,
+   "latency_s": {
+    "mean": 3.48,
+    "p50": 3.38,
+    "p95": 4.09,
+    "max": 6.09,
+    "n": 47,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 47
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": 6.586,
+    "fdinfo_peak_vram_gb_by_worker": {
+     "0": 6.59
+    },
+    "xpu_smi_idle_used_gb": {
+     "GPU.0": 0.04
+    },
+    "xpu_smi_peak_used_gb": {
+     "GPU.0": 6.63
+    },
+    "xpu_smi_per_worker_gb_est": {
+     "GPU.0": 6.59
+    }
+   },
+   "power": {
+    "idle_s": 10.0,
+    "by_device": {
+     "GPU.0": {
+      "mean_w": 193.59,
+      "max_w": 211.27,
+      "samples": 163
+     }
+    },
+    "idle_by_device": {
+     "GPU.0": {
+      "mean_w": 64.18,
+      "max_w": 64.53,
+      "samples": 9
+     }
+    },
+    "mean_w_total": 193.59,
+    "idle_w_total": 64.18,
+    "energy_counter": {
+     "GPU.0": {
+      "start_j": 13.365723,
+      "end_j": 20.307495,
+      "span_s": 164.0,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 193.6 W: not used"
+     }
+    },
+    "sampled_energy_wh": 8.801,
+    "sampled_wh_per_1000_docs": 187.25,
+    "energy_source": "sampled mean W x read wall clock",
+    "energy_wh": 8.801,
+    "wh_per_1000_docs": 187.25,
+    "marginal_wh_per_1000_docs": 125.17,
+    "source": {
+     "GPU.0": "dump: stdbuf -oL xpu-smi dump --device 0 --metrics 1,18 --interval 1 --number 1000000"
+    },
+    "raw_head": {
+     "GPU.0": [
+      "Timestamp, DeviceId, power.draw (W), memory.used (MiB)",
+      "18:35:59.273, 0, 64.23, 42.45703125",
+      "18:36:00.274, 0, 64.33, 42.45703125",
+      "18:36:01.275, 0, 64.51, 42.45703125"
+     ]
+    },
+    "xpu_smi_ids": {
+     "GPU.0": "0"
+    },
+    "notes": []
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k1-20261106-183903",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0
+   }
+  },
+  {
+   "k": 2,
+   "worker_devices": [
+    "GPU.0",
+    "GPU.0"
+   ],
+   "workers_per_device": {
+    "GPU.0": 2
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4089149,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.68
+    },
+    {
+     "worker": 1,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4092261,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 9.0
+    }
+   ],
+   "load_wall_s": 18.1,
+   "workers_loaded": 2,
+   "docs": 47,
+   "docs_read": 47,
+   "docs_not_read": 0,
+   "wall_s": 167.1,
+   "docs_per_hour": 1013,
+   "latency_s": {
+    "mean": 7.11,
+    "p50": 6.72,
+    "p95": 8.93,
+    "max": 10.35,
+    "n": 47,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 23,
+    "1": 24
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "speedup_vs_k1": 0.98,
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": 12.974,
+    "fdinfo_peak_vram_gb_by_worker": {
+     "0": 6.5,
+     "1": 6.47
+    },
+    "xpu_smi_idle_used_gb": {
+     "GPU.0": 0.04
+    },
+    "xpu_smi_peak_used_gb": {
+     "GPU.0": 13.02
+    },
+    "xpu_smi_per_worker_gb_est": {
+     "GPU.0": 6.49
+    }
+   },
+   "power": {
+    "idle_s": 10.0,
+    "by_device": {
+     "GPU.0": {
+      "mean_w": 197.48,
+      "max_w": 212.3,
+      "samples": 167
+     }
+    },
+    "idle_by_device": {
+     "GPU.0": {
+      "mean_w": 65.54,
+      "max_w": 65.92,
+      "samples": 9
+     }
+    },
+    "mean_w_total": 197.48,
+    "idle_w_total": 65.54,
+    "energy_counter": {
+     "GPU.0": {
+      "start_j": 13.23816,
+      "end_j": 20.661316,
+      "span_s": 167.4,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 197.5 W: not used"
+     }
+    },
+    "sampled_energy_wh": 9.166,
+    "sampled_wh_per_1000_docs": 195.03,
+    "energy_source": "sampled mean W x read wall clock",
+    "energy_wh": 9.166,
+    "wh_per_1000_docs": 195.03,
+    "marginal_wh_per_1000_docs": 130.3,
+    "source": {
+     "GPU.0": "dump: stdbuf -oL xpu-smi dump --device 0 --metrics 1,18 --interval 1 --number 1000000"
+    },
+    "raw_head": {
+     "GPU.0": [
+      "Timestamp, DeviceId, power.draw (W), memory.used (MiB)",
+      "18:39:09.329, 0, 65.22, 42.4609375",
+      "18:39:10.330, 0, 65.27, 42.4609375",
+      "18:39:11.331, 0, 65.92, 42.4609375"
+     ]
+    },
+    "xpu_smi_ids": {
+     "GPU.0": "0"
+    },
+    "notes": []
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k2-20261106-184227",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0
+   },
+   "same_scoring_as_k1": true,
+   "docs_fields_differ_vs_k1": 0
+  },
+  {
+   "k": 3,
+   "worker_devices": [
+    "GPU.0",
+    "GPU.0",
+    "GPU.0"
+   ],
+   "workers_per_device": {
+    "GPU.0": 3
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4101837,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.62
+    },
+    {
+     "worker": 1,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4104756,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.57
+    },
+    {
+     "worker": 2,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4107686,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 7.86
+    }
+   ],
+   "load_wall_s": 25.7,
+   "workers_loaded": 3,
+   "docs": 47,
+   "docs_read": 47,
+   "docs_not_read": 0,
+   "wall_s": 170.3,
+   "docs_per_hour": 993,
+   "latency_s": {
+    "mean": 10.77,
+    "p50": 10.45,
+    "p95": 13.51,
+    "max": 14.52,
+    "n": 47,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 16,
+    "1": 15,
+    "2": 16
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "speedup_vs_k1": 0.96,
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": 19.216,
+    "fdinfo_peak_vram_gb_by_worker": {
+     "0": 6.47,
+     "1": 6.4,
+     "2": 6.49
+    },
+    "xpu_smi_idle_used_gb": {
+     "GPU.0": 0.04
+    },
+    "xpu_smi_peak_used_gb": {
+     "GPU.0": 19.28
+    },
+    "xpu_smi_per_worker_gb_est": {
+     "GPU.0": 6.41
+    }
+   },
+   "power": {
+    "idle_s": 10.0,
+    "by_device": {
+     "GPU.0": {
+      "mean_w": 196.07,
+      "max_w": 212.96,
+      "samples": 171
+     }
+    },
+    "idle_by_device": {
+     "GPU.0": {
+      "mean_w": 61.29,
+      "max_w": 61.57,
+      "samples": 9
+     }
+    },
+    "mean_w_total": 196.07,
+    "idle_w_total": 61.29,
+    "energy_counter": {
+     "GPU.0": {
+      "start_j": 12.9776,
+      "end_j": 20.61438,
+      "span_s": 170.6,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 196.1 W: not used"
+     }
+    },
+    "sampled_energy_wh": 9.277,
+    "sampled_wh_per_1000_docs": 197.38,
+    "energy_source": "sampled mean W x read wall clock",
+    "energy_wh": 9.277,
+    "wh_per_1000_docs": 197.38,
+    "marginal_wh_per_1000_docs": 135.68,
+    "source": {
+     "GPU.0": "dump: stdbuf -oL xpu-smi dump --device 0 --metrics 1,18 --interval 1 --number 1000000"
+    },
+    "raw_head": {
+     "GPU.0": [
+      "Timestamp, DeviceId, power.draw (W), memory.used (MiB)",
+      "18:42:33.378, 0, 61.27, 42.4609375",
+      "18:42:34.379, 0, 61.08, 42.4609375",
+      "18:42:35.380, 0, 61.57, 42.4609375"
+     ]
+    },
+    "xpu_smi_ids": {
+     "GPU.0": "0"
+    },
+    "notes": []
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k3-20261106-184603",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0
+   },
+   "same_scoring_as_k1": true,
+   "docs_fields_differ_vs_k1": 0
+  },
+  {
+   "k": 4,
+   "worker_devices": [
+    "GPU.0",
+    "GPU.0",
+    "GPU.0",
+    "GPU.0"
+   ],
+   "workers_per_device": {
+    "GPU.0": 4
+   },
+   "workers": [
+    {
+     "worker": 0,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4118977,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 9.27
+    },
+    {
+     "worker": 1,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4121903,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.75
+    },
+    {
+     "worker": 2,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4124834,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.98
+    },
+    {
+     "worker": 3,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 4127823,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.88
+    }
+   ],
+   "load_wall_s": 36.8,
+   "workers_loaded": 4,
+   "docs": 47,
+   "docs_read": 47,
+   "docs_not_read": 0,
+   "wall_s": 173.4,
+   "docs_per_hour": 976,
+   "latency_s": {
+    "mean": 14.7,
+    "p50": 14.06,
+    "p95": 18.82,
+    "max": 19.11,
+    "n": 47,
+    "definition": "seconds a worker spent on one document (OCR + model + post-processing)"
+   },
+   "docs_per_worker": {
+    "0": 11,
+    "1": 12,
+    "2": 12,
+    "3": 12
+   },
+   "crashes": 0,
+   "crash_log": [],
+   "restarts": 0,
+   "restart_load_s": 0,
+   "retries": [],
+   "not_read": {},
+   "load_errors": [],
+   "speedup_vs_k1": 0.94,
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": 25.374,
+    "fdinfo_peak_vram_gb_by_worker": {
+     "0": 6.36,
+     "1": 6.36,
+     "2": 6.38,
+     "3": 6.33
+    },
+    "xpu_smi_idle_used_gb": {
+     "GPU.0": 0.04
+    },
+    "xpu_smi_peak_used_gb": {
+     "GPU.0": 25.41
+    },
+    "xpu_smi_per_worker_gb_est": {
+     "GPU.0": 6.34
+    }
+   },
+   "power": {
+    "idle_s": 10.0,
+    "by_device": {
+     "GPU.0": {
+      "mean_w": 195.06,
+      "max_w": 206.21,
+      "samples": 174
+     }
+    },
+    "idle_by_device": {
+     "GPU.0": {
+      "mean_w": 61.66,
+      "max_w": 62.24,
+      "samples": 9
+     }
+    },
+    "mean_w_total": 195.06,
+    "idle_w_total": 61.66,
+    "energy_counter": {
+     "GPU.0": {
+      "start_j": 15.304871,
+      "end_j": 20.331299,
+      "span_s": 173.7,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 195.1 W: not used"
+     }
+    },
+    "sampled_energy_wh": 9.394,
+    "sampled_wh_per_1000_docs": 199.87,
+    "energy_source": "sampled mean W x read wall clock",
+    "energy_wh": 9.394,
+    "wh_per_1000_docs": 199.87,
+    "marginal_wh_per_1000_docs": 136.69,
+    "source": {
+     "GPU.0": "dump: stdbuf -oL xpu-smi dump --device 0 --metrics 1,18 --interval 1 --number 1000000"
+    },
+    "raw_head": {
+     "GPU.0": [
+      "Timestamp, DeviceId, power.draw (W), memory.used (MiB)",
+      "18:46:09.616, 0, 62.24, 42.45703125",
+      "18:46:10.617, 0, 60.91, 42.45703125",
+      "18:46:11.618, 0, 62.16, 42.45703125"
+     ]
+    },
+    "xpu_smi_ids": {
+     "GPU.0": "0"
+    },
+    "notes": []
+   },
+   "scoring": {
+    "docs_for_person": 0,
+    "read_review_not_read": [],
+    "run_id": "concurrency-k4-20261106-184954",
+    "key_fields_wrong": 0,
+    "key_fields_compared": 319,
+    "key_field_error_rate": 0.0,
+    "rule_f1": 1.0,
+    "rule_micro": {
+     "tp": 24,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "clean_docs_flagged": 0
+   },
+   "same_scoring_as_k1": true,
+   "docs_fields_differ_vs_k1": 0
+  }
+ ],
+ "measured_on_b70": true
+}
