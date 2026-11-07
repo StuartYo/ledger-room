@@ -1,0 +1,47 @@
+{
+ "_note": "SYNTHETIC. Hand-typed OCR line texts and read fields for voucher-kind tests (tests/test_vouchers_*.py). Not from any real document: UBNs are synthetic numbers that pass the 2023 checksum, ticket and certificate numbers are made up.",
+ "client": {"id": "A", "name": "甲公司", "ubn": "00501503", "period": ["2026-09-01", "2026-10-31"], "policy": {}},
+ "docs": {
+  "thsr_ticket": {
+   "ocr": ["台灣高鐵 THSR", "購票證明", "台北 → 左營", "2026/10/05 08:31", "標準車廂 5車12A", "票價 NT$1,490", "統一編號 85927754", "票號 0512345678"],
+   "fields": {"doc_type": "receipt", "invoice_no": "0512345678", "date": "2026-10-05", "seller_name": "台灣高鐵",
+              "seller_ubn": "85927754", "buyer_ubn": null, "items": [{"desc": "台北-左營 標準車廂"}],
+              "net": null, "tax": null, "total": 1490}
+  },
+  "tra_ticket_no_ubn": {
+   "ocr": ["臺鐵 自強號", "臺北 → 花蓮", "2026/10/06", "全票 NT$440"],
+   "fields": {"doc_type": "receipt", "invoice_no": null, "date": "2026-10-06", "seller_name": null,
+              "seller_ubn": null, "buyer_ubn": null, "items": [], "net": null, "tax": null, "total": 440}
+  },
+  "bus_ticket": {
+   "ocr": ["國光客運", "台北 → 台中", "乘車日期 2026/10/07", "票價 260"],
+   "fields": {"doc_type": "receipt", "invoice_no": "A123456", "date": "2026-10-07", "seller_name": "國光客運",
+              "seller_ubn": "12345675", "buyer_ubn": null, "items": [], "net": null, "tax": null, "total": 260}
+  },
+  "taxi_receipt": {
+   "ocr": ["計程車 乘車證明", "車號 ABC-1234", "車資 550"],
+   "fields": {"doc_type": "receipt", "invoice_no": null, "date": "2026-10-08", "seller_name": "大眾車隊",
+              "seller_ubn": "85927754", "buyer_ubn": null, "items": [{"desc": "計程車資"}], "net": null, "tax": null,
+              "total": 550}
+  },
+  "customs_certificate": {
+   "ocr": ["財政部關務署臺北關", "海關代徵營業稅繳納證", "扣抵聯", "納稅義務人統一編號 00501503", "營業稅稅基 20,000",
+           "營業稅額 1,000", "繳納證號碼 AA12345678901B"],
+   "fields": {"doc_type": "receipt", "invoice_no": null, "customs_cert_no": "AA12345678901B", "date": "2026-10-09",
+              "seller_name": "財政部關務署臺北關", "seller_ubn": null, "buyer_ubn": "00501503", "items": [],
+              "net": 20000, "tax": 1000, "total": 21000}
+  },
+  "receipt_with_tax": {
+   "ocr": ["收據", "買受人統一編號 00501503", "清潔服務費 1,000", "稅額 50", "合計 1,050"],
+   "fields": {"doc_type": "receipt", "invoice_no": null, "date": "2026-10-10", "seller_name": "乙清潔社",
+              "seller_ubn": "85927754", "buyer_ubn": "00501503", "items": [{"desc": "清潔服務費"}],
+              "net": 1000, "tax": 50, "total": 1050}
+  },
+  "small_business_receipt": {
+   "ocr": ["收據", "免用統一發票", "文具一批 300"],
+   "fields": {"doc_type": "receipt", "invoice_no": null, "date": "2026-10-11", "seller_name": "丙文具行",
+              "seller_ubn": "85927754", "buyer_ubn": null, "items": [{"desc": "文具一批"}], "net": null, "tax": null,
+              "total": 300}
+  }
+ }
+}

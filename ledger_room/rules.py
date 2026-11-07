@@ -35,11 +35,15 @@ RULES: dict[str, dict] = {
     "DUP_CROSS_CLIENT": {
         "title": "Duplicate voucher: the same document appears under two different clients",
         "severity": "high",
+        # Mostly expense receipts without a buyer UBN (a voucher with the buyer's UBN is already stopped by
+        # BUYER_NOT_CLIENT for the wrong client), so the expense rule leads; the VAT rules apply only when input tax
+        # is claimed. Each exception carries the citations that fit its voucher (CITE_DUP_INCOME / CITE_DUP_VAT_CROSS).
         "citations": [
-            {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax (虛報進項稅額), fined up to 5x the tax evaded",
-             "url": LAW + "G0340080&flno=51"},
-            {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
-             "url": LAW + "G0340080&flno=33"},
+            {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(1): an expense without an original "
+                      "voucher, or whose voucher does not match, is in principle not recognised",
+             "url": LAW + "G0340051&flno=67"},
+            {"label": "VAT Act Art. 33 (only when input tax is claimed): deductible vouchers must carry the buyer's name, "
+                      "address and UBN", "url": LAW + "G0340080&flno=33"},
         ],
     },
     "S19_NONDEDUCTIBLE": {
@@ -77,16 +81,36 @@ RULES: dict[str, dict] = {
 CITE_DUP_VAT = [
     {"label": "VAT Act Art. 51(1)(5): claiming the same input tax twice may constitute over-claimed input tax (虛報進項稅額), fined up to 5x the tax evaded", "url": LAW + "G0340080&flno=51"},
 ]
-CITE_DUP_VAT_CROSS = CITE_DUP_VAT + [
-    {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
-     "url": LAW + "G0340080&flno=33"},
-]
+CITE_ART67 = {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(1): an expense without an original "
+                       "voucher, or whose voucher does not match, is in principle not recognised",
+              "url": LAW + "G0340051&flno=67"}
+# Across clients the expense rule leads (G15); VAT Art. 33 and Art. 51 follow only because input tax is claimed here.
+CITE_DUP_VAT_CROSS = [CITE_ART67,
+                      {"label": "VAT Act Art. 33 (input tax is claimed on this voucher): deductible vouchers must carry "
+                                "the buyer's name, address and UBN", "url": LAW + "G0340080&flno=33"}] + CITE_DUP_VAT
 CITE_DUP_INCOME = [
+    CITE_ART67,
     {"label": "Income Tax Act Art. 24: taxable income is revenue minus the costs and expenses of the year",
      "url": LAW + "G0340003&flno=24"},
-    {"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 67(1): an expense without an original "
-              "voucher, or whose voucher does not match, is in principle not recognised",
-     "url": LAW + "G0340051&flno=67"},
+]
+ART38_URL = LAW + "G0340081&flno=38"
+CITE_ART38_OTHER = [
+    {"label": "VAT Enforcement Rules Art. 38(1)(13): only other vouchers showing VAT that the Ministry of Finance has "
+              "approved (財政部核定之載有稅額之其他憑證) count as input-tax vouchers", "url": ART38_URL},
+    {"label": "VAT Act Art. 19(1)(1): input tax is not deductible without the vouchers required by Art. 33",
+     "url": LAW + "G0340080&flno=19"},
+]
+CITE_ART38_TRANSPORT = [
+    {"label": "VAT Enforcement Rules Art. 38(1)(10) and (4): receipts or ticket stubs of trains / buses (火（汽）車), "
+              "high-speed rail, ships and aircraft issued to employees on business trips; input tax = total x 5% / "
+              "(1 + 5%), rounded to the dollar", "url": ART38_URL},
+]
+CITE_ART38_CUSTOMS = [
+    {"label": "VAT Enforcement Rules Art. 38(1)(2): the deduction copy of the customs-collected VAT payment "
+              "certificate (海關代徵營業稅繳納證扣抵聯)", "url": ART38_URL},
+    {"label": "營業稅電子資料申報繳稅作業要點 第二十點 and 附件五: format code 28; certificate number 14 characters "
+              "(positions 36-49); amount field = 營業稅稅基 on the certificate",
+     "url": "https://law-out.mof.gov.tw/LawContent.aspx?id=GL009478"},
 ]
 CITE_TWO_PART = [
     {"label": "VAT Act Art. 33: deductible vouchers must carry the buyer's name, address and UBN",
@@ -160,6 +184,39 @@ RULES["UBN_NOT_REGISTERED"] = {
                    "url": "https://data.gov.tw/dataset/9400"}],
 }
 
+# Voucher kinds and 401 details added after the bookkeeping-practice review (gap rows G4, G5, G6, G8, G1 hook).
+# None of them is among the six evaluated issue types.
+RULES["RECEIPT_TAX_UNVERIFIED"] = {
+    "title": "Hold: receipt shows a tax amount; only MOF-approved voucher kinds carry deductible input tax",
+    "severity": "hold",
+    "citations": CITE_ART38_OTHER,
+}
+RULES["TRANSPORT_TICKET"] = {
+    "title": "Transport ticket: input tax 5/105 of the total (format code 22); confirm it was an employee's business trip",
+    "severity": "warning",
+    "citations": CITE_ART38_TRANSPORT,
+}
+RULES["CUSTOMS_KEY_BY_HAND"] = {
+    "title": "Hold: customs-collected VAT payment certificate (format code 28): key the certificate number and tax by hand",
+    "severity": "hold",
+    "citations": CITE_ART38_CUSTOMS,
+}
+RULES["FIXED_ASSET_HINT"] = {
+    "title": "May be a fixed asset: confirm deduction code 2 (or 4 if non-deductible)",
+    "severity": "warning",
+    "citations": [{"label": "Profit-seeking Enterprise Income Tax Audit Regulations Art. 77-1: an item with a useful life "
+                            "over two years and an amount over NT$80,000 is a capital expenditure; the 401 return splits "
+                            "input lines into purchases and expenses (deduction code 1 / 3) and fixed assets (2 / 4)",
+                   "url": LAW + "G0340051&flno=77-1"}],
+}
+RULES["IN_PLATFORM"] = {
+    "title": "Already in the e-invoice platform download: not entered again",
+    "severity": "info",
+    "citations": [{"label": "Not a finding. The invoice number is in the client's e-invoice platform download for this "
+                            "period, which is imported on its own; entering the photo too would claim the same input tax "
+                            "twice (VAT Act Art. 51(1)(5)).", "url": LAW + "G0340080&flno=51"}],
+}
+
 # --- category lexicon (auditable keyword table; the model's category is only a fallback) ---
 S19_LEXICON: list[tuple[str, str, list[str]]] = [
     # (category, Art.19(1) item, keywords)
@@ -217,6 +274,7 @@ class Doc:
     doc_kind: str | None = None          # transaction_detail | payment_slip | None, from printed keywords (voucher_kind)
     small_business_receipt: bool = False   # a plain receipt that prints 免用統一發票 (issuer exempt from uniform invoices)
     uncertain: dict = field(default_factory=dict)   # field -> why it is not confirmed on the page
+    tax_voucher_kind: str | None = None    # transport_ticket | customs_payment | None (other_voucher_kind)
 
 
 @dataclass
@@ -330,6 +388,76 @@ def small_business_receipt(ocr_text: str) -> bool:
     return any(k in ocr_text.replace(" ", "") for k in SMALL_RECEIPT_KW)
 
 
+# Enforcement Rules Art. 38(1)(10): tickets of 火（汽）車 (train or bus), 高鐵, 船舶, 飛機 bought for an employee's business
+# trip. Taxis are not on the list (a taxi is not taxed like other transport operators): a taxi receipt is never a ticket.
+TRANSPORT_KW = ("台灣高鐵", "臺灣高鐵", "台湾高铁", "高鐵", "高铁", "THSR",
+                "臺鐵", "台鐵", "台铁", "臺灣鐵路", "台灣鐵路", "鐵路局", "铁路局", "火車票", "火车票",
+                "客運", "客运", "國光號", "国光号",
+                "航空", "登機證", "登机证", "機票", "机票", "BOARDINGPASS",
+                "船票", "客輪", "客轮", "渡輪", "渡轮", "輪船", "轮船")
+TAXI_KW = ("計程車", "计程车", "TAXI", "車隊", "车队", "叫車", "叫车")
+# 海關代徵營業稅繳納證: the customs office collects VAT on imports and issues a payment certificate (format code 28)
+CUSTOMS_KW = ("代徵", "代征", "營業稅繳納證", "营业税缴纳证", "繳納證", "缴纳证")
+
+
+def other_voucher_kind(text: str, doc_type: str | None = None) -> str | None:
+    """transport_ticket or customs_payment from printed words (OCR text and / or the read fields), else None.
+    A uniform invoice stays a uniform invoice: an e-invoice from the railway keeps format code 25."""
+    t = (text or "").replace(" ", "").replace("　", "").upper()
+    if ("海關" in t or "海关" in t) and any(k in t for k in CUSTOMS_KW):
+        return "customs_payment"
+    if doc_type not in (None, "receipt"):
+        return None
+    if any(k in t for k in TAXI_KW):
+        return None
+    if any(k.upper() in t for k in TRANSPORT_KW):
+        return "transport_ticket"
+    return None
+
+
+def fields_text(f: dict) -> str:
+    """Printed words the reader kept in the fields (seller, items, note): used when the OCR lines are not at hand."""
+    return " ".join([f.get("seller_name") or "", f.get("note") or ""]
+                    + [i.get("desc") or "" for i in f.get("items") or []])
+
+
+def transport_input_tax(total: int | None) -> int:
+    """Art. 38(4): input tax on a two-part register invoice or a transport ticket = total x 5% / (1 + 5%), rounded."""
+    return int(round(total * 5 / 105)) if total else 0
+
+
+FIXED_ASSET_MIN_NET = 80_000   # Audit Regulations Art. 77-1: over NT$80,000 and a useful life over two years
+# Items that are usually bought to last more than two years. Repairs, rentals and consumables of the same equipment
+# are expenses, so a line that also names one of FIXED_ASSET_NOT is not hinted.
+FIXED_ASSET_KW = ("電腦", "电脑", "筆電", "笔电", "筆記型電腦", "伺服器", "服务器", "工作站", "影印機", "影印机", "事務機",
+                  "事务机", "印表機", "打印机", "投影機", "投影机", "冷氣機", "冷气机", "空調", "空调", "冷凍櫃", "冷冻柜",
+                  "冰箱", "機台", "机台", "機器", "机器", "機械", "机械", "設備", "设备", "生財器具", "辦公桌", "办公桌",
+                  "辦公椅", "貨架", "货架", "堆高機", "发电机", "發電機", "貨車", "货车", "监视系统", "監視系統")
+FIXED_ASSET_NOT = ("維修", "维修", "保養", "保养", "修理", "租", "耗材", "碳粉", "墨水", "滑鼠", "鍵盤", "清洗", "清潔",
+                   "運費", "运费", "授權", "月費", "年費", "線材", "配件")
+
+
+def fixed_asset_reason(net: int | None, item_texts: list[str]) -> str | None:
+    """Why a line may be a fixed asset (deduction code 2 / 4), or None. Only a hint: the code is never changed."""
+    if net is not None and net >= FIXED_ASSET_MIN_NET:
+        return f"net NT${net:,} >= NT${FIXED_ASSET_MIN_NET:,}"
+    for desc in item_texts:
+        if not desc or any(k in desc for k in FIXED_ASSET_NOT):
+            continue
+        for kw in FIXED_ASSET_KW:
+            if kw in desc:
+                return f"item '{desc}' (keyword '{kw}')"
+    return None
+
+
+def net_amount(net: int | None, tax: int | None, total: int | None) -> int | None:
+    if net is not None:
+        return net
+    if total is not None:
+        return total - (tax or 0)
+    return None
+
+
 def prints_invoice_ids(d: Doc) -> bool:
     """Whether this document is supposed to print an invoice number and the seller's UBN: a uniform invoice
     (e-invoice proof, triplicate, two-part register), or a document of unknown type that carries an invoice number.
@@ -357,6 +485,10 @@ def amounts_inconsistent(net, tax, total) -> bool:
 def claimable_input_tax(d: Doc, client: dict, allow_presumed: bool = False) -> int:
     """Input tax this client could deduct from this voucher (0 if none). allow_presumed=True also counts a voucher
     whose buyer UBN could not be read but whose buyer name matches: used to explain risk, never to deduct."""
+    if d.tax_voucher_kind == "transport_ticket":     # Art. 38(1)(10): no buyer UBN on a ticket; 5/105 of the total
+        return transport_input_tax(d.total)
+    if d.tax_voucher_kind == "customs_payment":      # the importer on the certificate must be this client
+        return (d.tax or 0) if d.buyer_ubn in (None, client["ubn"]) else 0
     if d.doc_type not in TAX_VOUCHERS:
         return 0
     if d.buyer_ubn != client["ubn"] and not (allow_presumed and buyer_presumed(d, client)):
@@ -376,14 +508,31 @@ def _hamming(a: str, b: str) -> int:
 
 # ---------------- the engine ----------------
 
-def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[Exception_]:
+def _platform_set(platform_invoices, client_id: str) -> set[str]:
+    if not platform_invoices:
+        return set()
+    if isinstance(platform_invoices, dict):
+        return set(platform_invoices.get(client_id) or ())
+    return set(platform_invoices)
+
+
+def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
+              platform_invoices: set[str] | dict[str, set[str]] | None = None) -> list[Exception_]:
     """registry: optional ledger_room.registry.Registry (local copy of the MOF business-registration file).
     With it, a checksum failure that is one digit away from a registered business is reported as a likely misread,
-    and a well-formed number missing from the register gets a UBN_NOT_REGISTERED warning."""
+    and a well-formed number missing from the register gets a UBN_NOT_REGISTERED warning.
+    platform_invoices: invoice numbers already in the e-invoice platform download for this period, either one set
+    (every client) or {client_id: set}. A photographed voucher whose number is in it gets IN_PLATFORM (info) and the
+    export leaves it out of the file (NOT_IN_FILE), so the same input tax is not claimed twice. Default: none."""
     out: list[Exception_] = []
 
     for d in docs:
         c = clients[d.client_id]
+        # 0a. the e-invoice platform download already has this invoice for this client (imported on its own)
+        if d.invoice_no and d.invoice_no in _platform_set(platform_invoices, d.client_id):
+            out.append(Exception_(d.doc_id, d.client_id, "IN_PLATFORM", "info",
+                                  f"Invoice {d.invoice_no} is already in the platform download: not entered again.",
+                                  ["invoice_no"]))
         # 0. a total that two independent readings do not agree on is checked by a person before anything is filed
         if d.uncertain.get("total"):
             out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
@@ -474,8 +623,34 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
                                       "No buyer UBN on the voucher (consumer-style invoice): an expense voucher only, "
                                       "no deductible input tax.", ["buyer_ubn"]))
 
+        # 7a. other vouchers that carry input tax (Enforcement Rules Art. 38(1))
+        if d.tax_voucher_kind == "customs_payment":
+            out.append(Exception_(d.doc_id, d.client_id, "CUSTOMS_KEY_BY_HAND", "hold",
+                                  "Customs-collected VAT payment certificate (海關代徵營業稅繳納證, format code 28). Key the "
+                                  "14-character 繳納證號碼, the 營業稅稅基 and the tax by hand from the deduction copy, and "
+                                  "confirm the importer (納稅義務人) is this client.", ["invoice_no", "net", "tax"]))
+        elif d.tax_voucher_kind == "transport_ticket":
+            t = transport_input_tax(d.total)
+            out.append(Exception_(d.doc_id, d.client_id, "TRANSPORT_TICKET", "warning",
+                                  "Transport ticket (載有稅額之其他憑證, format code 22): input tax "
+                                  + (f"NT${t:,} = NT${d.total:,} x 5 / 105" if d.total else "= total x 5 / 105 (total not read)")
+                                  + ". Confirm this was an employee's business trip; otherwise it is not deductible.",
+                                  ["total"]))
+            if not d.seller_ubn and not d.uncertain.get("seller_ubn"):
+                out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                      "Carrier's UBN not found on the ticket; key it in (the media file needs the "
+                                      "seller's UBN).", ["seller_ubn"], confidence="low"))
+        elif (d.doc_type in (None, "receipt") and not d.doc_kind and d.tax and d.buyer_ubn
+              and d.buyer_ubn == c["ubn"]):
+            what = "Receipt" if d.doc_type == "receipt" else "Voucher of unrecognised type"
+            out.append(Exception_(d.doc_id, d.client_id, "RECEIPT_TAX_UNVERIFIED", "hold",
+                                  f"{what} shows a tax amount (NT${d.tax:,}): confirm it is a voucher kind the MOF allows "
+                                  "as 載有稅額之其他憑證 before claiming input tax.", ["tax", "buyer_ubn"]))
+
         # 7b. slips that are not vouchers
-        if d.doc_kind or (d.doc_type in (None, "receipt") and not d.invoice_no and not d.seller_ubn):
+        if d.tax_voucher_kind:
+            pass   # a ticket or a customs certificate prints neither an invoice number nor (always) a seller UBN
+        elif d.doc_kind or (d.doc_type in (None, "receipt") and not d.invoice_no and not d.seller_ubn):
             kind = {"payment_slip": "a payment slip", "transaction_detail": "a transaction detail"}.get(d.doc_kind,
                                                                                                     "a slip without seller UBN or invoice number")
             out.append(Exception_(d.doc_id, d.client_id, "NOT_A_VOUCHER", "hold",
@@ -493,6 +668,16 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None) -> list[
             out.append(Exception_(d.doc_id, d.client_id, "AMOUNT_MISMATCH", "hold",
                                   "Net or tax not read on a voucher this client would deduct; held until both are filled in.",
                                   ["net", "tax", "total"]))
+
+        # 4b. fixed assets (401: purchases and expenses vs fixed assets; deduction code 2 / 4). A hint, never a change.
+        if not d.doc_kind:
+            itax = claimable_input_tax(d, c, allow_presumed=True)
+            fa = fixed_asset_reason(net_amount(d.net, d.tax if d.tax is not None else (itax or None), d.total),
+                                    [i.desc for i in d.items])
+            if fa:
+                out.append(Exception_(d.doc_id, d.client_id, "FIXED_ASSET_HINT", "warning",
+                                      f"May be a fixed asset ({fa}): confirm deduction code 2 (or 4 if non-deductible). "
+                                      "Code left unchanged.", ["net", "items"]))
 
         # 5. policy limit
         limits = c.get("policy", {})

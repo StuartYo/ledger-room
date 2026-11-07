@@ -65,12 +65,19 @@ def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
 UNCONFIRMED = {"model-only", "unconfirmed"}
 
 
+def tax_voucher_kind(f: dict, ocr_lines: list | None = None) -> str | None:
+    """transport_ticket / customs_payment (rules.other_voucher_kind) from the OCR text and the read fields."""
+    ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
+    return rules.other_voucher_kind(ocr_text + " " + rules.fields_text(f), f.get("doc_type"))
+
+
 def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | None = None) -> rules.Doc:
     prov = prov or {}
     ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
     return rules.Doc(
         doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
         small_business_receipt=rules.small_business_receipt(ocr_text),
+        tax_voucher_kind=tax_voucher_kind(f, ocr_lines),
         uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
@@ -196,9 +203,12 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 
 
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
-          registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None) -> dict:
+          registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None,
+          platform_invoices: set[str] | dict[str, set[str]] | None = None) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
-    read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode."""
+    read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
+    platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
+    {client_id: set}); a photographed voucher with one of them is left out of the file (rules.run_rules). Default none."""
     clients, docs = load_inbox(set_name)
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     rdir = OUT / "runs" / run_id
@@ -222,7 +232,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                 **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}))
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
              for d in docs if d["doc_id"] not in failed]
-    excs = rules.run_rules(rdocs, clients, registry=registry)
+    excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices)
+    rdoc_by_id = {r.doc_id: r for r in rdocs}
     for d in docs:   # tiered mode: the second reader's process died before re-reading this document
         crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
         if crash:
@@ -282,13 +293,21 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                   "provenance": reads[d["doc_id"]]["provenance"], "boxes": reads[d["doc_id"]]["boxes"],
                   "image_size": reads[d["doc_id"]].get("image_size"),
                   "timing": reads[d["doc_id"]]["timing"],
+                  # voucher kind and 免用統一發票 come from the OCR text, which result.json does not keep: the export
+                  # needs them (format code 22 / 28, the period's small-business receipt total)
+                  "tax_voucher_kind": rdoc_by_id[d["doc_id"]].tax_voucher_kind if d["doc_id"] in rdoc_by_id else None,
+                  "small_business_receipt": rdoc_by_id[d["doc_id"]].small_business_receipt if d["doc_id"] in rdoc_by_id else False,
                   **({"tier": reads[d["doc_id"]]["tier"]} if "tier" in reads[d["doc_id"]] else {})} for d in docs],
         "exceptions": out_ex,
         "rules": rules.RULES,
         "audit_log": str((rdir / "audit_log.jsonl").relative_to(OUT)).replace("\\", "/"),
         "export_media": str((rdir / "export_media.csv").relative_to(OUT)).replace("\\", "/"),
     }
+    # 401 input total must include small-business plain receipts (G10): per client, this period
+    result["summary"]["small_business_receipts"] = export.period_summary(result)
+    result["export_summary"] = str((rdir / "export_summary.csv").relative_to(OUT)).replace("\\", "/")
     export.write_csv(result, rdir / "export_media.csv")
+    export.write_summary_csv(result, rdir / "export_summary.csv")
     (rdir / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     return result
 
