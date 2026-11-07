@@ -73,12 +73,61 @@ STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)"}
 UBN_ONE_READING = {"ocr-role", "ocr", "snapped"}   # one OCR reading: the check digit is the second source
 
 
-def strict_uncertain(f: dict, prov: dict) -> dict:
-    """Fields strict reading sends to a person: {field: provenance}. Empty when every filed value has two sources."""
+_TRACKS = None
+
+
+def issued_prefixes(d: str | None) -> set[str] | None:
+    """MOF-issued invoice prefixes (字軌) for the month of date d (YYYY-MM-DD), purchase formats 21/22/25.
+    None when the table has no entry for that month (ledger_room/data/invoice_tracks.json)."""
+    global _TRACKS
+    if not d:
+        return None
+    if _TRACKS is None:
+        p = Path(__file__).parent / "data" / "invoice_tracks.json"
+        _TRACKS = json.loads(p.read_text(encoding="utf-8"))["periods"] if p.exists() else {}
+    y, m = int(d[:4]), int(d[5:7])
+    per = _TRACKS.get(f"{y - 1911:03d}{m:02d}")
+    return {x for v in per.values() for x in v} if per else None
+
+
+def strict_uncertain(f: dict, prov: dict, ocr_lines: list | None = None, model_reply: str | None = None) -> dict:
+    """Fields strict reading sends to a person: {field: provenance}. Empty when every filed value has two sources.
+    ocr_lines and model_reply (the model's raw reply) let a value count as confirmed when OCR and the model agree
+    even though the reconciliation code labelled it otherwise:
+    - date: the model's date is one of the dates OCR found on the page (OCR found several, so the label was model-only);
+    - invoice number: the model gave the same 8 digits without the letters, and the OCR letters are a prefix the MOF
+      issued for that month (the issued-prefix list is the second source for the letters, like a check digit)."""
     out = {}
-    for k in ("invoice_no", "date"):
-        if f.get(k) and prov.get(k) not in STRICT_CONFIRMED:
-            out[k] = prov.get(k) or "unconfirmed"
+    obj = None
+    if model_reply:
+        from . import normalize as N
+        obj = N.parse_json_loose(model_reply) or {}
+    lines = None
+    if ocr_lines:
+        from .reader import Line, ocr_tokens
+        lines = [Line(l["id"], l["text"], tuple(l["box"]), l["conf"]) for l in ocr_lines]
+    inv = f.get("invoice_no")
+    if inv and prov.get("invoice_no") not in STRICT_CONFIRMED:
+        ok = False
+        if obj is not None and len(str(inv)) == 10:
+            said = str(obj.get("no") or "").upper()
+            letters = "".join(ch for ch in said if ch.isalpha())
+            digits = "".join(ch for ch in said if ch.isdigit())
+            issued = issued_prefixes(f.get("date"))
+            ok = (digits == str(inv)[2:] and letters in ("", str(inv)[:2]) and issued is not None
+                  and str(inv)[:2] in issued)
+        if not ok:
+            out["invoice_no"] = prov.get("invoice_no") or "unconfirmed"
+    dt = f.get("date")
+    if dt and prov.get("date") not in STRICT_CONFIRMED:
+        ok = False
+        if obj is not None and lines is not None:
+            from . import normalize as N
+            said = N.parse_date(obj.get("date"))
+            ok = (said is not None and str(said)[:10] == str(dt)[:10]
+                  and str(dt)[:10] in {str(x)[:10] for x, _ in ocr_tokens(lines)[1]})
+        if not ok:
+            out["date"] = prov.get("date") or "unconfirmed"
     for k in ("seller_ubn", "buyer_ubn"):
         v, p = f.get(k), prov.get(k)
         if not v or p in STRICT_CONFIRMED or str(p).startswith("zoom-vote"):
@@ -98,7 +147,8 @@ def tax_voucher_kind(f: dict, ocr_lines: list | None = None) -> str | None:
     return rules.other_voucher_kind(ocr_text + " " + rules.fields_text(f), f.get("doc_type"))
 
 
-def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | None = None) -> rules.Doc:
+def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | None = None,
+                model_reply: str | None = None) -> rules.Doc:
     prov = prov or {}
     ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
     return rules.Doc(
@@ -106,7 +156,7 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | No
         small_business_receipt=rules.small_business_receipt(ocr_text),
         tax_voucher_kind=tax_voucher_kind(f, ocr_lines),
         uncertain={**{k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
-                   **(strict_uncertain(f, prov) if STRICT else {})},
+                   **(strict_uncertain(f, prov, ocr_lines, model_reply) if STRICT else {})},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
         date=date.fromisoformat(f["date"]) if f.get("date") else None,
@@ -360,7 +410,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"),
                 **({"tier": r["tier"]} if "tier" in r else {}),
                 **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}))
-    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
+    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"),
+                         reads[d["doc_id"]].get("raw"))
              for d in docs if d["doc_id"] not in failed]
     excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices,
                            platform_void=platform_void)

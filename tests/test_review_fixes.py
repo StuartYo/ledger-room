@@ -119,3 +119,19 @@ def test_strict_reading_needs_two_sources(monkeypatch):
     second_diff = {"fields": {**f, "invoice_no": "CO12345678"}, "provenance": {**prov, "invoice_no": "ocr-confirmed"},
                    "parsed": True}
     assert tiered.merge(first, second_diff, [])["provenance"]["invoice_no"] == "snapped"
+
+
+def test_strict_prefix_and_date_second_sources(monkeypatch):
+    from ledger_room import pipeline
+    issued = pipeline.issued_prefixes("2026-10-03")
+    assert issued and "EC" in issued and "ZZ" not in issued
+    assert pipeline.issued_prefixes("2022-05-01") is None          # 111 is not in the table: no second source
+    ocr = [{"id": 0, "text": "EC12345678", "box": [0, 0, 10, 10], "conf": 0.9},
+           {"id": 1, "text": "2026-10-03 2026-10-05", "box": [0, 20, 10, 30], "conf": 0.9}]
+    f = {"invoice_no": "EC12345678", "date": "2026-10-03"}
+    prov = {"invoice_no": "ocr", "date": "model-only"}
+    reply = '{"no": "12345678", "date": "2026-10-03"}'
+    assert pipeline.strict_uncertain(f, prov, ocr, reply) == {}
+    assert set(pipeline.strict_uncertain({**f, "invoice_no": "ZZ12345678"}, prov, ocr, reply)) == {"invoice_no"}
+    assert set(pipeline.strict_uncertain(f, prov, ocr, '{"no": "EQ12345678", "date": "2026-10-05"}')) \
+        == {"invoice_no", "date"}

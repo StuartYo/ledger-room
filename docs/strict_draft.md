@@ -17,11 +17,18 @@ else goes to a person (READ_REVIEW).
 
 | Field | Accepted when | Otherwise |
 |---|---|---|
-| Invoice number | OCR and a model read the same value (`ocr-confirmed`) | person |
-| Date | OCR and a model read the same date (`ocr-confirmed`) | person |
+| Invoice number | OCR and a model read the same value (`ocr-confirmed`); or the model gave the same 8 digits without the letters and the OCR letters are a prefix the MOF issued for that month | person |
+| Date | OCR and a model read the same date (`ocr-confirmed`), or the model's date is one of the dates OCR found | person |
 | Seller / buyer UBN | OCR and a model agree, or a zoom vote of 2 or 3, or one OCR reading whose checksum is valid | person |
 | Total | unchanged: two printed sources must agree (existing rule) | person |
 | Voucher type | when a model alone says "plain receipt" and no invoice number was read, the type decides that no invoice number is needed; that decision rests on one source | person |
+
+Added the same day, after the strict re-score of real_tw (still before any real_tw2 read): the two "or" cases
+above. On real_tw the model often answers the invoice number with its 8 digits only, and OCR often finds several
+dates; both were counted as one source although OCR and the model agreed. The issued-prefix list
+(`ledger_room/data/invoice_tracks.json`, from the MOF offline checking program, months 099/01–115/12 except 111) is
+the second source for the two letters, the way the check digit is for a UBN. A misread letter pair that happens to
+be another issued prefix still passes (about 45–55 of 676 pairs are issued in a month).
 
 Default mode is unchanged. Strict mode is switched on by `LEDGER_STRICT_READ=1` or `pipeline.STRICT = True`.
 

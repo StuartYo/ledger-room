@@ -55,7 +55,8 @@ def escalation_reasons(res: dict) -> list[str]:
         reasons.append("amounts_inconsistent")
     if pipeline.STRICT:   # docs/strict_draft.md: the second reader can be the second source for these
         for k in ("invoice_no", "date"):
-            if k in pipeline.strict_uncertain(f, prov) and f"{k}_unconfirmed" not in reasons:
+            if (k in pipeline.strict_uncertain(f, prov, res.get("ocr_lines"), res.get("raw"))
+                    and f"{k}_unconfirmed" not in reasons):
                 reasons.append(f"{k}_strict")
     return reasons
 

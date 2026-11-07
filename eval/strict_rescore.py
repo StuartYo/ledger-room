@@ -77,7 +77,7 @@ def main(argv=None):
         pipeline.STRICT = strict
         fields = {Path(k).name: v["fields"] for k, v in rd.items()}
         rdocs = [pipeline.to_rule_doc(d, rd[d["doc_id"]]["fields"], rd[d["doc_id"]]["provenance"],
-                                      rd[d["doc_id"]].get("ocr_lines")) for d in docs]
+                                      rd[d["doc_id"]].get("ocr_lines"), rd[d["doc_id"]].get("raw")) for d in docs]
         ex = rules.run_rules(rdocs, clients)
         held = {Path(e.doc_id).name for e in ex if e.severity in ("hold", "review")}
         sc = R.score_tw(key["docs"], fields, held)
