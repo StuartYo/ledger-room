@@ -402,6 +402,12 @@ TRANSPORT_KW = ("台灣高鐵", "臺灣高鐵", "台湾高铁", "高鐵", "高�
                 "客運", "客运", "國光號", "国光号",
                 "航空", "登機證", "登机证", "機票", "机票", "BOARDINGPASS",
                 "船票", "客輪", "客轮", "渡輪", "渡轮", "輪船", "轮船")
+# Words that only appear on a ticket itself (not on a receipt from a shop that is near or inside a station).
+TICKET_STRONG = ("火車票", "火车票", "登機證", "登机证", "機票", "机票", "船票", "BOARDINGPASS")
+TICKET_MARKERS = ("票價", "票价", "票號", "票号", "購票", "购票", "車次", "车次", "座位", "車廂", "车厢", "乘車日期",
+                  "乘车日期", "全票", "半票", "敬老票", "愛心票", "對號", "自由座", "航班", "班次", "艙等", "舱等",
+                  "起站", "訖站", "起訖", "去程", "回程", "單程", "单程", "來回", "来回", "登機", "登机")
+_ROUTE = re.compile(r"[一-鿿]{2,4}(?:→|->|－|—|~|～|-)[一-鿿]{2,4}")
 TAXI_KW = ("計程車", "计程车", "TAXI", "車隊", "车队", "叫車", "叫车")
 # 海關代徵營業稅繳納證: the customs office collects VAT on imports and issues a payment certificate (format code 28)
 CUSTOMS_KW = ("代徵", "代征", "營業稅繳納證", "营业税缴纳证", "繳納證", "缴纳证")
@@ -417,7 +423,12 @@ def other_voucher_kind(text: str, doc_type: str | None = None) -> str | None:
         return None
     if any(k in t for k in TAXI_KW):
         return None
-    if any(k.upper() in t for k in TRANSPORT_KW):
+    if any(k.upper() in t for k in TICKET_STRONG):
+        return "transport_ticket"
+    # A carrier's name alone is not a ticket: a shop in a station or an airport prints it in its address. The text must
+    # also look like a ticket (fare, seat, route, travel date...).
+    if any(k.upper() in t for k in TRANSPORT_KW) and (any(k.upper() in t for k in TICKET_MARKERS)
+                                                      or _ROUTE.search(t)):
         return "transport_ticket"
     return None
 

@@ -9,7 +9,7 @@ import getpass
 import hashlib
 import hmac
 import json
-import platform
+import platform as _platform_mod   # the name "platform" is audit()'s e-invoice platform switch
 import subprocess
 import threading
 import time
@@ -95,7 +95,10 @@ class AuditLog:
     """Append-only JSONL. Each entry carries the SHA-256 of the previous one and an HMAC-SHA256 under the operator key
     (keys.py). The plain hash chain only shows accidental damage: someone who can write the disk can recompute it.
     The HMAC makes an edit, insertion or deletion detectable by whoever holds the key, as long as the key is not on
-    the same disk as the log. Neither stops someone who holds both."""
+    the same disk as the log. Neither stops someone who holds both.
+    Lines are written ASCII-only (\\uXXXX escapes) so a logged value can never split an entry over two lines; the hashed
+    and MAC'd body is unchanged. A MAC'd head record (last seq and hash) kept in the secrets folder makes a removed tail
+    detectable: verify_detail(path, key, head=True) adds tail_ok."""
 
     def __init__(self, path: Path, key: bytes | None = None, append: bool = False):
         self.path = path
@@ -104,12 +107,74 @@ class AuditLog:
         self.seq = 0
         self.lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
+        self._rpath = str(path.resolve())
+        self.head_path = AuditLog.head_path(path)
+        problem = {}
         if append and path.exists() and path.stat().st_size:
-            last = path.read_text(encoding="utf-8").splitlines()[-1]
-            e = json.loads(last)
-            self.prev, self.seq = e["hash"], e["seq"]
-        else:
+            lines = AuditLog.lines(path)
+            good = -1
+            for i in range(len(lines) - 1, -1, -1):
+                try:
+                    e = json.loads(lines[i])
+                    self.prev, self.seq = str(e["hash"]), int(e["seq"])
+                    good = i
+                    break
+                except (ValueError, KeyError, TypeError):
+                    continue
+            if good < len(lines) - 1:     # unreadable tail: continue after the last readable entry and say so
+                problem["unreadable_lines"] = len(lines) - 1 - good
+        elif not (append and path.exists()):
             path.write_text("", encoding="utf-8")
+        if append:
+            hd = AuditLog._read_head(self.head_path, self.key, self._rpath)
+            if hd is False:
+                problem["head"] = "head record unreadable or its MAC does not match"
+            elif hd is not None and (hd["seq"] > self.seq or (hd["seq"] == self.seq and hd["hash"] != self.prev)):
+                problem.update(head_seq=hd["seq"], head_hash=hd["hash"], last_seq=self.seq)
+        if problem:
+            self.add("log_tail_broken", note="the log on disk does not end where it last ended; continuing after the "
+                                             "last readable entry", **problem)
+
+    @staticmethod
+    def lines(path: Path) -> list[str]:
+        """Entries split on "\\n" only (str.splitlines would also split on U+2028, U+0085 ... inside old lines)."""
+        ls = path.read_text(encoding="utf-8", errors="replace").split("\n")
+        if ls and ls[-1] == "":
+            ls.pop()
+        return ls
+
+    @staticmethod
+    def head_path(path: Path) -> Path:
+        return keys.secrets_dir() / "log_heads" / f"{hashlib.sha256(str(Path(path).resolve()).encode('utf-8')).hexdigest()}.json"
+
+    @staticmethod
+    def _head_mac(key: bytes, rpath: str, seq: int, h: str) -> str:
+        return hmac.new(key, f"ledger-room log head|{rpath}|{seq}|{h}".encode("utf-8"), hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def _read_head(hp: Path, key: bytes, rpath: str):
+        """None: no head record. False: unreadable or wrong MAC. Else {"seq", "hash"}."""
+        if not hp.exists():
+            return None
+        try:
+            r = json.loads(hp.read_text(encoding="utf-8"))
+            seq, h = int(r["seq"]), str(r["hash"])
+            if r.get("log") != rpath or not hmac.compare_digest(str(r["mac"]), AuditLog._head_mac(key, rpath, seq, h)):
+                return False
+            return {"seq": seq, "hash": h}
+        except (OSError, ValueError, KeyError, TypeError):
+            return False
+
+    def _write_head(self) -> None:
+        rec = {"log": self._rpath, "seq": self.seq, "hash": self.prev,
+               "mac": AuditLog._head_mac(self.key, self._rpath, self.seq, self.prev)}
+        try:
+            self.head_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.head_path.with_name(f"{self.head_path.name}.{threading.get_ident()}.tmp")
+            tmp.write_text(json.dumps(rec), encoding="utf-8")
+            tmp.replace(self.head_path)
+        except OSError:
+            pass    # the log itself is written; a missed head update only weakens the tail check
 
     def add(self, event: str, **kw) -> None:
         with self.lock:
@@ -121,27 +186,46 @@ class AuditLog:
             e["mac"] = hmac.new(self.key, body, hashlib.sha256).hexdigest()
             self.prev = e["hash"]
             with self.path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(e, ensure_ascii=False, sort_keys=True) + "\n")
+                f.write(json.dumps(e, ensure_ascii=True, sort_keys=True) + "\n")
+            self._write_head()
 
     @staticmethod
-    def verify_detail(path: Path, key: bytes | None = None) -> dict:
+    def verify_detail(path: Path, key: bytes | None = None, head: bool = False) -> dict:
         """chain_ok: hashes link up. mac_ok: every entry's HMAC matches `key` (None when no key was given).
-        n: entries checked before the first failure."""
+        n: entries checked before the first failure. head=True with a key: when a head record exists for this log,
+        also tail_ok (False when the log ends before the last entry the head recorded, or is missing or empty)."""
         prev = "0" * 64
         n = 0
         mac_ok = None if key is None else True
-        for line in path.read_text(encoding="utf-8").splitlines():
-            e = json.loads(line)
-            h = e.pop("hash")
-            m = e.pop("mac", None)
-            body = json.dumps(e, ensure_ascii=False, sort_keys=True).encode("utf-8")
-            if e["prev"] != prev or hashlib.sha256(body).hexdigest() != h:
-                return {"chain_ok": False, "mac_ok": False if key else None, "n": n}
-            if key is not None and (m is None or not hmac.compare_digest(m, hmac.new(key, body, hashlib.sha256).hexdigest())):
-                return {"chain_ok": True, "mac_ok": False, "n": n}
+        seen: dict = {}
+        res = None
+        for line in (AuditLog.lines(path) if path.exists() else []):
+            try:
+                e = json.loads(line)
+                h = e.pop("hash")
+                m = e.pop("mac", None)
+                body = json.dumps(e, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                linked = e["prev"] == prev and hashlib.sha256(body).hexdigest() == h
+                mac_good = key is None or (isinstance(m, str) and
+                                           hmac.compare_digest(m, hmac.new(key, body, hashlib.sha256).hexdigest()))
+            except (ValueError, KeyError, TypeError, AttributeError):
+                linked = mac_good = False
+            if not linked:
+                res = {"chain_ok": False, "mac_ok": False if key else None, "n": n}
+                break
+            if not mac_good:
+                res = {"chain_ok": True, "mac_ok": False, "n": n}
+                break
+            seen[e.get("seq")] = h
             prev = h
             n += 1
-        return {"chain_ok": True, "mac_ok": mac_ok, "n": n}
+        if res is None:
+            res = {"chain_ok": True, "mac_ok": mac_ok, "n": n}
+        if head and key is not None:
+            hd = AuditLog._read_head(AuditLog.head_path(path), key, str(Path(path).resolve()))
+            if hd is not None:
+                res["tail_ok"] = bool(hd) and seen.get(hd["seq"]) == hd["hash"]
+        return res
 
     @staticmethod
     def verify(path: Path, key: bytes | None = None) -> tuple[bool, int]:
@@ -205,17 +289,25 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
           registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None,
           platform_invoices: set[str] | dict[str, set[str]] | None = None,
-          platform_void: set[str] | dict[str, set[str]] | None = None) -> dict:
+          platform_void: set[str] | dict[str, set[str]] | None = None, platform: str | None = None) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
     read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
-    {client_id: set}); a photographed voucher with one of them is left out of the file (rules.run_rules). Default none."""
+    {client_id: set}); a photographed voucher with one of them is left out of the file (rules.run_rules). Default none.
+    platform_void: numbers the platform marks 作廢, same shapes; a photographed voucher with one is held.
+    platform="auto": load both from data/platform/<client UBN>/ for each client's own period (the web app does this;
+    the evaluation does not, so its scores are unchanged). Explicit platform_invoices / platform_void win."""
     clients, docs = load_inbox(set_name)
+    if platform == "auto":
+        from . import einvoice_platform
+        issued, void = einvoice_platform.platform_hooks_by_client(clients)
+        platform_invoices = issued if platform_invoices is None else platform_invoices
+        platform_void = void if platform_void is None else platform_void
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     rdir = OUT / "runs" / run_id
     log = AuditLog(rdir / "audit_log.jsonl")
     log.add("run_start", run_id=run_id, inbox=f"data/{set_name}", n_docs=len(docs), operator=operator or getpass.getuser(),
-            host=platform.node(), code_rev=git_rev(), reader_version=READER_VERSION,
+            host=_platform_mod.node(), code_rev=git_rev(), reader_version=READER_VERSION,
             model=reader.model_id if reader else f"cache ({model_id or 'Qwen3.5-2B-int4-ov'})", device=reader.device if reader else "cache",
             network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE,
             registry=registry.label if registry is not None else None)

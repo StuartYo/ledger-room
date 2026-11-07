@@ -135,7 +135,7 @@ def write(result: dict, path: Path, platform_records=None, *, force_csv: bool = 
         with p.open("w", encoding="utf-8-sig", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=COLUMNS)
             w.writeheader()
-            w.writerows(data)
+            w.writerows(export.safe_rows(data))
         return p
     p = path.with_suffix(".xlsx")
     wb = Workbook()
@@ -144,6 +144,9 @@ def write(result: dict, path: Path, platform_records=None, *, force_csv: bool = 
     ws.append(COLUMNS)
     for r in data:
         ws.append([r[c] for c in COLUMNS])
+        for cell in ws[ws.max_row]:        # receipt text starting with "=" is stored as text, never as a formula
+            if isinstance(cell.value, str) and cell.value.startswith("="):
+                cell.data_type = "s"
     for col in ("B", "D", "C", "I", "J"):        # numbers that must stay text (leading zeros)
         for cell in ws[col][1:]:
             cell.number_format = "@"

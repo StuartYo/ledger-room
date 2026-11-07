@@ -172,6 +172,11 @@ def assemble_media_file(client: dict, period, *, tax_reg_no: str, result: dict |
     if result is not None:
         recs, skipped = export.media_records(_client_result(result, ubn), {ubn: tax_reg_no}, include_hold=include_hold)
         lr = [plat.parse_record(x) for x in recs.get(ubn, [])]
+        # a voucher the platform marks 作廢 is never claimed, even with include_hold (VAT Act Art. 51(1)(5))
+        void_nos = {r["invoice_no"] for r in platform["void"] if r["invoice_no"]}
+        for r in [r for r in lr if r["invoice_no"] in void_nos]:
+            notes.append(f"{r['invoice_no']}: voided on the e-invoice platform; the photographed voucher is not filed")
+        lr = [r for r in lr if r["invoice_no"] not in void_nos]
         for r in lr:
             entries.append(("ledger-room", r))
     lr_keys = {_voucher_key(r): r for r in lr if _voucher_key(r)}

@@ -33,7 +33,7 @@ Ways that **leave the firm**:
 - **LINE and e-mail are transfers through third-party servers** (the messaging company's or the mail provider's). The photo is stored there, outside the firm's control, before anyone imports it. If a client insists on sending this way, import the file, then delete the chat or mail copy, and say in the client agreement that this channel is the client's choice.
 - Cloud drives (Google Drive, OneDrive, Dropbox) are the same: a third party holds a copy.
 
-Transfer inside the office: the web app speaks plain HTTP. On the office LAN this relies on the network itself being closed (wired, or WPA2/WPA3 Wi-Fi with no guest access). Encrypted transfer (Art. 17) over the LAN needs HTTPS in front of the app, for example a reverse proxy with the firm's own certificate; Ledger Room does not set this up yet.
+Transfer inside the office (Art. 17, encrypted transfer): on 127.0.0.1 the app speaks HTTP to the same PC only. To serve the office LAN it refuses to start without HTTPS: give it the firm's certificate (`--cert` / `--key`), or put a reverse proxy with that certificate in front and start it with `--behind-tls-proxy` (the proxy must keep the original Host header). The session cookie is then marked Secure.
 
 ## 3. Display masking (顯示隱碼)
 

@@ -112,7 +112,11 @@ def rows(result: dict) -> list[dict]:
             ded = "3" if "S19_NONDEDUCTIBLE" in ids else "1"
             blocking = [e for e in exs if e["rule_id"] in BLOCKING
                         or (e["rule_id"] == "PERIOD_MISMATCH" and e["severity"] != "warning")]
-            status = "HOLD" if blocking or other_tax or kind == "customs_payment" else "READY"
+            inv = (f.get("invoice_no") or "").upper().replace(" ", "")
+            no_ticket_no = kind == "transport_ticket" and not (_UNIFORM_NO.match(inv) or _OTHER_NO.match(inv))
+            status = "HOLD" if blocking or other_tax or no_ticket_no or kind == "customs_payment" else "READY"
+            if no_ticket_no:
+                notes.append("ticket number not read: key it in (the media file needs a voucher number)")
             if blocking:
                 notes.append("resolve first: " + ", ".join(sorted({e["rule_id"] for e in blocking})))
             if other_tax:
@@ -183,12 +187,25 @@ def period_summary(result: dict) -> list[dict]:
     return out
 
 
+_FORMULA_START = ("=", "+", "-", "@", chr(9), chr(13))
+
+
+def cell_safe(v):
+    """A text cell that a spreadsheet would run as a formula (it starts with = + - @ or a tab / CR; the text comes from
+    the receipt via OCR and the model) gets a leading apostrophe, so Excel shows it as text. Numbers are unchanged."""
+    return "'" + v if isinstance(v, str) and v.startswith(_FORMULA_START) else v
+
+
+def safe_rows(data: list[dict]) -> list[dict]:
+    return [{k: cell_safe(v) for k, v in r.items()} for r in data]
+
+
 def write_csv(result: dict, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as fh:   # BOM so Excel opens the Chinese headers
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
         w.writeheader()
-        w.writerows(rows(result))
+        w.writerows(safe_rows(rows(result)))
     return path
 
 

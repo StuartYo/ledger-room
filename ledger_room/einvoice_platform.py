@@ -39,6 +39,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .export import _UNIFORM_NO   # one definition of a uniform-invoice number
+
 RECORD_LEN = 81
 ROOT = Path(__file__).resolve().parents[1]
 PLATFORM_ROOT = ROOT / "data" / "platform"
@@ -69,7 +71,6 @@ FORMAT_LABEL = {   # 第二十點(一)
     "38": "特種稅額計算之銷貨退回或折讓證明單",
 }
 TAX_TYPE_LABEL = {"1": "應稅", "2": "零稅率", "3": "免稅", "F": "作廢", "D": "空白未使用"}
-_UNIFORM_NO = re.compile(r"^[A-Z]{2}\d{8}$")
 
 
 def _f(rec: str, a: int, b: int) -> str:
@@ -265,7 +266,7 @@ def platform_invoice_numbers(client, period=None, *, root: Path | None = None, f
 
 def platform_void_numbers(client, period=None, *, root: Path | None = None, files=None) -> set[str]:
     """Invoice numbers the platform file marks 作廢 (課稅別 F) on either side. A photographed voucher with one of these
-    numbers must not be claimed (VAT Act Art. 51(1)(5)); the pipeline has no rule for it yet."""
+    numbers must not be claimed (VAT Act Art. 51(1)(5)): rules.run_rules(platform_void=...) holds it (VOID_ON_PLATFORM)."""
     d = load_client(client, period, root=root, files=files)
     return {r["invoice_no"] for r in d["void"] if r["invoice_no"]}
 
@@ -275,6 +276,19 @@ def platform_numbers_by_client(clients, period=None, *, root: Path | None = None
     items = clients.values() if isinstance(clients, dict) else clients
     return {c["id"]: platform_invoice_numbers(c, period if period is not None else c.get("period"), root=root)
             for c in items}
+
+
+def platform_hooks_by_client(clients, *, root: Path | None = None) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """({client_id: issued input numbers}, {client_id: voided numbers}) for pipeline.audit, each client in its own
+    filing period. Clients with no platform download get empty sets (nothing changes for them)."""
+    items = clients.values() if isinstance(clients, dict) else clients
+    issued, void = {}, {}
+    for c in items:
+        d = load_client(c, c.get("period"), root=root)
+        issued[c["id"]] = {r["invoice_no"] for r in d["input"]
+                           if r["format_code"] in ("21", "22", "25") and r["status"] == "issued" and r["invoice_no"]}
+        void[c["id"]] = {r["invoice_no"] for r in d["void"] if r["invoice_no"]}
+    return issued, void
 
 
 def roc_month(month: str) -> str:

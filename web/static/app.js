@@ -76,7 +76,7 @@ async function init() {
   S.me = await (await fetch("/api/me")).json();
   if (!S.me.user) await login();
   showUser();
-  $("#logoutBtn").onclick = async () => { await fetch("/api/logout", { method: "POST" }); location.reload(); };
+  $("#logoutBtn").onclick = async () => { await fetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); location.reload(); };
   $("#exportBtn").onclick = () => { if (S.runId) location.href = `/api/export?run=${encodeURIComponent(S.runId)}${um()}`; };
   $("#unmaskBtn").onclick = toggleUnmask;
   const boxes = await j("/api/inboxes");
