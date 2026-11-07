@@ -1,0 +1,214 @@
+{
+ "set": "real_company (private_mom on the host)",
+ "what": "Real petty-cash vouchers of one small Taiwanese company, used with the owner's consent. Only aggregate counts are published: no images, no company name, no tax ID, no per-voucher values.",
+ "answer_key": "4 labelers read the page images only (no ledger, no OCR, no Ledger Room); frozen (sha256 prefix fcff2ca60a393f7d) before any Ledger Room read. Kept outside git.",
+ "vouchers": 336,
+ "by_kind": {
+  "e_invoice": 83,
+  "three_part_invoice": 24,
+  "two_part_register": 14,
+  "utility_bill": 155,
+  "postage_receipt": 34,
+  "tax_bill": 14,
+  "receipt": 12
+ },
+ "first_runs": {
+  "Qwen3.5-9B-int4-ov": {
+   "host": "Intel Cloud, Arc Pro B70 (GPU.0)",
+   "code_rev": "fa8c027",
+   "generated_at": "2026-11-07T11:30:07+00:00",
+   "sec_per_photo": 3.87,
+   "field_error_rate": {
+    "ocr_only": 0.6,
+    "model_only": 0.27,
+    "ledger_room": 0.215
+   },
+   "default": {
+    "sent_to_a_person": 220,
+    "wrong_and_not_held": 34
+   },
+   "strict": {
+    "sent_to_a_person": 257,
+    "wrong_and_not_held": 11,
+    "note": "re-scored from the same reads (eval/strict_rescore.py)"
+   },
+   "strict_with_27B_second_reader": {
+    "sent_to_a_person": 241,
+    "wrong_and_not_held": 11,
+    "field_error_rate": 0.182,
+    "escalated": 164,
+    "sec_per_escalated_photo": 5.96
+   }
+  },
+  "Qwen3.5-2B-int4-ov": {
+   "host": "Intel Cloud, Arc Pro B70 (GPU.0)",
+   "code_rev": "b6fd8bd",
+   "generated_at": "2026-11-07T12:35:04+00:00",
+   "sec_per_photo": 2.45,
+   "field_error_rate": {
+    "ocr_only": 0.6,
+    "model_only": 0.681,
+    "ledger_room": 0.361
+   },
+   "default": {
+    "sent_to_a_person": 262,
+    "wrong_and_not_held": 34
+   },
+   "strict": {
+    "sent_to_a_person": 309,
+    "wrong_and_not_held": 7
+   }
+  }
+ },
+ "by_kind_9B": {
+  "columns": [
+   "vouchers",
+   "sent_to_a_person",
+   "with_a_wrong_field",
+   "wrong_and_not_held"
+  ],
+  "default": {
+   "e_invoice": [
+    83,
+    27,
+    26,
+    0
+   ],
+   "three_part_invoice": [
+    24,
+    14,
+    12,
+    1
+   ],
+   "two_part_register": [
+    14,
+    14,
+    14,
+    0
+   ],
+   "utility_bill": [
+    155,
+    111,
+    117,
+    32
+   ],
+   "postage_receipt": [
+    34,
+    34,
+    11,
+    0
+   ],
+   "tax_bill": [
+    14,
+    11,
+    5,
+    1
+   ],
+   "receipt": [
+    12,
+    9,
+    8,
+    0
+   ]
+  },
+  "strict": {
+   "e_invoice": [
+    83,
+    27,
+    26,
+    0
+   ],
+   "three_part_invoice": [
+    24,
+    15,
+    12,
+    1
+   ],
+   "two_part_register": [
+    14,
+    14,
+    14,
+    0
+   ],
+   "utility_bill": [
+    155,
+    145,
+    117,
+    9
+   ],
+   "postage_receipt": [
+    34,
+    34,
+    11,
+    0
+   ],
+   "tax_bill": [
+    14,
+    13,
+    5,
+    1
+   ],
+   "receipt": [
+    12,
+    9,
+    8,
+    0
+   ]
+  },
+  "fields_scored": "invoice_no, date, seller_ubn, total, net, tax (as eval/real_photo_eval.py TW_FIELDS); a utility bill's printed invoice number is the previous period's e-invoice"
+ },
+ "invoices_121": {
+  "strict": {
+   "Qwen3.5-9B-int4-ov": {
+    "sent_to_a_person": 56,
+    "with_a_wrong_field": 52,
+    "wrong_and_not_held": 1
+   },
+   "Qwen3.5-2B-int4-ov": {
+    "sent_to_a_person": 98,
+    "with_a_wrong_field": 79,
+    "wrong_and_not_held": 4
+   }
+  }
+ },
+ "old_ledger_vs_ledger_room": {
+  "what": "The company's own ledger rows for its invoices were typed by a general cloud chat AI and checked once by the owner. 113 of the 121 invoices could be paired with a ledger row (106 by exact invoice number, 7 by a near-miss number with the same date or amount). Compared on the three fields that ledger keeps: invoice number, date, total.",
+  "old_ledger": {
+   "rows": 113,
+   "wrong_rows": 15,
+   "wrong_fields": {
+    "invoice_no": 7,
+    "date": 6,
+    "total": 3
+   }
+  },
+  "ledger_room_strict": {
+   "Qwen3.5-9B-int4-ov": {
+    "vouchers": 113,
+    "read_wrong": 10,
+    "wrong_and_not_held": 0,
+    "sent_to_a_person": 53
+   },
+   "Qwen3.5-2B-int4-ov": {
+    "vouchers": 113,
+    "read_wrong": 36,
+    "wrong_and_not_held": 1,
+    "sent_to_a_person": 91
+   }
+  },
+  "ledger_room_default": {
+   "Qwen3.5-9B-int4-ov": {
+    "read_wrong": 10,
+    "wrong_and_not_held": 0,
+    "sent_to_a_person": 52
+   },
+   "Qwen3.5-2B-int4-ov": {
+    "read_wrong": 36,
+    "wrong_and_not_held": 13,
+    "sent_to_a_person": 52
+   }
+  },
+  "note": "Not a person-versus-machine race: the old ledger is one way a small company actually kept its books. On all six scored fields the 9B let 1 of the 113 through (a seller tax ID), which the old ledger does not record."
+ },
+ "computed": "2026-11-07, from per-voucher held sets re-derived from the saved reads (no model run) and the frozen key; private per-voucher files stay outside git"
+}
