@@ -35,8 +35,9 @@ DEFAULT_MODEL_DIR = os.environ.get("LEDGER_MODEL_DIR", r"E:\models\Qwen3.5-2B-in
 VLM_MAX_SIDE = int(os.environ.get("LEDGER_VLM_MAX_SIDE", "896"))
 # The UBN zoom crop is a thin strip (about 850 x 140). On the Arc Pro B70 (OpenVINO GPU plugin) reading such a strip
 # now and then fails with CL_OUT_OF_RESOURCES (eval/repro_oor.py: 4 of 640 full reads, every one on this crop).
-# White padding above and below to at least this height; 0 keeps the strip as it is.
-ZOOM_MIN_H = int(os.environ.get("LEDGER_ZOOM_MIN_H", "0"))
+# White padding above and below to at least this height; 0 keeps the strip as it is. With 448 the 70-minute two-card
+# run had 0 reader restarts (28 before) and the same scores (eval/results_longrun_zoompad.json).
+ZOOM_MIN_H = int(os.environ.get("LEDGER_ZOOM_MIN_H", "448"))
 CATEGORIES = ["office", "equipment", "materials", "logistics", "software", "printing", "meal", "taxi",
               "lodging", "entertainment", "employee_benefit", "passenger_car", "non_business", "other"]
 CONFIRMED = {"ocr-confirmed", "ocr-role", "snapped", "ocr", "ocr-keyword", "ocr-total-line", "zoom-vote 2/3", "zoom-vote 3/3"}

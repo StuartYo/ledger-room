@@ -1,0 +1,1791 @@
+{
+ "generated_at": "2026-11-07T04:24:30+00:00",
+ "code_rev": "c370a45",
+ "mode": "longrun",
+ "dry_run": false,
+ "command": "python -m eval.bench_concurrency --sets heldout,hard,blind3,main --k 2 --devices GPU.0,GPU.1 --duration-min 70 --models-root /home/devcloud/models --out results_longrun_zoompad.json",
+ "sets": [
+  {
+   "name": "heldout",
+   "docs_in_set": 47,
+   "docs_used": 47,
+   "answer_key": "eval/expected_heldout.json"
+  },
+  {
+   "name": "hard",
+   "docs_in_set": 49,
+   "docs_used": 49,
+   "answer_key": "eval/expected_hard.json"
+  },
+  {
+   "name": "blind3",
+   "docs_in_set": 53,
+   "docs_used": 53,
+   "answer_key": "eval/expected_blind3.json"
+  },
+  {
+   "name": "main",
+   "docs_in_set": 52,
+   "docs_used": 52,
+   "answer_key": "eval/expected_main.json"
+  }
+ ],
+ "docs_per_pass": 201,
+ "repeat": null,
+ "duration_min": 70.0,
+ "max_restarts": 1000,
+ "model": "Qwen3.5-9B-int4-ov",
+ "devices": [
+  "GPU.0",
+  "GPU.1"
+ ],
+ "factory": "ledger_room.reader:Reader",
+ "inventory": {
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "host": "0007e935143f",
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4",
+  "openvino_genai": "2026.4.1.0-3408-ab01d1771e4",
+  "devices": [
+   {
+    "id": "CPU",
+    "name": "Intel(R) Xeon(R) 6787P"
+   },
+   {
+    "id": "GPU.0",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0",
+    "pci": "{domain: 0 bus: 23 device: 0x0 function: 0}"
+   },
+   {
+    "id": "GPU.1",
+    "name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+    "type": "Type.DISCRETE",
+    "memory_gb": 30.3,
+    "driver": "",
+    "uarch": "20.2.0",
+    "pci": "{domain: 0 bus: 186 device: 0x0 function: 0}"
+   }
+  ],
+  "kernel": "7.0.0-34-generic"
+ },
+ "xpu_smi_discovery": "                                                                  \n  Device ID     Device Information                                \n  0             Device Name: Intel(R) Arc(TM) Pro B70 Graphics    \n                Device State: normal                              \n                Vendor Name: Intel(R) Corporation                 \n                SOC UUID: 00000000-0000-0017-0000-0000e2238086    \n                PCI BDF Address: 0000:17:00.0                     \n                DRM Device: /dev/dri/card1                        \n                Function Type: physical                           \n                                                                  \n  1             Device Name: Intel(R) Arc(TM) Pro B70 Graphics    \n                Device State: normal                              \n                Vendor Name: Intel(R) Corporation                 \n                SOC UUID: 00000000-0000-00ba-0000-0000e2238086    \n                PCI BDF Address: 0000:ba:00.0                     \n                DRM Device: /dev/dri/card2                        \n                Function Type: physical                           \n                                                                  \n",
+ "definitions": {
+  "pass": "one pass = every set once, in the order given; each (pass, set) is scored on its own (pipeline.audit + eval.read_accuracy + eval.run_eval.score, as bench_tiered), so passes of the same set should give the same F1, key fields wrong and docs for a person",
+  "stop": "--repeat N: N passes. --duration-min M: no new document is handed out once M minutes of read wall clock have passed; documents already handed out (and their retries) are finished. The last pass of a timed run is usually partial (partial: true): scored on the documents it reached, and left out of the stability comparison",
+  "docs_per_hour": "documents read / read wall clock of the whole run (all workers loaded -> last document back; reloads after crashes included). per_device counts the documents read by the workers on that card over the same wall clock",
+  "per_hour": "crashes_per_hour, restarts_per_hour = count x 3600 / read wall clock (s). A restart follows a crash or a reader error (restarts_after_reader_error)",
+  "docs_not_read_reader_failure": "documents sent to a person because the reader failed twice on them (READ_REVIEW, reason reader_crash / reader_error / no_reader)",
+  "wh_per_1000_docs": "per card: xpu-smi energy counter (end - start) when it behaves as a running counter, else mean sampled power x read wall clock; / documents read on that card x 1000",
+  "utilisation": "GPU utilisation % per card from xpu-smi dump metric 0 (header column whose name holds 'util' and 'gpu' but not 'mem'; column and raw_header recorded), over the read wall clock: mean, p50 / p95 (1 % bins), frac_ge_90 = share of 1-second samples at or above 90 %; null with the raw header when the column is missing",
+  "samples": "power / memory / utilisation summaries are exact running sums over every sample; the full 1-second series is in the side CSV (side_files), not in this file; the in-RAM copy used for per-pass windows is thinned (in_ram_samples_kept_every)",
+  "supervisor": "a worker that dies is restarted and its document retried once; a second failure sends it to a person; logs in this file are capped at logs_capped_at entries, counts are not"
+ },
+ "notes": [
+  "OCR runs on the CPU inside each worker, so K workers also share the CPU",
+  "Run with LEDGER_ZOOM_MIN_H=448 set in the environment at code c370a45; the same value became the default in the next commit."
+ ],
+ "rows": [
+  {
+   "k": 2,
+   "worker_devices": [
+    "GPU.0",
+    "GPU.1"
+   ],
+   "workers_per_device": {
+    "GPU.0": 1,
+    "GPU.1": 1
+   },
+   "side_files": "data/out/bench_concurrency/longrun/20261107-042430-k2",
+   "workers": [
+    {
+     "worker": 0,
+     "device": "GPU.0",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 887472,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 8.51
+    },
+    {
+     "worker": 1,
+     "device": "GPU.1",
+     "state": "idle",
+     "model_id": "Qwen3.5-9B-int4-ov",
+     "pid": 890665,
+     "thinking": "off (template default was on; prompt wrapped by Ledger Room)",
+     "load_s": 7.95
+    }
+   ],
+   "load_wall_s": 16.9,
+   "workers_loaded": 2,
+   "stopped_by": "duration",
+   "passes_started": 12,
+   "blocks": 48,
+   "docs": 2383,
+   "docs_read": 2383,
+   "docs_not_read_reader_failure": 0,
+   "wall_s": 4201.5,
+   "wall_min": 70.0,
+   "docs_per_hour": 2042,
+   "crashes": 0,
+   "crashes_per_hour": 0.0,
+   "restarts": 0,
+   "restarts_per_hour": 0.0,
+   "restarts_after_reader_error": 0,
+   "restart_load_s": 0,
+   "latency_s": {
+    "mean": 3.52,
+    "p50": 3.53,
+    "p95": 4.54,
+    "max": 5.96,
+    "n": 2383
+   },
+   "crash_log": [],
+   "restart_log": [],
+   "retries": [],
+   "logs_capped_at": 100,
+   "retries_total": 0,
+   "load_errors": [],
+   "not_read_no_device": 0,
+   "per_device": {
+    "GPU.0": {
+     "workers": 1,
+     "docs_read": 1203,
+     "docs_not_read_reader_failure": 0,
+     "wall_s": 4201.5,
+     "docs_per_hour": 1031,
+     "crashes": 0,
+     "crashes_per_hour": 0.0,
+     "restarts": 0,
+     "restarts_per_hour": 0.0,
+     "reached_1000_docs": true,
+     "power": {
+      "mean_w": 197.03,
+      "max_w": 213.71,
+      "samples": 4198
+     },
+     "idle_power": {
+      "mean_w": 56.33,
+      "max_w": 56.46,
+      "samples": 5
+     },
+     "energy_wh": 229.95,
+     "energy_source": "sampled mean W x wall clock",
+     "energy_counter_status": "energy counter implies 0.0 W but samples average 197.0 W: not used",
+     "wh_per_1000_docs": 191.15,
+     "utilisation": {
+      "mean_pct": null,
+      "p50_pct": null,
+      "p95_pct": null,
+      "frac_ge_90": null,
+      "samples": 0,
+      "column": "utilization.gpu (%)",
+      "raw_header": "Timestamp, DeviceId, utilization.gpu (%), power.draw (W), memory.used (MiB)",
+      "note": "no GPU utilisation samples"
+     },
+     "xpu_smi_peak_used_gb": 6.92
+    },
+    "GPU.1": {
+     "workers": 1,
+     "docs_read": 1180,
+     "docs_not_read_reader_failure": 0,
+     "wall_s": 4201.5,
+     "docs_per_hour": 1011,
+     "crashes": 0,
+     "crashes_per_hour": 0.0,
+     "restarts": 0,
+     "restarts_per_hour": 0.0,
+     "reached_1000_docs": true,
+     "power": {
+      "mean_w": 191.46,
+      "max_w": 206.68,
+      "samples": 4198
+     },
+     "idle_power": {
+      "mean_w": 55.82,
+      "max_w": 56.05,
+      "samples": 5
+     },
+     "energy_wh": 223.45,
+     "energy_source": "sampled mean W x wall clock",
+     "energy_counter_status": "energy counter implies 0.0 W but samples average 191.5 W: not used",
+     "wh_per_1000_docs": 189.36,
+     "utilisation": {
+      "mean_pct": null,
+      "p50_pct": null,
+      "p95_pct": null,
+      "frac_ge_90": null,
+      "samples": 0,
+      "column": "utilization.gpu (%)",
+      "raw_header": "Timestamp, DeviceId, utilization.gpu (%), power.draw (W), memory.used (MiB)",
+      "note": "no GPU utilisation samples"
+     },
+     "xpu_smi_peak_used_gb": 6.88
+    }
+   },
+   "power": {
+    "mean_w_total": 388.49,
+    "energy_counter": {
+     "GPU.0": {
+      "start_j": 11.684754,
+      "end_j": 20.444458,
+      "span_s": 4201.8,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 197.0 W: not used"
+     },
+     "GPU.1": {
+      "start_j": 13.827636,
+      "end_j": 19.381042,
+      "span_s": 4201.8,
+      "delta_j": null,
+      "status": "energy counter implies 0.0 W but samples average 191.5 W: not used"
+     }
+    },
+    "sampled_energy_wh": 453.4,
+    "sampled_wh_per_1000_docs": 190.26,
+    "energy_source": "sampled mean W x read wall clock",
+    "energy_wh": 453.4,
+    "wh_per_1000_docs": 190.26,
+    "source": {
+     "GPU.0": "dump: stdbuf -oL xpu-smi dump --device 0 --metrics 0,1,18 --interval 1 --number 1000000",
+     "GPU.1": "dump: stdbuf -oL xpu-smi dump --device 1 --metrics 0,1,18 --interval 1 --number 1000000"
+    },
+    "raw_head": {
+     "GPU.0": [
+      "Timestamp, DeviceId, utilization.gpu (%), power.draw (W), memory.used (MiB)",
+      "04:24:31.426, 0, N/A, 56.43, 44.39453125",
+      "04:24:32.426, 0, N/A, 56.40, 44.39453125",
+      "04:24:33.427, 0, N/A, 56.46, 44.39453125"
+     ],
+     "GPU.1": [
+      "Timestamp, DeviceId, utilization.gpu (%), power.draw (W), memory.used (MiB)",
+      "04:24:31.441, 1, N/A, 55.87, 44.25390625",
+      "04:24:32.442, 1, N/A, 54.70, 44.25390625",
+      "04:24:33.443, 1, N/A, 56.05, 44.25390625"
+     ]
+    },
+    "xpu_smi_ids": {
+     "GPU.0": "0",
+     "GPU.1": "1"
+    },
+    "notes": [],
+    "in_ram_samples_kept_every": {
+     "GPU.0": 2,
+     "GPU.1": 2
+    },
+    "samples_file": {
+     "GPU.0": "xpu_smi_GPU_0.csv",
+     "GPU.1": "xpu_smi_GPU_1.csv"
+    }
+   },
+   "memory": {
+    "fdinfo_peak_vram_gb_all_workers": 13.531,
+    "fdinfo_peak_vram_gb_by_worker": {
+     "0": 6.88,
+     "1": 6.84
+    }
+   },
+   "passes": [
+    {
+     "pass": 1,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.46,
+      "p95": 4.38
+     },
+     "t_start_s": 0.0,
+     "t_end_s": 84.7,
+     "run_id": "concurrency-longrun-k2-p1-heldout-20261107-053504",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 193.14,
+      "GPU.1": 182.74
+     },
+     "first_complete_pass": true
+    },
+    {
+     "pass": 1,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.59,
+      "p95": 4.55
+     },
+     "t_start_s": 84.6,
+     "t_end_s": 170.9,
+     "run_id": "concurrency-longrun-k2-p1-hard-20261107-053504",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 194.67,
+      "GPU.1": 187.34
+     },
+     "first_complete_pass": true
+    },
+    {
+     "pass": 1,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.67,
+      "p95": 5.0
+     },
+     "t_start_s": 170.4,
+     "t_end_s": 269.4,
+     "run_id": "concurrency-longrun-k2-p1-blind3-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 192.2,
+      "GPU.1": 187.41
+     },
+     "first_complete_pass": true
+    },
+    {
+     "pass": 1,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.69,
+      "p95": 4.37
+     },
+     "t_start_s": 268.6,
+     "t_end_s": 364.1,
+     "run_id": "concurrency-longrun-k2-p1-main-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 194.79,
+      "GPU.1": 187.45
+     },
+     "first_complete_pass": true
+    },
+    {
+     "pass": 2,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.45,
+      "p95": 4.03
+     },
+     "t_start_s": 361.8,
+     "t_end_s": 444.6,
+     "run_id": "concurrency-longrun-k2-p2-heldout-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.97,
+      "GPU.1": 188.89
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 2,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.49,
+      "p95": 4.45
+     },
+     "t_start_s": 443.9,
+     "t_end_s": 529.1,
+     "run_id": "concurrency-longrun-k2-p2-hard-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.14,
+      "GPU.1": 189.7
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 2,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.6,
+      "p95": 4.76
+     },
+     "t_start_s": 528.8,
+     "t_end_s": 626.8,
+     "run_id": "concurrency-longrun-k2-p2-blind3-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 195.6,
+      "GPU.1": 188.5
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 2,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.67,
+      "p95": 4.36
+     },
+     "t_start_s": 625.9,
+     "t_end_s": 721.1,
+     "run_id": "concurrency-longrun-k2-p2-main-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.38,
+      "GPU.1": 189.91
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 3,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.4,
+      "p95": 4.0
+     },
+     "t_start_s": 718.6,
+     "t_end_s": 800.8,
+     "run_id": "concurrency-longrun-k2-p3-heldout-20261107-053505",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.53,
+      "GPU.1": 193.03
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 3,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.44,
+      "p95": 4.38
+     },
+     "t_start_s": 800.2,
+     "t_end_s": 884.4,
+     "run_id": "concurrency-longrun-k2-p3-hard-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.96,
+      "GPU.1": 190.89
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 3,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.56,
+      "p95": 4.79
+     },
+     "t_start_s": 884.3,
+     "t_end_s": 981.2,
+     "run_id": "concurrency-longrun-k2-p3-blind3-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.18,
+      "GPU.1": 192.11
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 3,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.6,
+      "p95": 4.39
+     },
+     "t_start_s": 980.3,
+     "t_end_s": 1074.5,
+     "run_id": "concurrency-longrun-k2-p3-main-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.27,
+      "GPU.1": 190.37
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 4,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.4,
+      "p95": 4.0
+     },
+     "t_start_s": 1072.3,
+     "t_end_s": 1154.2,
+     "run_id": "concurrency-longrun-k2-p4-heldout-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.85,
+      "GPU.1": 191.2
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 4,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.51,
+      "p95": 4.37
+     },
+     "t_start_s": 1153.8,
+     "t_end_s": 1238.4,
+     "run_id": "concurrency-longrun-k2-p4-hard-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.7,
+      "GPU.1": 191.74
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 4,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.58,
+      "p95": 4.72
+     },
+     "t_start_s": 1238.3,
+     "t_end_s": 1335.2,
+     "run_id": "concurrency-longrun-k2-p4-blind3-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.91,
+      "GPU.1": 191.12
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 4,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.62,
+      "p95": 4.3
+     },
+     "t_start_s": 1334.3,
+     "t_end_s": 1428.6,
+     "run_id": "concurrency-longrun-k2-p4-main-20261107-053506",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 195.29,
+      "GPU.1": 190.99
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 5,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.37,
+      "p95": 4.03
+     },
+     "t_start_s": 1426.1,
+     "t_end_s": 1508.1,
+     "run_id": "concurrency-longrun-k2-p5-heldout-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.84,
+      "GPU.1": 191.21
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 5,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.49,
+      "p95": 4.46
+     },
+     "t_start_s": 1507.6,
+     "t_end_s": 1592.3,
+     "run_id": "concurrency-longrun-k2-p5-hard-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 199.46,
+      "GPU.1": 191.85
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 5,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.56,
+      "p95": 4.78
+     },
+     "t_start_s": 1592.1,
+     "t_end_s": 1688.9,
+     "run_id": "concurrency-longrun-k2-p5-blind3-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.48,
+      "GPU.1": 190.06
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 5,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.65,
+      "p95": 4.32
+     },
+     "t_start_s": 1687.7,
+     "t_end_s": 1781.8,
+     "run_id": "concurrency-longrun-k2-p5-main-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.67,
+      "GPU.1": 192.99
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 6,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.38,
+      "p95": 4.0
+     },
+     "t_start_s": 1779.5,
+     "t_end_s": 1861.2,
+     "run_id": "concurrency-longrun-k2-p6-heldout-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 199.63,
+      "GPU.1": 192.89
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 6,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.45,
+      "p95": 4.39
+     },
+     "t_start_s": 1861.0,
+     "t_end_s": 1945.2,
+     "run_id": "concurrency-longrun-k2-p6-hard-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.12,
+      "GPU.1": 193.5
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 6,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.52,
+      "p95": 4.78
+     },
+     "t_start_s": 1945.1,
+     "t_end_s": 2041.9,
+     "run_id": "concurrency-longrun-k2-p6-blind3-20261107-053507",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.37,
+      "GPU.1": 191.85
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 6,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.62,
+      "p95": 4.35
+     },
+     "t_start_s": 2040.6,
+     "t_end_s": 2134.7,
+     "run_id": "concurrency-longrun-k2-p6-main-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.53,
+      "GPU.1": 191.85
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 7,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.39,
+      "p95": 4.03
+     },
+     "t_start_s": 2132.5,
+     "t_end_s": 2214.3,
+     "run_id": "concurrency-longrun-k2-p7-heldout-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.23,
+      "GPU.1": 193.19
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 7,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.53,
+      "p95": 4.39
+     },
+     "t_start_s": 2214.1,
+     "t_end_s": 2298.4,
+     "run_id": "concurrency-longrun-k2-p7-hard-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.97,
+      "GPU.1": 190.98
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 7,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.54,
+      "p95": 4.73
+     },
+     "t_start_s": 2298.4,
+     "t_end_s": 2394.9,
+     "run_id": "concurrency-longrun-k2-p7-blind3-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.08,
+      "GPU.1": 192.2
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 7,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.61,
+      "p95": 4.29
+     },
+     "t_start_s": 2393.9,
+     "t_end_s": 2487.7,
+     "run_id": "concurrency-longrun-k2-p7-main-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 195.19,
+      "GPU.1": 193.61
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 8,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.37,
+      "p95": 4.0
+     },
+     "t_start_s": 2485.4,
+     "t_end_s": 2567.1,
+     "run_id": "concurrency-longrun-k2-p8-heldout-20261107-053508",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.4,
+      "GPU.1": 191.53
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 8,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.48,
+      "p95": 4.48
+     },
+     "t_start_s": 2566.9,
+     "t_end_s": 2651.5,
+     "run_id": "concurrency-longrun-k2-p8-hard-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.55,
+      "GPU.1": 192.26
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 8,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.58,
+      "p95": 4.75
+     },
+     "t_start_s": 2651.1,
+     "t_end_s": 2748.1,
+     "run_id": "concurrency-longrun-k2-p8-blind3-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 194.87,
+      "GPU.1": 192.15
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 8,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.64,
+      "p95": 4.32
+     },
+     "t_start_s": 2747.3,
+     "t_end_s": 2841.2,
+     "run_id": "concurrency-longrun-k2-p8-main-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 199.03,
+      "GPU.1": 191.27
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 9,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.37,
+      "p95": 4.03
+     },
+     "t_start_s": 2838.9,
+     "t_end_s": 2921.2,
+     "run_id": "concurrency-longrun-k2-p9-heldout-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.15,
+      "GPU.1": 192.7
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 9,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.46,
+      "p95": 4.4
+     },
+     "t_start_s": 2920.9,
+     "t_end_s": 3004.8,
+     "run_id": "concurrency-longrun-k2-p9-hard-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.6,
+      "GPU.1": 192.38
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 9,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.53,
+      "p95": 4.78
+     },
+     "t_start_s": 3004.7,
+     "t_end_s": 3101.0,
+     "run_id": "concurrency-longrun-k2-p9-blind3-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 199.07,
+      "GPU.1": 190.84
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 9,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.64,
+      "p95": 4.31
+     },
+     "t_start_s": 3100.2,
+     "t_end_s": 3194.6,
+     "run_id": "concurrency-longrun-k2-p9-main-20261107-053509",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.12,
+      "GPU.1": 191.22
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 10,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.37,
+      "p95": 3.96
+     },
+     "t_start_s": 3192.1,
+     "t_end_s": 3273.7,
+     "run_id": "concurrency-longrun-k2-p10-heldout-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.94,
+      "GPU.1": 192.66
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 10,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.48,
+      "p95": 4.42
+     },
+     "t_start_s": 3273.4,
+     "t_end_s": 3357.3,
+     "run_id": "concurrency-longrun-k2-p10-hard-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 199.57,
+      "GPU.1": 192.15
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 10,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.54,
+      "p95": 4.72
+     },
+     "t_start_s": 3357.1,
+     "t_end_s": 3454.0,
+     "run_id": "concurrency-longrun-k2-p10-blind3-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.22,
+      "GPU.1": 192.51
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 10,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.63,
+      "p95": 4.33
+     },
+     "t_start_s": 3453.2,
+     "t_end_s": 3547.2,
+     "run_id": "concurrency-longrun-k2-p10-main-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.37,
+      "GPU.1": 191.52
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 11,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.4,
+      "p95": 3.99
+     },
+     "t_start_s": 3544.8,
+     "t_end_s": 3626.7,
+     "run_id": "concurrency-longrun-k2-p11-heldout-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.98,
+      "GPU.1": 193.98
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 11,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.47,
+      "p95": 4.37
+     },
+     "t_start_s": 3626.5,
+     "t_end_s": 3711.0,
+     "run_id": "concurrency-longrun-k2-p11-hard-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.15,
+      "GPU.1": 194.39
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 11,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.57,
+      "p95": 4.78
+     },
+     "t_start_s": 3710.5,
+     "t_end_s": 3807.7,
+     "run_id": "concurrency-longrun-k2-p11-blind3-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.53,
+      "GPU.1": 192.26
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 11,
+     "set": "main",
+     "docs": 52,
+     "partial": false,
+     "docs_read": 52,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 345,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.62,
+      "p95": 4.36
+     },
+     "t_start_s": 3806.8,
+     "t_end_s": 3900.7,
+     "run_id": "concurrency-longrun-k2-p11-main-20261107-053510",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.25,
+      "GPU.1": 190.34
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 12,
+     "set": "heldout",
+     "docs": 47,
+     "partial": false,
+     "docs_read": 47,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 319,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.38,
+      "p95": 4.0
+     },
+     "t_start_s": 3898.7,
+     "t_end_s": 3980.9,
+     "run_id": "concurrency-longrun-k2-p12-heldout-20261107-053511",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 196.75,
+      "GPU.1": 189.19
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 12,
+     "set": "hard",
+     "docs": 49,
+     "partial": false,
+     "docs_read": 49,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 0.0,
+     "key_fields_wrong": 45,
+     "key_fields_compared": 320,
+     "docs_for_person": 18,
+     "latency_s": {
+      "p50": 3.51,
+      "p95": 4.41
+     },
+     "t_start_s": 3980.5,
+     "t_end_s": 4064.9,
+     "run_id": "concurrency-longrun-k2-p12-hard-20261107-053511",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 198.57,
+      "GPU.1": 190.64
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 12,
+     "set": "blind3",
+     "docs": 53,
+     "partial": false,
+     "docs_read": 53,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 18,
+     "key_fields_compared": 326,
+     "docs_for_person": 12,
+     "latency_s": {
+      "p50": 3.52,
+      "p95": 4.8
+     },
+     "t_start_s": 4064.7,
+     "t_end_s": 4161.0,
+     "run_id": "concurrency-longrun-k2-p12-blind3-20261107-053511",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.87,
+      "GPU.1": 190.55
+     },
+     "same_scoring_as_first_pass": true,
+     "docs_fields_differ_vs_first_pass": 0
+    },
+    {
+     "pass": 12,
+     "set": "main",
+     "docs": 23,
+     "partial": true,
+     "docs_read": 23,
+     "docs_not_read": 0,
+     "not_read_reasons": null,
+     "rule_f1": 1.0,
+     "key_fields_wrong": 0,
+     "key_fields_compared": 146,
+     "docs_for_person": 0,
+     "latency_s": {
+      "p50": 3.65,
+      "p95": 4.09
+     },
+     "t_start_s": 4160.2,
+     "t_end_s": 4201.5,
+     "run_id": "concurrency-longrun-k2-p12-main-20261107-053511",
+     "util_mean_pct": {
+      "GPU.0": null,
+      "GPU.1": null
+     },
+     "power_mean_w": {
+      "GPU.0": 197.08,
+      "GPU.1": 191.62
+     }
+    }
+   ],
+   "stability": {
+    "heldout": {
+     "complete_passes": 12,
+     "rule_f1_values": [
+      1.0
+     ],
+     "key_fields_wrong_values": [
+      0
+     ],
+     "docs_for_person_values": [
+      0
+     ],
+     "all_complete_passes_same_scoring": true,
+     "max_docs_fields_differ_vs_first_pass": 0
+    },
+    "hard": {
+     "complete_passes": 12,
+     "rule_f1_values": [
+      0.0
+     ],
+     "key_fields_wrong_values": [
+      45
+     ],
+     "docs_for_person_values": [
+      18
+     ],
+     "all_complete_passes_same_scoring": true,
+     "max_docs_fields_differ_vs_first_pass": 0
+    },
+    "blind3": {
+     "complete_passes": 12,
+     "rule_f1_values": [
+      1.0
+     ],
+     "key_fields_wrong_values": [
+      18
+     ],
+     "docs_for_person_values": [
+      12
+     ],
+     "all_complete_passes_same_scoring": true,
+     "max_docs_fields_differ_vs_first_pass": 0
+    },
+    "main": {
+     "complete_passes": 11,
+     "rule_f1_values": [
+      1.0
+     ],
+     "key_fields_wrong_values": [
+      0
+     ],
+     "docs_for_person_values": [
+      0
+     ],
+     "all_complete_passes_same_scoring": true,
+     "max_docs_fields_differ_vs_first_pass": 0
+    }
+   },
+   "passes_complete": 47
+  }
+ ],
+ "measured_on_b70": true
+}

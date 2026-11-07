@@ -1,0 +1,28 @@
+{
+ "what": "Compute-engine busy share per B70 during the 70-minute two-card long run with the UBN zoom strip padded to 448 px (eval/results_longrun_zoompad.json), from Xe DRM fdinfo every 5 s (eval/util_sampler.py). Busy = compute engine had work queued; not EU occupancy.",
+ "run": "eval/results_longrun_zoompad.json",
+ "raw": "eval/longrun/util_longrun_zoompad.csv",
+ "measured_on_b70": true,
+ "cards": {
+  "GPU.0 (0000:17:00.0)": {
+   "samples": 839,
+   "dropped_negative_at_restart": 1,
+   "samples_at_zero": 5,
+   "minutes": 70.5,
+   "mean_busy": 0.907,
+   "p50_busy": 0.916,
+   "p05_busy": 0.868,
+   "share_of_samples_at_or_above_0.90": 0.681
+  },
+  "GPU.1 (0000:ba:00.0)": {
+   "samples": 840,
+   "dropped_negative_at_restart": 0,
+   "samples_at_zero": 6,
+   "minutes": 70.5,
+   "mean_busy": 0.907,
+   "p50_busy": 0.918,
+   "p05_busy": 0.86,
+   "share_of_samples_at_or_above_0.90": 0.669
+  }
+ }
+}
