@@ -4,6 +4,7 @@ real_tw (41 photos in data/real_tw, answer key eval/expected_real_tw.json, froze
   python -I eval/real_photo_eval.py tw --ocr-only
   python -I eval/real_photo_eval.py tw --model-dir E:\\models\\Qwen3.5-2B-int4-ov --device CPU --limit 5      (dry run)
   python -I eval/real_photo_eval.py tw --model-dir DIR --device GPU --official --out eval/results_real_tw.json
+  Add --set real_tw2 for the second blind set (data/real_tw2, eval/expected_real_tw2.json, eval/frozen_real_tw2.json).
   Three readers, scored field by field against the key:
     OCR only      eval/ocr_only.py: OCR + the same reconciliation code and rules, no model
     model only    the model's own transcription (the same reply Ledger Room gets), with format clean-up only
@@ -47,6 +48,7 @@ if str(ROOT) not in sys.path:   # run as a script with python -I: the repository
     sys.path.insert(0, str(ROOT))
 
 TW_SET = "real_tw"
+TW_SETS = ("real_tw", "real_tw2")   # same layout, key and freeze format; pick one with --set
 TW_FIELDS = ["invoice_no", "date", "seller_ubn", "total", "net", "tax"]
 ONLY_WHEN_PRINTED = {"net", "tax"}   # scored only on vouchers that print an untaxed amount and a tax line
 DRY_RUN_MAX = 5
@@ -60,17 +62,17 @@ def sha256(p: Path) -> str:
 
 # ---------------------------------------------------------------- real_tw
 
-def load_truth(path: Path | None = None) -> dict:
-    return json.loads((path or ROOT / "eval" / "expected_real_tw.json").read_text(encoding="utf-8"))
+def load_truth(path: Path | None = None, set_name: str = TW_SET) -> dict:
+    return json.loads((path or ROOT / "eval" / f"expected_{set_name}.json").read_text(encoding="utf-8"))
 
 
-def check_frozen() -> None:
+def check_frozen(set_name: str = TW_SET) -> None:
     """Refuse to score against a key or photos that changed after the freeze."""
-    fr = json.loads((ROOT / "eval" / "frozen_real_tw.json").read_text(encoding="utf-8"))
+    fr = json.loads((ROOT / "eval" / f"frozen_{set_name}.json").read_text(encoding="utf-8"))
     bad = [k for k in ("expected", "clients_json") if sha256(ROOT / fr[k]["path"]) != fr[k]["sha256"]]
-    bad += [d for d, h in fr["images"].items() if sha256(ROOT / "data" / TW_SET / "clients" / d) != h]
+    bad += [d for d, h in fr["images"].items() if sha256(ROOT / "data" / set_name / "clients" / d) != h]
     if bad:
-        raise SystemExit(f"real_tw changed after it was frozen: {bad[:5]}")
+        raise SystemExit(f"{set_name} changed after it was frozen: {bad[:5]}")
 
 
 def model_only_fields(obj: dict) -> dict:
@@ -132,9 +134,10 @@ def score_tw(truth_docs: list[dict], got: dict[str, dict], held: set[str] | None
 
 def run_tw(a) -> dict:
     from ledger_room import pipeline, rules
-    check_frozen()
-    T = load_truth()
-    clients, docs = pipeline.load_inbox(TW_SET)
+    set_name = getattr(a, "set", None) or TW_SET
+    check_frozen(set_name)
+    T = load_truth(set_name=set_name)
+    clients, docs = pipeline.load_inbox(set_name)
     keep = {t["file"] for t in T["docs"]}
     docs = [d for d in docs if d["path"].name in keep]
     if a.limit:
@@ -144,7 +147,7 @@ def run_tw(a) -> dict:
     use_model = not a.ocr_only
     dry = bool(a.limit) or a.dry_run
     if use_model and not a.official and (not a.limit or a.limit > DRY_RUN_MAX):
-        raise SystemExit(f"real_tw with a model: --limit <= {DRY_RUN_MAX} (dry run) or --official (first full run)")
+        raise SystemExit(f"{set_name} with a model: --limit <= {DRY_RUN_MAX} (dry run) or --official (first full run)")
     if a.official and (a.limit or a.ocr_only):
         raise SystemExit("--official is the full model run: no --limit, no --ocr-only")
 
@@ -152,7 +155,7 @@ def run_tw(a) -> dict:
         reads = pipeline.read_docs(docs, reader, cache=cache, model_id=model_id,
                                    progress=lambda i, n, did, r: print(f"[{model_id} {i}/{n}] {did}", flush=True))
         rdocs = [pipeline.to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"],
-                                      reads[d["doc_id"]].get("ocr_lines")) for d in docs]
+                                      reads[d["doc_id"]].get("ocr_lines"), reads[d["doc_id"]].get("raw")) for d in docs]
         ex = rules.run_rules(rdocs, clients)
         held = {Path(e.doc_id).name for e in ex if e.severity in ("hold", "review")}
         fields = {Path(k).name: v["fields"] for k, v in reads.items()}
@@ -160,7 +163,7 @@ def run_tw(a) -> dict:
         secs = [r["timing"].get("total_s") for r in reads.values() if r["timing"].get("total_s")]
         return reads, fields, held, why, (round(sum(secs) / len(secs), 2) if secs else None)
 
-    res = {"set": TW_SET, "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+    res = {"set": set_name, "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
            "code_rev": pipeline.git_rev(), "dry_run": dry, "labels": T["note"],
            "photos": len(docs), "photo_files": sorted(files) if dry else "all",
            "conditions": {}}
@@ -413,7 +416,8 @@ def main(argv=None):
         s.add_argument("--show-reads", action="store_true", help="include per-photo values in the output")
         s.add_argument("--out")
         if name == "tw":
-            s.add_argument("--official", action="store_true", help="first full model run on real_tw (B70)")
+            s.add_argument("--official", action="store_true", help="first full model run on the set (B70)")
+            s.add_argument("--set", default=TW_SET, choices=TW_SETS, help="real_tw (default) or real_tw2")
         else:
             s.add_argument("--root", required=True, help="prepared folder with truth.json (on F:)")
             s.add_argument("--split", help="e.g. validation,test")

@@ -1,0 +1,194 @@
+{
+ "set": "real_tw",
+ "model": "Qwen3.5-9B-int4-ov",
+ "code_rev": "fa8c027",
+ "generated_at": "2026-11-07T10:00:34+00:00",
+ "note": "re-scored from saved reads; the reader re-ran only what was not saved",
+ "label": "after the fix: the strict rule (docs/strict_draft.md) was written after seeing this set's misses; not a first run. Copied from the B70 host output.",
+ "conditions": {
+  "default": {
+   "photos": 41,
+   "fields_scored": 164,
+   "fields_wrong": 11,
+   "field_error_rate": 0.067,
+   "by_field": {
+    "invoice_no": "4 wrong / 41",
+    "date": "0 wrong / 40",
+    "seller_ubn": "4 wrong / 40",
+    "total": "3 wrong / 41",
+    "net": "0 wrong / 1",
+    "tax": "0 wrong / 1"
+   },
+   "values_not_printed": {
+    "seller_ubn": 1
+   },
+   "fields_unreadable_not_scored": 1,
+   "photos_with_a_wrong_field": 9,
+   "photos_sent_to_a_person": 7,
+   "wrong_and_not_held": 3,
+   "held_with_all_fields_right": 1,
+   "wrong_and_not_held_files": [
+    "TW006.jpg",
+    "TW013.jpg",
+    "TW020.jpg"
+   ],
+   "hold_rules": {
+    "READ_REVIEW": 9
+   }
+  },
+  "strict": {
+   "photos": 41,
+   "fields_scored": 164,
+   "fields_wrong": 11,
+   "field_error_rate": 0.067,
+   "by_field": {
+    "invoice_no": "4 wrong / 41",
+    "date": "0 wrong / 40",
+    "seller_ubn": "4 wrong / 40",
+    "total": "3 wrong / 41",
+    "net": "0 wrong / 1",
+    "tax": "0 wrong / 1"
+   },
+   "values_not_printed": {
+    "seller_ubn": 1
+   },
+   "fields_unreadable_not_scored": 1,
+   "photos_with_a_wrong_field": 9,
+   "photos_sent_to_a_person": 14,
+   "wrong_and_not_held": 0,
+   "held_with_all_fields_right": 5,
+   "wrong_and_not_held_files": [],
+   "hold_rules": {
+    "READ_REVIEW": 23
+   }
+  },
+  "strict_with_second_reader": {
+   "photos": 41,
+   "fields_scored": 164,
+   "fields_wrong": 11,
+   "field_error_rate": 0.067,
+   "by_field": {
+    "invoice_no": "4 wrong / 41",
+    "date": "0 wrong / 40",
+    "seller_ubn": "4 wrong / 40",
+    "total": "3 wrong / 41",
+    "net": "0 wrong / 1",
+    "tax": "0 wrong / 1"
+   },
+   "values_not_printed": {
+    "seller_ubn": 1
+   },
+   "fields_unreadable_not_scored": 1,
+   "photos_with_a_wrong_field": 9,
+   "photos_sent_to_a_person": 14,
+   "wrong_and_not_held": 0,
+   "held_with_all_fields_right": 5,
+   "wrong_and_not_held_files": [],
+   "hold_rules": {
+    "READ_REVIEW": 20
+   }
+  }
+ },
+ "second_reader": {
+  "model": "Qwen3.5-27B-int4-ov",
+  "device": "GPU.1",
+  "escalated": 12,
+  "sec_per_escalated_photo": null,
+  "sec_note": "27B replies were cached from the previous run on the same day; see the real_tw2 run for timing",
+  "per_photo": {
+   "TW002.jpg": {
+    "reasons": [
+     "total_unconfirmed"
+    ],
+    "taken": []
+   },
+   "TW006.jpg": {
+    "reasons": [
+     "invoice_no_strict"
+    ],
+    "taken": []
+   },
+   "TW011.jpg": {
+    "reasons": [
+     "total_unconfirmed"
+    ],
+    "taken": [
+     "total",
+     "net",
+     "tax"
+    ]
+   },
+   "TW012.jpg": {
+    "reasons": [
+     "date_strict"
+    ],
+    "taken": [
+     "invoice_no (confirmed)"
+    ]
+   },
+   "TW013.jpg": {
+    "reasons": [
+     "date_strict"
+    ],
+    "taken": []
+   },
+   "TW020.jpg": {
+    "reasons": [
+     "invoice_no_strict"
+    ],
+    "taken": [
+     "invoice_no (confirmed)"
+    ]
+   },
+   "TW023.jpg": {
+    "reasons": [
+     "date_strict"
+    ],
+    "taken": [
+     "invoice_no (confirmed)"
+    ]
+   },
+   "TW024.jpg": {
+    "reasons": [
+     "invoice_no_strict",
+     "date_strict"
+    ],
+    "taken": []
+   },
+   "TW030.jpg": {
+    "reasons": [
+     "total_unconfirmed",
+     "date_strict"
+    ],
+    "taken": []
+   },
+   "TW036.jpg": {
+    "reasons": [
+     "reply_unparsed",
+     "invoice_no_strict",
+     "date_strict"
+    ],
+    "taken": [
+     "doc_type",
+     "seller_ubn",
+     "date (confirmed)",
+     "seller_name",
+     "items",
+     "category"
+    ]
+   },
+   "TW039.jpg": {
+    "reasons": [
+     "total_unconfirmed"
+    ],
+    "taken": []
+   },
+   "TW040.jpg": {
+    "reasons": [
+     "invoice_no_strict"
+    ],
+    "taken": []
+   }
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "note": "Real photos from Wikimedia Commons, all filed under one evaluation client. The client is not the buyer on any photo.",
+ "set": "real_tw2",
+ "clients": [
+  {
+   "id": "TW",
+   "name": "(evaluation client)",
+   "ubn": "00501503",
+   "period": [
+    "2026-09-01",
+    "2026-10-31"
+   ],
+   "policy": {
+    "meal": 1500,
+    "taxi": 800,
+    "lodging": 3600,
+    "any": 30000
+   }
+  }
+ ]
+}

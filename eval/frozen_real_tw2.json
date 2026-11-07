@@ -1,0 +1,38 @@
+{
+ "synthetic": false,
+ "set": "real_tw2",
+ "frozen_at": "2026-11-07T19:42:21+08:00",
+ "rule": "Frozen. Do not change any image, the answer key or clients.json. No vision-language model had read these photos when the key was frozen. The first full model run is made by the main session on the B70 host (eval/real_photo_eval.py tw --set real_tw2 --official); before that, model runs on this set are capped at 5 photos (dry runs).",
+ "pre_freeze_checks": "images opened and resized only; labels checked against the UBN checksum (all seller UBNs pass). No OCR, no model.",
+ "expected": {
+  "path": "eval/expected_real_tw2.json",
+  "sha256": "b2a21f22e559a430494f6c5eb976c4262fdaa467d00cefce7324b481f801697c"
+ },
+ "clients_json": {
+  "path": "data/real_tw2/clients.json",
+  "sha256": "fc1036c8e09fa8f275e6593593136425f45f7b7d0c8805e5ca9cd26a6f46e8d2"
+ },
+ "attribution": {
+  "path": "data/real_tw2/ATTRIBUTION.md",
+  "sha256": "7a81a29c9c6fb89c5221b94a3a85c41ec7d9f0cd7195048cc611668d98b406b0"
+ },
+ "images": {
+  "TW/2026-11/TW201.jpg": "e178a340974e77da06a71aed56ab24a751c85fb2d42386eaa6eef2f3ea1b3b5d",
+  "TW/2026-11/TW202.jpg": "7c5ddb5f2ba45ba81e1fa7932892ad9db10a0342cab3c4c3f75671e536fad07f",
+  "TW/2026-11/TW203.jpg": "58002c3b79b10803b97a8eb772f1bd24aeec6f38b096c99e45c8ca38763071c8",
+  "TW/2026-11/TW204.jpg": "952b42f0596d56d4fc6554d12964373ce89e1b8c4b11078e67996edff6527496",
+  "TW/2026-11/TW205.jpg": "f5584e99219d7164973b5908b45b8ecb08f2f06953ba2f10d1191b36d649204c",
+  "TW/2026-11/TW206.jpg": "966cce69b9283052f467ea84f53085d6e5272c8561ef4fb8230fb0b734c62521",
+  "TW/2026-11/TW207.jpg": "7b137adc09603a6c043f6121851b3ab9fe588eb1c039dcc728aed9dad8785a6e",
+  "TW/2026-11/TW208.jpg": "143e4477e519558a7107c69ba358e1a5ce7b7acd7760b530b55cb6e67fab4f57",
+  "TW/2026-11/TW209.jpg": "a021cc9e77aa5264665b2096a42105db55f6d266a9424546d5076adcc591b6b2",
+  "TW/2026-11/TW210.jpg": "509cd9715083822e03e7e24947962353b2319e992fd7d99268be72857216e6f4",
+  "TW/2026-11/TW211.jpg": "d9e58f68d36e7644ed013cf57565b815bbba5ba6166d6a4b39718c3a4b261640",
+  "TW/2026-11/TW212.jpg": "3b06d92f7125a611fb9022341c576db18da8298c6883640b31612e6129aacab0",
+  "TW/2026-11/TW213.jpg": "a9ed366130ae3e1bc01cacd8889f8f9ecc6c17b007835ab24f8f474e24830a83",
+  "TW/2026-11/TW214.jpg": "30c3c64ce572699a93a064ea2f9324da15dd9cc36f0025ab522225f39a712716",
+  "TW/2026-11/TW215.jpg": "418ad2ea9e8cb5c6826164db88b26fa052ce7e32ac28967721feccd18923bdef",
+  "TW/2026-11/TW216.jpg": "5e819ca8c52165062faa512f6599a400457a7d442850d98f7511243321cc7227",
+  "TW/2026-11/TW217.jpg": "564754a332f46d35f2e176ecf9785636ce0ab9fdb068016798d9b5614fd3e8af"
+ }
+}
