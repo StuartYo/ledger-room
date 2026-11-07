@@ -97,3 +97,43 @@ def test_dual_card_real_photos_offline():
     off = _load("results_offline_b70.json")
     assert off["pass"] is True
     _has(f"{off['docs_read']} documents read live, {off['duration_s']} s watched")
+
+
+def test_real_company_strict_and_evidence():
+    """Evidence block, strict re-scores and the real company box quote their results files."""
+    tw = _load("results_real_tw_strict.json")["conditions"]
+    d, s = tw["default"], tw["strict"]
+    _has(f"Default reading at this code: {d['fields_wrong']}/{d['fields_scored']} fields wrong, "
+         f"{d['photos_sent_to_a_person']} photos sent to a person, {d['wrong_and_not_held']} photos with a wrong field not stopped")
+    _has(f"Strict reading: {s['photos_sent_to_a_person']} sent to a person, {s['wrong_and_not_held']} not stopped")
+    _has(f"real_tw default {d['photos_sent_to_a_person']} sent, {d['wrong_and_not_held']} let through, "
+         f"strict {s['photos_sent_to_a_person']} sent, {s['wrong_and_not_held']} let through")
+    t2 = _load("results_real_tw2_strict.json")["conditions"]
+    assert t2["strict"]["wrong_and_not_held"] == 0 and s["wrong_and_not_held"] == 0
+    _has(f"{t2['strict']['photos_sent_to_a_person']} sent to a person\nwith strict reading, "
+         f"{t2['default']['wrong_and_not_held']} and {t2['default']['photos_sent_to_a_person']} with the default")
+    b2 = {k: _load(f)["conditions"]["strict"] for k, f in (("tw", "results_real_tw_strict_2b.json"), ("tw2", "results_real_tw2_strict_2b.json"))}
+    s2 = t2["strict"]
+    _has(f"| {b2['tw']['fields_wrong']} of {b2['tw']['fields_scored']} / {b2['tw']['photos_sent_to_a_person']} / {b2['tw']['wrong_and_not_held']} "
+         f"| {s['fields_wrong']} of {s['fields_scored']} / {s['photos_sent_to_a_person']} / {s['wrong_and_not_held']} |")
+    _has(f"| {b2['tw2']['fields_wrong']} of {b2['tw2']['fields_scored']} / {b2['tw2']['photos_sent_to_a_person']} / {b2['tw2']['wrong_and_not_held']} "
+         f"| {s2['fields_wrong']} of {s2['fields_scored']} / {s2['photos_sent_to_a_person']} / {s2['wrong_and_not_held']} |")
+    rc = _load("results_real_company.json")
+    ol = rc["old_ledger_vs_ledger_room"]
+    o, l9 = ol["old_ledger"], ol["ledger_room_strict"]["Qwen3.5-9B-int4-ov"]
+    wf = o["wrong_fields"]
+    _has(f"**{o['wrong_rows']} wrong rows** (invoice\n   number {wf['invoice_no']}, date {wf['date']}, total {wf['total']})")
+    _has(f"**{l9['read_wrong']} misread, all {l9['read_wrong']} held, {l9['wrong_and_not_held']} let through**;\n"
+         f"   {l9['sent_to_a_person']} of {l9['vouchers']} sent to a person")
+    l2 = ol["ledger_room_strict"]["Qwen3.5-2B-int4-ov"]
+    _has(f"| {l2['sent_to_a_person']} / {l2['wrong_and_not_held']} | {l9['sent_to_a_person']} / {l9['wrong_and_not_held']} |")
+    fr = rc["first_runs"]
+    fe = {m: fr[m]["field_error_rate"]["ledger_room"] for m in fr}
+    _has(f"| {fe['Qwen3.5-2B-int4-ov'] * 100:.1f}% | {fe['Qwen3.5-9B-int4-ov'] * 100:.1f}% |")
+    for m in ("Qwen3.5-9B-int4-ov", "Qwen3.5-2B-int4-ov"):
+        for mode in ("default", "strict"):
+            assert f"{fr[m][mode]['sent_to_a_person']} / {fr[m][mode]['wrong_and_not_held']}" in README, (m, mode)
+    af = rc["after_fix_utility_routing"]["Qwen3.5-9B-int4-ov"]["strict"]
+    _has(f"9B strict: {af['sent_to_a_person']} sent to a person ({fr['Qwen3.5-9B-int4-ov']['strict']['sent_to_a_person']} before), "
+         f"{af['wrong_and_not_held_excluding_bills']} wrong and not held outside the\nbills")
+    assert README.count("used with the owner's consent") == 1

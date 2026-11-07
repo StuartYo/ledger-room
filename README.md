@@ -1,6 +1,48 @@
 # Ledger Room
 
-**An on-premises receipt audit box for Taiwanese bookkeeping firms (記帳業者).** The firm scans each client's paper
+**A private receipt clerk for Taiwanese bookkeeping firms (記帳業者), on one machine inside the office.** The firm
+gives it a client's box of paper vouchers. Ledger Room reads every voucher, books a value only when two independent
+sources agree on it, and sends everything else to a person with the reason, so a misread does not slip into the VAT
+return. Client data never leaves the office network.
+
+### Evidence
+
+Three headline facts, all on real documents (definitions: *let through* = a voucher with a wrong field accepted
+without a person; *sent to a person* = held for a bookkeeper to check):
+
+1. **The same 113 real invoices of one small company** ([data rule](#real-vouchers-from-one-company-stage-ii)).
+   The company's old ledger (rows typed by a general chat AI, checked once by the owner): **15 wrong rows** (invoice
+   number 7, date 6, total 3). Ledger Room, 9B on the B70, strict reading: **10 misread, all 10 held, 0 let through**;
+   53 of 113 sent to a person. Compared on the three fields the old ledger keeps; on all six scored fields Ledger Room
+   let 1 through, a seller tax ID (UBN), which the old ledger does not record.
+   `eval/results_real_company.json` → `old_ledger_vs_ledger_room`
+2. **Public real Taiwan photos, strict reading: 0 let through** on 41 (real_tw, re-scored after the fix: the strict
+   rule was written after seeing this set) and 0 on 17 (real_tw2, first run, key frozen before any read).
+   `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` → `conditions.strict`
+3. **Why the B70: the bigger reader is the accurate one, and only the B70 runs it fast.** Same real documents,
+   strict reading, Qwen3.5-2B against Qwen3.5-9B:
+
+   | Same real documents, strict reading | 2B | 9B |
+   |---|---|---|
+   | real_tw, 41 photos: fields wrong / sent to a person / let through | 18 of 164 / 21 / 1 | 11 of 164 / 14 / 0 |
+   | real_tw2, 17 photos (first run): fields wrong / sent to a person / let through | 19 of 66 / 14 / 0 | 15 of 66 / 9 / 0 |
+   | 336 real vouchers: share of fields wrong | 36.1% | 21.5% |
+   | 113 real invoices: sent to a person / let through | 91 / 1 | 53 / 0 |
+
+   The 9B takes 78.4 s a document on the laptop CPU and 3.7 s on one B70 (held-out synthetic set; laptop code
+   c445b35, B70 code 3524145). `eval/results_real_tw_strict_2b.json`, `eval/results_real_tw2_strict_2b.json`,
+   `eval/results_real_company.json` → `first_runs`, `old_ledger_vs_ledger_room`; `eval/results.json` →
+   `larger_model`; `eval/results_b70.json`.
+
+**Shipping mode: strict reading.** Set `LEDGER_STRICT_READ=1` (or `pipeline.STRICT = True`); this is the recommended
+mode, and every Ledger Room count above uses it. The code default is still off. The trade: the default also accepts
+an invoice number or date that only one source supports, so fewer vouchers go to a person but more misreads get through; strict sends more to a person and lets fewer through. On the
+same reads: real_tw default 7 sent, 3 let through, strict 14 sent, 0 let through; the 336-voucher box default 220
+sent, 34 let through, strict 257 sent, 11 let through (9 of the 11 are utility bills, now routed to the platform
+instead; see [Real vouchers from one company](#real-vouchers-from-one-company-stage-ii)). Design:
+[docs/strict_draft.md](docs/strict_draft.md).
+
+**How it works, in short.** The firm scans each client's paper
 vouchers into `client/month/` folders on one office machine (office scanner, USB stick or the office LAN; see
 [docs/data_handling.md](docs/data_handling.md)) and adds the client's media filing download from the MOF e-invoice
 platform, so e-invoices are imported, not photographed. OCR and a vision-language model
@@ -12,10 +54,8 @@ evidence crops and law citations, the client's full VAT media filing file (input
 for forms 401 and 403 (the 401 pair passes the MOF offline checking program on synthetic data), a voucher list to import into accounting
 software, and an HMAC-chained audit log, and nothing leaves the office network. On the held-out synthetic set, first blind run on the laptop (2B reader), Ledger Room scored micro F1 0.96;
 the same model auditing on its own scored 0.15, and OCR with the same rules scores as well as Ledger Room on that clean
-synthetic print (details under [Results](#results)). On 41 real Taiwan receipt photos (first run on the B70) the 9B on its own let
-20 photos with a wrong field through. Ledger Room stopped 15 of them and sent 5 photos to a person; OCR with the
-same rules let 1 through but sent 38 to a person. That is the trade: 4 more wrong photos get through than with OCR and the
-rules, and a person opens 5 photos instead of 38.
+synthetic print (details under [Results](#results)). The real-photo first runs, their strict re-score and the
+caveats on every set are under [Measured on the Intel Arc Pro B70](#measured-on-the-intel-arc-pro-b70-stage-ii).
 
 Entry for the ASUS UGen AI League (Thunderstorm track, Workplace AI). Two kinds of numbers appear here, and each is
 labelled: **Stage II** numbers were measured on the organiser's host with two Intel Arc Pro B70 cards (next section);
@@ -24,7 +64,8 @@ labelled: **Stage II** numbers were measured on the organiser's host with two In
 > **All data in this repository is SYNTHETIC.** Every company, Unified Business Number (統一編號, UBN), invoice
 > number, amount and document image is generated by code (`synth/generate.py`, drawn with Pillow). No real people,
 > no real business records, no AI-generated images. Any match with a real business is coincidental.
-> The only exceptions are the real-photo rows in the next section (public photos and a public dataset, named there).
+> The only exceptions are the real-photo rows in the B70 section (public photos and a public dataset, named there)
+> and the aggregate counts from one company's petty-cash box (no images or values from it are in this repository).
 
 ## Reproduce on the B70 host
 
@@ -68,6 +109,9 @@ run; its blind3 and hard-set numbers are in the after-the-fix table below the no
 | Hard set, same 49 docs, later code (77fa568) | 46/320 key fields wrong, 18 of 49 sent to a person. See the note under this table: the two rows count differently | `eval/results_tiered.json` → `sets.hard.first_only` |
 | **blind3, first official run** (53 synthetic docs in six layouts the code had never seen; key frozen before any run), 9B alone, code 77fa568 | micro F1 0.836 (found 23, missed 4, 5 false alarms); key fields wrong 40/326 (buyer UBN 10/26, net 10/26, tax 7/26, total 10/53); 11 of 53 sent to a person; 1 clean document flagged. Of the 13 documents with a wrong key field, 11 went to a person; 2 hotel statements were accepted with the seller UBN read as the client's own and the buyer UBN left blank | `eval/results_tiered.json` → `sets.blind3.first_only`; the 13 / 11 / 2 split: `eval/blind3_first_run_per_doc.json` → `summary` (per document: wrong field names, whether it went to a person and why; no read values) |
 | **Real photos, Taiwan** (41 receipt and e-invoice photos from Wikimedia Commons, CC BY-SA; answer labels written by Claude, a different model from the readers, from the image only; first run, code 99f36fc) | Ledger Room (9B): 13/164 fields wrong, 5 photos sent to a person, 5 photos with a wrong field not stopped. 9B on its own: 28/164 wrong, 20 photos with a wrong field and nothing stops them. OCR only: 29/164 wrong, 38 photos sent to a person | `eval/results_real_tw_b70.json` → `["Qwen3.5-9B-int4-ov"].conditions` |
+| **Real photos, Taiwan, strict re-score** (the same 41 photos, saved 9B reads re-scored, code fa8c027; **after the fix**: the strict rule was written after seeing this set's misses, so this is not a first run) | Default reading at this code: 11/164 fields wrong, 7 photos sent to a person, 3 photos with a wrong field not stopped. Strict reading: 14 sent to a person, 0 not stopped. Strict with the 27B as second reader (12 photos escalated): 14 sent, 0 not stopped. 2B (code b6fd8bd): 18/164 wrong; default 10 sent, 6 not stopped; strict 21 sent, 1 not stopped | `eval/results_real_tw_strict.json`, `eval/results_real_tw_strict_2b.json` → `conditions` |
+| **Real photos, Taiwan, second blind set real_tw2** (17 other Commons photos, labels by Claude from the image only, key frozen before any read; first official run, code 968f9e0) | 9B: 15/66 fields wrong; default 8 sent to a person, 0 not stopped; strict 9 sent, 0 not stopped; strict with the 27B as second reader (9 escalated) 14/66 wrong, 9 sent, 0 not stopped. 2B (code b6fd8bd): 19/66 wrong; default 10 sent, 1 not stopped; strict 14 sent, 0 not stopped | `eval/results_real_tw2_strict.json`, `eval/results_real_tw2_strict_2b.json` → `conditions` |
+| **Real vouchers, one company's petty-cash box** (336 vouchers; data rule and details in [Real vouchers from one company](#real-vouchers-from-one-company-stage-ii)) | 9B, strict: 257 sent to a person, 11 with a wrong field not stopped (9 of them utility bills); on the 113 invoices compared with the company's old ledger, 10 misread, all held | `eval/results_real_company.json` |
 | **Real receipts, CORD v2** (193 receipts, validation + test splits, CC BY 4.0; total only, against the dataset's own ground truth; Taiwanese rules and Ledger Room's own reader not run) | 9B on its own: 3 of 193 totals wrong, none stopped. OCR + 9B, a total accepted only when two printed sources agree: 1 wrong and not stopped, 65 sent to a person (63 of those had been read right) | `eval/results_real_intl_cord_b70.json` → `["Qwen3.5-9B-int4-ov"].conditions` |
 | **Two cards at once**, one 9B per card, started together, each card reading the same 47 held-out docs | 1,006 + 1,002 documents per hour (whole batch, wall clock); F1 1.00 and 0/319 fields wrong on both cards; no model reloads | `eval/results_dualcard_gpu0.json`, `eval/results_dualcard_gpu1.json` → `sets.heldout.first_only` (code 77fa568) |
 | **27B as second reader** on the second card (the 9B reads everything, the 27B re-reads what the 9B is unsure of) | No gain. Hard set: 14 documents went to the 27B and 5 fields were taken from it, but still 18 of 49 to a person and 46/320 fields wrong, the same as the 9B alone. The unsure fields on that set are damaged on the image itself (covered, faded, written over), so a bigger reader has nothing more to read. Held-out: the 9B was unsure of no document. With the 27B as the only reader on held-out: F1 1.00, 0/319, 5.2 s per document against 3.7 s for the 9B | `eval/results_tiered.json` → `sets.hard.tiered` vs `sets.hard.first_only`; `eval/results_b70.json` → `results["Qwen3.5-27B-int4-ov"]` |
@@ -120,6 +164,74 @@ blind3 run showed. The first-run rows above stay the headline.
 | Hard set, 49 docs, 9B alone (first reader only; the 27B pass was not run, which is why the file says incomplete) | 45/320 key fields wrong, 18 of 49 sent to a person, 2 clean documents flagged | `eval/results_after_fix_r9.json` → `sets.hard.first_only` |
 | blind3, 53 docs, 9B alone, restart-on-error bench (7d00d4d) | F1 1.00 (found 27, missed 0, 0 false alarms), 18/326 key fields wrong, 12 of 53 sent to a person, 0 clean documents flagged; 883 documents an hour; one reader error (`CL_OUT_OF_RESOURCES`) recovered by a fresh process, no fixed reloads. A first attempt (bench 34f5246) reused the broken process and was discarded | `eval/results_after_fix_r9_blind3.json` → `rows[0]` |
 
+### Real photos: first run, then strict reading
+
+On 41 real Taiwan receipt photos (real_tw, first run on the B70) the 9B on its own let 20 photos with a wrong field
+through. Ledger Room with the default reading stopped 15 of them and sent 5 photos to a person; OCR with the same
+rules let 1 through but sent 38 to a person. That was the trade of the default reading: 4 more wrong photos got
+through than with OCR and the rules, and a person opened 5 photos instead of 38. The first-run row above stays the
+record of that run.
+
+Those misses led to strict reading ([docs/strict_draft.md](docs/strict_draft.md)). The same saved reads were
+re-scored: the default reading at the newer code lets 3 through and sends 7 to a person; strict lets 0 through and
+sends 14. The strict rule was written after seeing this set, so that is an after-the-fix number. The first blind test
+of strict reading is real_tw2 (17 photos, key frozen before any read, first run): 0 let through and 9 sent to a person
+with strict reading, 0 and 8 with the default. Answer labels on both public sets were written by Claude, a different
+model from the readers, from the image only; no person checked them.
+
+### Real vouchers from one company (Stage II)
+
+**Data rule.** One small Taiwanese company's petty-cash box, used with the owner's consent. Only aggregate counts are
+published: no images, no company name, no tax ID, no per-voucher values. The images, the answer key and the
+per-voucher files stay outside git. Every other mention of "the real company box" in this README refers to this set
+and this rule.
+
+The box holds 336 vouchers: 83 e-invoices, 24 triplicate invoices, 14 two-part cash-register invoices, 155 utility
+bills, 34 postage receipts, 14 tax bills and 12 receipts. Answer key: 4 labelers read the page images only (no ledger,
+no OCR, no Ledger Room output), frozen (sha256 prefix fcff2ca60a393f7d) before any Ledger Room read; it was not made
+or checked by a bookkeeper. Fields scored: invoice number, date, seller UBN, total, net, tax (a utility bill's printed
+invoice number is the previous period's e-invoice). First runs on one B70 (`GPU.0`):
+
+| First run, 336 vouchers | 9B (code fa8c027) | 2B (code b6fd8bd) |
+|---|---|---|
+| Seconds a photo on the B70 | 3.87 | 2.45 |
+| Share of fields wrong: OCR only / model alone / Ledger Room | 60% / 27% / 21.5% | 60% / 68.1% / 36.1% |
+| Default reading: sent to a person / wrong and not held | 220 / 34 | 262 / 34 |
+| Strict reading: sent to a person / wrong and not held | 257 / 11 | 309 / 7 |
+| Strict, the 121 invoices only: sent to a person / with a wrong field / wrong and not held | 56 / 52 / 1 | 98 / 79 / 4 |
+
+Strict counts were re-scored from the same reads (`eval/strict_rescore.py`). With strict reading the 2B lets fewer
+vouchers through over the whole box (7 against 11) because it sends 52 more to a person; on the invoices it lets more
+through (4 against 1). Of the 9B's 11 strict misses, 9 are utility bills, 1 a tax bill and 1 a triplicate invoice
+(`by_kind_9B`). The 27B as second reader on the 9B's strict run: 164 photos escalated, 5.96 s each, 241 sent to a
+person, still 11 not held, share of fields wrong 18.2%.
+
+**Against the company's old ledger.** The company's own ledger rows for its invoices were typed by a general cloud chat
+AI and checked once by the owner. 113 of the 121 invoices could be paired with a ledger row (106 by exact invoice
+number, 7 by a near-miss number with the same date or amount), compared on the three fields that ledger keeps:
+invoice number, date, total.
+
+| Same 113 invoices | Wrong | Wrong and not held | Sent to a person |
+|---|---|---|---|
+| Old ledger (chat AI, checked once) | 15 rows (invoice number 7, date 6, total 3) | 15 (nobody held them) | n/a |
+| Ledger Room 9B, strict | 10 | 0 | 53 |
+| Ledger Room 9B, default | 10 | 0 | 52 |
+| Ledger Room 2B, strict | 36 | 1 | 91 |
+| Ledger Room 2B, default | 36 | 13 | 52 |
+
+Not a person-versus-machine race: the old ledger is one way a small company actually kept its books. On all six
+scored fields the 9B let 1 of the 113 through (a seller tax ID), which the old ledger does not record.
+
+**After the fix: utility bills routed to the platform.** The utility-bill keywords (commit 1d7a07c) were written after
+seeing this box, so these are after-the-fix numbers on the same saved reads, no model run. A recognised utility bill is
+not booked from paper: its input tax comes from the utility's e-invoice on the MOF platform, and the bill is kept as
+proof of payment. It is neither held nor exported. Recognised: 155 of 155, 0 false (OCR text only;
+`eval/results_utility_detect.json`). 9B strict: 112 sent to a person (257 before), 2 wrong and not held outside the
+bills (11 before, 9 of them bills); default 109 and 2. 2B strict: 157 and 4; default 114 and 27.
+
+All counts: `eval/results_real_company.json` (`first_runs`, `by_kind_9B`, `invoices_121`, `old_ledger_vs_ledger_room`,
+`after_fix_utility_routing`). Page splitting on the same box: [Stage II progress](#stage-ii-progress).
+
 ## Why a bookkeeping firm needs this
 
 - Taiwan has about 8,600 bookkeeping firms, and the Ministry of Finance inspects their personal-data safeguards
@@ -136,6 +248,32 @@ blind3 run showed. The first-run rows above stay the headline.
   rejects newly issued numbers ([MOF Fiscal Information Agency](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283)).
 - A firm sees all of its clients' vouchers. Only a firm-level system can notice the same receipt claimed by two
   different client companies.
+
+## Who buys it and when it pays back
+
+The buyer is the bookkeeping firm, in two versions:
+
+- **Pro**: one ASUS workstation with an Arc Pro B70 and the 9B reader, for larger bookkeeping firms or CPA firms.
+  Box NT$81,590–148,189 at Taiwan prices read on 2026-11-07 (a parts build plus the card, up to an ASUS WS780T plus the
+  card; card NT$51,290), plus a licence of NT$1,500–3,000 a month per firm (our proposal).
+- **Lite**: the firm's own laptop with the 2B reader, for small bookkeeping firms; licence only.
+
+Method (our calculation): the saving is 45 s of keying a voucher (published estimates 30–60 s) at NT$219 a staff hour
+(NT$38,000 a month, MOL 2025 occupational wage survey, no employer costs), counted only for vouchers that pass
+without a person; a held voucher saves nothing. Share that passes, real data, strict reading: 9B 54% (the real
+company's 121 invoices) to 66% (the 41 public photos); 2B 19% to 49%. Vouchers a month are our assumption, paper
+only (e-invoices come from the platform download; scanning not counted).
+
+| Paper vouchers a month | Pro: payback | Lite: net a month |
+|---|---|---|
+| 10,000 | 5–13 months | +NT$2,200 to +NT$11,900 |
+| 5,000 | 11–34 months | −NT$400 to +NT$5,200 |
+| 2,000 | no payback in 3 years (39 months at best): Lite | −NT$2,000 to +NT$1,200 |
+
+Pro best case: cheaper box, higher pass share, lower licence; worst case the opposite. At 10,000 vouchers a month and
+30 s a voucher: 8–22 months; at 60 s: 4–9 months. The keying speed comes from published estimates, not a timing in a
+firm, and a held voucher's check time is not counted; a pilot firm would measure both. The speed was measured on the
+organiser's Xeon host, not on the box priced here.
 
 ## What it checks
 
@@ -599,16 +737,21 @@ on the B70 host on 2026-11-06 (code 3524145); the results are under
 (`eval/results_b70_dryrun.json`, `eval/results_tiered_dryrun.json`) only check that the scripts work; their timings are
 not results.
 
-**Page splitting (not yet connected to the pipeline).** A firm scans A4 pages with several vouchers taped on each. `ledger_room/split.py` (`split_page`, or `python -m ledger_room.split page.jpg [out_dir]`) returns one box per voucher with classical image processing on the CPU, about 0.03 s a page: the print is grouped into blobs, and each blob is cut again and again along the widest near-blank band that leaves both sides voucher sized; a printed rule across the band blocks the cut, a paper edge along it does not. It does not turn crops upright. On the private petty-cash pages (107 pages, 336 boxes drawn by hand; owner's consent, counts only) every threshold was set on 72 pages, and the other 35 (every third page by sorted file name) were run once after the method was frozen: 84 of 109 vouchers found at IoU 0.5 or more (69 at 0.7 or more), 25 missed, 20 extra boxes, 24 of 35 pages fully right. On the 72 tuning pages: 171 of 227 (151 at 0.7), 49 extra boxes, 47 pages fully right. It fails on touching vouchers with no blank band between them (e-invoice strips side by side, stacked postage receipts), on small receipts in a dense grid (0 of 13 two-part register receipts on the held-out pages) and on sideways bills, which it cuts in two (`eval/split_eval.py`, `eval/results_split.json`).
+**Page splitting (not yet connected to the pipeline).** A firm scans A4 pages with several vouchers taped on each. `ledger_room/split.py` (`split_page`, or `python -m ledger_room.split page.jpg [out_dir]`) returns one box per voucher with classical image processing on the CPU, about 0.03 s a page: the print is grouped into blobs, and each blob is cut again and again along the widest near-blank band that leaves both sides voucher sized; a printed rule across the band blocks the cut, a paper edge along it does not. It does not turn crops upright. On the real company box ([data rule](#real-vouchers-from-one-company-stage-ii); 107 pages, 336 boxes drawn by hand) every threshold was set on 72 pages, and the other 35 (every third page by sorted file name) were run once after the method was frozen: 84 of 109 vouchers found at IoU 0.5 or more (69 at 0.7 or more), 25 missed, 20 extra boxes, 24 of 35 pages fully right. On the 72 tuning pages: 171 of 227 (151 at 0.7), 49 extra boxes, 47 pages fully right. It fails on touching vouchers with no blank band between them (e-invoice strips side by side, stacked postage receipts), on small receipts in a dense grid (0 of 13 two-part register receipts on the held-out pages) and on sideways bills, which it cuts in two (`eval/split_eval.py`, `eval/results_split.json`).
 
 ## Limits
 
 - Mostly synthetic photos. The real data so far: one person's own consumer e-invoices through the import path (no OCR)
   and 10 of his own receipts in two phone photos (laptop, results under [Results](#results)). Those 10 receipts are not
-  a blind test: they were looked at while the slip checks and the total reading were written. On the B70: 41 public
-  Taiwanese receipt photos whose answer labels were written by Claude, not by a person, and 193 CORD receipts scored on
-  the total only. No bookkeeping firm's client documents have been read, no licensed bookkeeper has checked any
+  a blind test: they were looked at while the slip checks and the total reading were written. On the B70: 41 + 17
+  public Taiwanese receipt photos (real_tw, real_tw2) whose answer labels were written by Claude, not by a person; 193
+  CORD receipts scored on the total only; and the real company box, 336 vouchers of one small company, labelled by 4
+  labelers from the images. No bookkeeping firm's client documents have been read, no licensed bookkeeper has checked any
   answer key, and no firm has piloted Ledger Room yet.
+- Strict reading on real photos: 0 let through on real_tw is an after-the-fix number (the rule was written after
+  seeing that set); real_tw2 is the only blind real-photo test of it, 17 photos. On the real company box strict
+  reading still let 11 of 336 through before the utility-bill routing and 2 outside the bills after it (also after
+  the fix).
 - Totals. Code now picks every total right on the synthetic sets and on the 10 real receipts, but held-out set 2,
   the only blind check of that change, was designed by the author after the weakness was known and uses clean
   synthetic print, so it overstates real accuracy. On the laptop real photos the 2B reader still sends
@@ -616,8 +759,8 @@ not results.
 - The expense category can come from the buyer's name. On held-out set 2 a receipt made out to a company named
   穗田便當有限公司 was taken as a meal and reported over the meal limit. It is not fixed in this version, because
   changing the rule after that run would leave held-out set 2 no longer blind.
-- Utility bills. On a private set of 336 real vouchers from one small company's petty-cash box (used with the owner's
-  consent; only counts are published, in `eval/results_utility_detect.json`), 155 are utility bills. On OCR text alone
+- Utility bills. Of the 336 vouchers in the real company box ([data rule](#real-vouchers-from-one-company-stage-ii);
+  counts in `eval/results_utility_detect.json`), 155 are utility bills. On OCR text alone
   the recogniser found all 155 and nothing else (155 found, 0 false, 0 missed). That is an after-the-fix number: the
   keywords were written after looking at that set. On the public sets (real_tw, real_tw2 and the four synthetic sets,
   259 documents, none of them a utility bill) it recognised none. The platform match is tested on synthetic records only.
