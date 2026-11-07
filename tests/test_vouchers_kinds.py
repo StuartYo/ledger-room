@@ -308,9 +308,9 @@ def test_audit_end_to_end(tmp_path, monkeypatch):
     seen = {}
     real = rules.run_rules
 
-    def spy(docs, clients, registry=None, platform_invoices=None):
+    def spy(docs, clients, registry=None, platform_invoices=None, **kw):
         seen["p"] = platform_invoices
-        return real(docs, clients, registry=registry, platform_invoices=platform_invoices)
+        return real(docs, clients, registry=registry, platform_invoices=platform_invoices, **kw)
     monkeypatch.setattr(rules, "run_rules", spy)
     pipeline.audit("v", _Reader(), run_id="vouchers-test-2", cache=False, platform_invoices={"A": {"AB12345678"}})
     assert seen["p"] == {"A": {"AB12345678"}}

@@ -209,6 +209,13 @@ RULES["FIXED_ASSET_HINT"] = {
                             "input lines into purchases and expenses (deduction code 1 / 3) and fixed assets (2 / 4)",
                    "url": LAW + "G0340051&flno=77-1"}],
 }
+RULES["VOID_ON_PLATFORM"] = {
+    "title": "Voided on the e-invoice platform: do not claim",
+    "severity": "high",
+    "citations": [{"label": "The client's e-invoice platform download marks this invoice number 作廢 (課稅別 F). A voided "
+                            "invoice carries no input tax; claiming it is over-claiming (VAT Act Art. 51(1)(5)).",
+                   "url": LAW + "G0340080&flno=51"}],
+}
 RULES["IN_PLATFORM"] = {
     "title": "Already in the e-invoice platform download: not entered again",
     "severity": "info",
@@ -517,17 +524,25 @@ def _platform_set(platform_invoices, client_id: str) -> set[str]:
 
 
 def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
-              platform_invoices: set[str] | dict[str, set[str]] | None = None) -> list[Exception_]:
+              platform_invoices: set[str] | dict[str, set[str]] | None = None,
+              platform_void: set[str] | dict[str, set[str]] | None = None) -> list[Exception_]:
     """registry: optional ledger_room.registry.Registry (local copy of the MOF business-registration file).
     With it, a checksum failure that is one digit away from a registered business is reported as a likely misread,
     and a well-formed number missing from the register gets a UBN_NOT_REGISTERED warning.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period, either one set
     (every client) or {client_id: set}. A photographed voucher whose number is in it gets IN_PLATFORM (info) and the
-    export leaves it out of the file (NOT_IN_FILE), so the same input tax is not claimed twice. Default: none."""
+    export leaves it out of the file (NOT_IN_FILE), so the same input tax is not claimed twice. Default: none.
+    platform_void: invoice numbers the platform download marks 作廢 (einvoice_platform.platform_void_numbers), same
+    shapes; a photographed voucher with one of them gets VOID_ON_PLATFORM (high) and is held. Default: none."""
     out: list[Exception_] = []
 
     for d in docs:
         c = clients[d.client_id]
+        # 0b. the platform download marks this invoice number as voided
+        if d.invoice_no and d.invoice_no in _platform_set(platform_void, d.client_id):
+            out.append(Exception_(d.doc_id, d.client_id, "VOID_ON_PLATFORM", "high",
+                                  f"Invoice {d.invoice_no} is voided on the e-invoice platform: do not claim it; ask the "
+                                  "client for the replacement invoice.", ["invoice_no"]))
         # 0a. the e-invoice platform download already has this invoice for this client (imported on its own)
         if d.invoice_no and d.invoice_no in _platform_set(platform_invoices, d.client_id):
             out.append(Exception_(d.doc_id, d.client_id, "IN_PLATFORM", "info",

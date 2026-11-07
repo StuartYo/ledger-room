@@ -39,7 +39,7 @@ from . import rules
 
 FORMAT_CODE = {"triplicate_invoice": "21", "e_invoice": "25", "two_part_register": "22"}
 BLOCKING = {"UBN_CHECKSUM", "DUP_CROSS_MONTH", "DUP_CROSS_CLIENT", "READ_REVIEW", "AMOUNT_MISMATCH", "BUYER_PRESUMED",
-            "RECEIPT_TAX_UNVERIFIED", "CUSTOMS_KEY_BY_HAND"}
+            "RECEIPT_TAX_UNVERIFIED", "CUSTOMS_KEY_BY_HAND", "VOID_ON_PLATFORM"}
 STATUS_LABEL = {
     "READY": "pre-checked (a bookkeeper still signs off every line)",
     "HOLD": "on hold: resolve the exceptions first",

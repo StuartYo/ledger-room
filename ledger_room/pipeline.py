@@ -204,7 +204,8 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
           registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None,
-          platform_invoices: set[str] | dict[str, set[str]] | None = None) -> dict:
+          platform_invoices: set[str] | dict[str, set[str]] | None = None,
+          platform_void: set[str] | dict[str, set[str]] | None = None) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
     read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
@@ -232,7 +233,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                 **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}))
     rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"))
              for d in docs if d["doc_id"] not in failed]
-    excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices)
+    excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices,
+                           platform_void=platform_void)
     rdoc_by_id = {r.doc_id: r for r in rdocs}
     for d in docs:   # tiered mode: the second reader's process died before re-reading this document
         crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
