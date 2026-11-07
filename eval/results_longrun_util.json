@@ -1,0 +1,28 @@
+{
+ "what": "Compute-engine busy share per B70 during the 70-minute two-card long run (eval/results_longrun.json), read from Xe DRM fdinfo every 5 s by eval/util_sampler.py, because xpu-smi returns N/A for engine utilisation on this host. Busy = the compute engine had work queued; not EU occupancy.",
+ "run": "eval/results_longrun.json",
+ "raw": "eval/longrun/util_longrun.csv",
+ "measured_on_b70": true,
+ "cards": {
+  "GPU.0 (0000:17:00.0)": {
+   "samples": 804,
+   "dropped_negative_at_restart": 3,
+   "samples_at_zero": 19,
+   "minutes": 67.7,
+   "mean_busy": 0.86,
+   "p50_busy": 0.897,
+   "p05_busy": 0.775,
+   "share_of_samples_at_or_above_0.90": 0.473
+  },
+  "GPU.1 (0000:ba:00.0)": {
+   "samples": 803,
+   "dropped_negative_at_restart": 4,
+   "samples_at_zero": 21,
+   "minutes": 67.7,
+   "mean_busy": 0.843,
+   "p50_busy": 0.89,
+   "p05_busy": 0.537,
+   "share_of_samples_at_or_above_0.90": 0.386
+  }
+ }
+}
