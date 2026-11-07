@@ -6,7 +6,10 @@ const um = () => (S.unmasked && S.unmasked === S.runId ? "&unmask=1" : "");
 const RULE_SHORT = {
   UBN_CHECKSUM: "UBN checksum", DUP_CROSS_MONTH: "Duplicate, same client", DUP_CROSS_CLIENT: "Duplicate, across clients",
   S19_NONDEDUCTIBLE: "Art. 19 non-deductible", OVER_LIMIT: "Over policy limit", PERIOD_MISMATCH: "Period mismatch",
+  DUP_PRIOR_FILING: "Filed in an earlier period", PLATFORM_AMOUNT_DIFF: "Photo and platform differ",
 };
+// The period check (platform e-invoices + paper, one period) lists its own exceptions next to the run's.
+const allExceptions = () => (S.run ? S.run.exceptions.concat(S.run.period_check?.exceptions || []) : []);
 const GOOD = new Set(["ocr-confirmed", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword"]);
 const ICON_LINK = '<svg viewBox="0 0 24 24"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>';
 
@@ -120,7 +123,7 @@ async function loadRun(runId) {
 const SEV_ORDER = { high: 0, hold: 1, medium: 2, warning: 3, review: 4 };
 function exceptions() {
   if (!S.run) return [];
-  return S.run.exceptions
+  return allExceptions()
     .filter((e) => (S.client === "ALL" || e.client_id === S.client) && (!S.rules.size || S.rules.has(e.rule_id)))
     .slice()
     .sort((a, b) => (SEV_ORDER[a.severity] ?? 3) - (SEV_ORDER[b.severity] ?? 3) || a.client_id.localeCompare(b.client_id) || a.doc_id.localeCompare(b.doc_id));
@@ -130,10 +133,10 @@ function renderAll() { renderClients(); renderStats(); renderChips(); renderExce
 
 function renderClients() {
   const counts = {};
-  (S.run?.exceptions || []).forEach((e) => (counts[e.client_id] = (counts[e.client_id] || 0) + 1));
+  allExceptions().forEach((e) => (counts[e.client_id] = (counts[e.client_id] || 0) + 1));
   const docsBy = {};
   S.inbox.docs.forEach((d) => (docsBy[d.client_id] = (docsBy[d.client_id] || 0) + 1));
-  const total = S.run ? S.run.exceptions.length : "";
+  const total = S.run ? allExceptions().length : "";
   const item = (id, name, meta, n) =>
     `<li data-id="${esc(id)}" class="${S.client === id ? "active" : ""}"><span class="cname">${esc(name)}</span>` +
     `<span class="badge ${n ? "hot" : ""}">${S.run ? n || 0 : "-"}</span><span class="cmeta">${esc(meta)}</span></li>`;
@@ -146,15 +149,29 @@ function renderStats() {
   const s = S.run?.summary;
   const affected = s ? Object.values(s.by_client).filter((x) => x > 0).length : null;
   const tile = (v, k) => `<div class="stat"><div class="v">${v ?? "-"}</div><div class="k">${k}</div></div>`;
-  $("#stats").innerHTML = tile(s?.n_docs, "documents read") + tile(s?.n_exceptions, "exceptions") +
-    tile(affected, "clients with exceptions") + tile(s?.mean_read_s != null ? s.mean_read_s + " s" : null, "read time per document");
+  $("#stats").innerHTML = tile(s?.n_docs, "documents read") + tile(S.run ? allExceptions().length : null, "exceptions") +
+    tile(affected, "clients with exceptions") + tile(s?.mean_read_s != null ? s.mean_read_s + " s" : null, "read time per document") +
+    periodLine();
   $("#batchSub").textContent = S.runId
     ? `Showing run ${S.runId}. Reads every document in every client folder, then runs the rule engine across the whole firm.`
     : "Reads every document in every client folder, then runs the rule engine across the whole firm.";
 }
 
+// One line for the whole period: e-invoices from the platform download plus the paper that was read.
+function periodLine() {
+  const pc = S.run?.period_check;
+  if (!pc) return "";
+  if (pc.error) return `<div class="period muted">Period check not run: ${esc(pc.error)}</div>`;
+  const s = S.client === "ALL" ? pc.summary : pc.by_client?.[S.client];
+  if (!s) return "";
+  const who = S.client === "ALL" ? "This period" : `This period, ${esc(clientName(S.client))}`;
+  return `<div class="period"><b>${who}:</b> <span class="n">${s.einvoices}</span> e-invoices (from the platform download)
+    + <span class="n">${s.paper}</span> paper vouchers (read) · <span class="n hot">${s.held.total}</span> held for a person
+    (${s.held.einvoice} e-invoice, ${s.held.paper} paper) · <span class="n">${s.ready.total}</span> ready to book</div>`;
+}
+
 function renderChips() {
-  const all = (S.run?.exceptions || []).filter((e) => S.client === "ALL" || e.client_id === S.client);
+  const all = allExceptions().filter((e) => S.client === "ALL" || e.client_id === S.client);
   $("#ruleChips").innerHTML = Object.keys(RULE_SHORT).map((r) => {
     const n = all.filter((e) => e.rule_id === r).length;
     return `<button class="chip ${S.rules.has(r) ? "on" : ""}" data-r="${r}">${RULE_SHORT[r]}<b>${n}</b></button>`;
@@ -173,8 +190,9 @@ function renderExceptions() {
   if (!S.run) { $("#exList").innerHTML = `<div class="card empty">No run yet for this inbox. Press <b>Replay batch</b> or <b>Run live</b>.</div>`; return; }
   if (!list.length) { $("#exList").innerHTML = `<div class="card empty">No exceptions for this selection.</div>`; return; }
   $("#exList").innerHTML = list.map((e, i) => {
-    const crops = e.evidence.map((v) => `<img src="/out/${esc(v.crop)}" alt="${esc(v.field)}" title="${esc(v.field)}: ${esc(v.value)} (${esc(v.provenance || "")})">`).join("");
-    const prov = e.evidence.map((v) => `${esc(v.field)}: <span class="prov ${GOOD.has(v.provenance) ? "good" : "weak"}">${esc(v.provenance || "n/a")}</span>`).join(" ");
+    const plat = e.source === "e-invoice";
+    const crops = (e.evidence || []).map((v) => `<img src="/out/${esc(v.crop)}" alt="${esc(v.field)}" title="${esc(v.field)}: ${esc(v.value)} (${esc(v.provenance || "")})">`).join("");
+    const prov = (e.evidence || []).map((v) => `${esc(v.field)}: <span class="prov ${GOOD.has(v.provenance) ? "good" : "weak"}">${esc(v.provenance || "n/a")}</span>`).join(" ");
     const cites = e.citations.map((c) => c.url
       ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${ICON_LINK}${esc(c.label)}</a>`
       : `<span>${esc(c.label)}</span>`).join("");
@@ -182,15 +200,16 @@ function renderExceptions() {
       const d = docById(r); return d ? `<img src="/img/${esc(d.image)}" data-doc="${esc(r)}" title="${esc(r)}"><span class="mono">${esc(r)}</span>` : esc(r);
     }).join(" ")}</div>` : "";
     return `<article class="card ex" style="animation-delay:${Math.min(i, 12) * 25}ms">
-      <div class="ev">${crops}<img class="thumb" src="/img/${esc(e.image)}" data-doc="${esc(e.doc_id)}" alt="document"></div>
+      <div class="ev">${plat ? `<div class="einv" title="Read from the MOF e-invoice platform download: no photo, no OCR">E-invoice<br><small>platform download</small></div>`
+        : `${crops}<img class="thumb" src="/img/${esc(e.image)}" data-doc="${esc(e.doc_id)}" alt="document">`}</div>
       <div>
         <h3>${esc(e.title)} <span class="sev ${esc(e.severity)}">${esc(e.severity)}</span></h3>
-        <div class="meta"><span class="mono">${esc(e.doc_id)}</span><span>${esc(clientName(e.client_id))}</span>${e.confidence !== "high" ? `<span>confidence: ${esc(e.confidence)}</span>` : ""}</div>
+        <div class="meta"><span class="mono">${esc(e.doc_id)}</span><span>${esc(clientName(e.client_id))}</span>${e.source ? `<span class="src">period check · ${plat ? "e-invoice" : "paper"}</span>` : ""}${e.confidence !== "high" ? `<span>confidence: ${esc(e.confidence)}</span>` : ""}</div>
         <p class="msg">${esc(e.message)}</p>
         <div class="meta">${prov}</div>
         <div class="cite">${cites}</div>
         ${rel}
-        <button class="linkbtn" data-doc="${esc(e.doc_id)}">Open document</button>
+        ${plat ? "" : `<button class="linkbtn" data-doc="${esc(e.doc_id)}">Open document</button>`}
       </div></article>`;
   }).join("");
   document.querySelectorAll("#exList [data-doc]").forEach((el) => (el.onclick = () => openDoc(el.dataset.doc)));
@@ -198,9 +217,9 @@ function renderExceptions() {
 
 function renderDocs() {
   const docs = S.inbox.docs.filter((d) => S.client === "ALL" || d.client_id === S.client);
-  const flagged = new Set((S.run?.exceptions || []).map((e) => e.doc_id));
+  const flagged = new Set(allExceptions().map((e) => e.doc_id));
   $("#docGrid").innerHTML = docs.map((d) => {
-    const ex = (S.run?.exceptions || []).filter((e) => e.doc_id === d.doc_id).map((e) => RULE_SHORT[e.rule_id]);
+    const ex = allExceptions().filter((e) => e.doc_id === d.doc_id).map((e) => RULE_SHORT[e.rule_id] || e.rule_id);
     return `<div class="card doc ${flagged.has(d.doc_id) ? "flag" : ""}" data-doc="${esc(d.doc_id)}">
       <img src="/img/${esc(d.image)}" alt="" loading="lazy"><div class="dn">${esc(d.doc_id)}</div>
       <div class="ds ${ex.length ? "" : "muted"}">${ex.length ? esc(ex.join(", ")) : S.run ? "no exceptions" : ""}</div></div>`;
@@ -214,8 +233,8 @@ function openDoc(docId) {
   $("#viewTitle").textContent = docId;
   const img = $("#viewImg");
   img.src = `/img/${d.image}`;
-  const exs = (S.run?.exceptions || []).filter((e) => e.doc_id === docId);
-  const want = new Set(exs.flatMap((e) => e.evidence.map((v) => v.field)));
+  const exs = allExceptions().filter((e) => e.doc_id === docId);
+  const want = new Set(exs.flatMap((e) => (e.evidence || []).map((v) => v.field)));
   const box = $("#imgBox");
   box.querySelectorAll(".hl").forEach((h) => h.remove());
   const draw = () => {

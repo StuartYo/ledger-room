@@ -283,7 +283,7 @@ The model only reads. Every decision below is made by code in `ledger_room/rules
 |---|---|---|
 | `UBN_CHECKSUM` | A seller or buyer UBN that fails the 2023 mod-5 rule (with the 7th-digit-is-7 case). Also explains when a number passes the new rule but would fail the old one. | [FIA notice](https://www.fia.gov.tw/singlehtml/3?cntId=c4d9cff38c8642ef8872774ee9987283) |
 | `DUP_CROSS_MONTH` | The same voucher submitted again by the same client (same invoice number, or same seller + date + total) | With input tax for this client: deducting it twice may constitute over-claimed input tax (虛報進項稅額), [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51); the bookkeeper decides. Without (e.g. a taxi receipt): [Income Tax Act Art. 24](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340003&flno=24) and [Audit Regulations Art. 67(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) (an expense without an original voucher is in principle not recognised) |
-| `DUP_CROSS_CLIENT` | The same voucher filed under two different clients | As above, plus [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) when input tax is claimed |
+| `DUP_CROSS_CLIENT` | The same voucher filed under two different clients. The period check extends it to e-invoices: an invoice on one client's platform download (the platform names the buyer) that turns up in another client's paper, or on two clients' downloads | As above, plus [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33) when input tax is claimed |
 | `S19_NONDEDUCTIBLE` | Input tax claimed on entertainment or gifts, employee personal benefits, a passenger car for own use, or non-business items | [VAT Act Art. 19](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=19) |
 | `OVER_LIMIT` | A document above the client's own expense policy (meal, taxi, lodging, approval threshold) | client policy in `clients.json` |
 | `PERIOD_MISMATCH` | A date after the filing period (VAT is filed per two-month period, by the 15th of the next odd month: September–October by 15 November), or an e-invoice period header that does not contain its own date. A date **before** the period is only a warning: input tax may be claimed in a later period (from the second period on, with a stated reason, up to ten years) | [Art. 35](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=35), [Enforcement Rules Art. 29](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=29) |
@@ -304,6 +304,9 @@ Routing rules, outside the six evaluated types (the answer keys were frozen befo
 | `NOT_A_VOUCHER` (hold) | a payment slip or a transaction / order detail (printed keywords, traditional or simplified), or a slip with neither seller UBN nor invoice number: not a voucher on its own; ask the client for the invoice | [Audit Regulations Art. 67](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
 | `IN_PLATFORM` (info) | a photographed invoice whose number is already in the client's e-invoice platform download for the period: not entered again (the platform line stands for it), so the same input tax is not claimed twice | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `VOID_ON_PLATFORM` (hold) | a photographed invoice the platform download marks voided: held, and never written to the filing file | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
+| `DUP_PRIOR_FILING` (high, period check) | an invoice about to be claimed this period (a platform line, or a paper line that would be filed) whose number and seller UBN are already in a media file the client filed for an earlier period. Invoice tracks are reused across years, so the seller must match too; without a seller UBN the number alone decides | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51), [Enforcement Rules Art. 29](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=29) |
+| `PLATFORM_AMOUNT_DIFF` (hold, period check) | a photographed invoice whose number is on the client's own platform download (`IN_PLATFORM`) but whose total or seller UBN differs: the platform line is held until the paper and the seller are checked (skipped when the photo's total already went to a person) | [營業稅電子資料申報繳稅作業要點 第二十點, 附件五](https://law-out.mof.gov.tw/LawContent.aspx?id=GL009478), [Audit Regulations Art. 67(1)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
+| `PLATFORM_RECORD_CONFLICT` (hold, period check) | one invoice twice in the client's platform downloads with different amounts or sellers (identical re-downloads are merged): only one may be filed | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `CUSTOMS_KEY_BY_HAND` (hold) | a customs-collected VAT payment certificate (format code 28) is recognised from its printed words and always held: the bookkeeper keys the certificate number and tax by hand; Ledger Room does not read it into the filing file | [Enforcement Rules Art. 38(1)(2)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=38) |
 | `UTILITY_BILL_PLATFORM` (info) | an electricity, water, telecom or gas bill or payment notice, recognised from printed words: a utility's name and a bill marker (such as 繳費期限 or 應繳總金額), never on an e-invoice proof (證明聯). Not keyed and not sent to a person: its input tax comes from the utility's e-invoice in the platform download, and the bill is kept as proof of payment. The invoice number printed on it (an earlier period's e-invoice) is not used for duplicates, and the bill never becomes a line in the export, the filing file or the voucher list. With the platform download loaded, the message says whether a platform record has the same seller UBN and total | [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33), [Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) from small businesses (printed 免用統一發票), cumulative per client, above 3% (千分之三十) of the year's manufacturing expenses plus operating expenses (`annual_manufacturing_expenses` + `annual_operating_expenses` in `clients.json`, ideally the amounts the tax office assesses); off unless both are set. Other receipts are not capped by this rule | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
@@ -327,6 +330,7 @@ flowchart LR
   B --> D[Reconcile in code<br/>snap digits to OCR, UBN roles,<br/>zoom re-read, doc type]
   C --> D
   H[MOF e-invoice platform<br/>media filing download, no OCR] --> E
+  J[Earlier filed media files<br/>period check history] --> E
   D --> E[Rule engine<br/>6 deterministic rules,<br/>firm-wide duplicate index]
   E --> F[Per-client exceptions<br/>evidence crops + citations]
   E --> I[Media file, input + sales<br/>401/403 return file<br/>voucher list xlsx]
@@ -358,11 +362,28 @@ flowchart LR
    download (one `<UBN>.txt` per client, 81-character records, input and sales lines) from `data/platform/<client UBN>/`,
    and the web app loads it for every run. A photographed invoice already in it is not entered again (`IN_PLATFORM`);
    one the platform marks voided is held (`VOID_ON_PLATFORM`) and never filed. The download carries no item names, so
-   the VAT Act Art. 19 keyword check cannot run on platform lines. The reader follows the layout shown in the platform
+   the VAT Act Art. 19 keyword check runs on platform lines only when a carrier export with item names sits next to
+   the download (step 6). The reader follows the layout shown in the platform
    manual; no real download has been parsed yet (that needs the client's login). Photos are for paper vouchers the
    platform does not have. Separately, `ledger_room/einvoice.py` imports a consumer's e-invoice CSV export (UTF-8 or
    Big5, footnote lines skipped, line items grouped into invoices, discount and zero-price lines kept); it was run once
    on one person's own consumer e-invoices (aggregates under [Results](#results)).
+6. **Period check: every voucher of the period, e-invoices and paper together.** Paper is the smaller part of a
+   firm's input vouchers (about 15% of uniform invoices were paper in 2023), so the check that matters is the one
+   before the return goes out. `ledger_room/period_check.py` takes, per client and period, the platform download, an
+   optional carrier export with item names (`*.csv` next to the download), the media files the firm already filed
+   for earlier periods (`data/filed/<client UBN>/`) and the paper run, and runs one set of checks across all of them:
+   `DUP_PRIOR_FILING`, `PLATFORM_AMOUNT_DIFF`, `PLATFORM_RECORD_CONFLICT`, `DUP_CROSS_CLIENT` across platform lines
+   and paper, VAT Act Art. 19 on platform lines that have item names, and `FIXED_ASSET_HINT` on platform lines of
+   NT$80,000 or more. Each voucher ends as ready to book, held for a person, booked from its platform line (a photo of
+   an invoice the platform already has), or left out (a voided platform line). The web app runs it with every batch
+   and shows one line above the exceptions ("This period: N e-invoices (from the platform download) + M paper
+   vouchers (read), K held for a person"); held e-invoices appear in the same list, marked as coming from the
+   platform. Not checked, and said so in the report: Art. 19 on platform lines without item names (the media file
+   has none), B2B exchange invoices the buyer has not confirmed (the media file has no such field), and whether a
+   photographed e-invoice should be on the download (upload delays make an absence weak evidence). The `heldout`
+   inbox has synthetic platform downloads and earlier filings (`synth/period_demo.py`) so the screen has something
+   to show; the evaluation does not load them.
 
 Scans are working copies. The paper originals stay with the client and are kept at least five years (Art. 27 of the
 regulation on account books and vouchers); Ledger Room does not replace paper. Documents should reach the box through
@@ -517,6 +538,12 @@ No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU
 - **Real e-invoice check.** `.venv\Scripts\python -m eval.einvoice_check EXPORT.csv ... --out DIR` runs the import and
   the rules on MOF platform exports and writes aggregates only. Keep the exports and `DIR` outside the repository;
   `eval/results_einvoice_check.json` holds the aggregates of the one run reported here.
+- **Period check (seconds, no model).** `.venv\Scripts\python -m eval.period_check --synthetic` runs the period
+  check on the synthetic firm period in `data/period_synthetic/` (`synth/period_check.py`) and scores it against
+  `eval/expected_period_check_synthetic.json`, which the generator wrote and which was committed before the checker
+  existed; it writes `eval/results_period_check.json`. On real data: `python -m eval.period_check --ubn UBN --period
+  2026-09/2026-10 --platform-root DIR [--filed-root DIR] [--paper result.json] --out FILE` writes counts only (no
+  invoice numbers, UBNs or messages) and refuses an output path inside the repository.
 - **Totals before and after (cached reads).** `.venv\Scripts\python -m eval.totals_eval --set main` (or `heldout`)
   compares the current amount code with the previous one, the model's own text and the pure model, and writes
   `eval/results_totals.json` (merged by `run_eval`). The held-out set 2 entry is marked frozen: the script refuses to
@@ -653,6 +680,8 @@ Runtime choice, measured on 2026-10-14 (Intel Core i7-13620H laptop, Intel UHD G
 | OCR: Same .onnx files compiled by OpenVINO 2026.4, CPU | 0.3-1.1 s | yes |
 <!-- RESULTS:END -->
 
+**Period check, synthetic firm period** (`eval/results_period_check.json`, first run, code 2eef0cc; synthetic data, deterministic rules, no model; paper fields given as if read correctly). 4 clients, 140 e-invoices from platform downloads (2 allowances and 5 voided lines besides) and 44 paper vouchers. Planted errors caught: 18 of 18 (amount_diff 3/3, cross_client 3/3, fixed_asset 2/2, prior_filing_einvoice 3/3, prior_filing_paper 2/2, record_conflict 1/1, s19_einvoice 2/2, s19_to_confirm 1/1, void_paper 1/1). Vouchers held that should not have been: 0; planted holds missed: 0; rules raised where nothing was planted: 0. Ready to book: 167 (135 e-invoices, 32 paper; the key says 167), 13 held for a person, 6 photos booked from their platform line. The errors were planted by the same person who wrote the rules, so this shows the checks do what they say on the cases they were written for; it is not evidence about how often these errors occur in a real firm, and no real platform download has been checked yet.
+
 ## Stage II progress
 
 The filing output and voucher list below have not been run on the B70 host. The B70 measurements are under
@@ -705,7 +734,8 @@ Not verified yet:
 - Only the 401 pair has been through the MOF checking program, on synthetic data; form 403 and real client data
   have not.
 - The e-invoice platform import has only read synthetic downloads written from the published layout; no real
-  download from the platform has been parsed yet.
+  download from the platform has been parsed yet. The period check has only run on a synthetic firm period whose
+  errors were planted by the rule author.
 - No accounting software has imported them, and no bookkeeper has compared lines with the paper vouchers.
 - The file number field of the TET_U is written as a placeholder (00000000), CRLF separates records, and text
   fields are padded with spaces on the right. The regulation does not spell these out; the checking program

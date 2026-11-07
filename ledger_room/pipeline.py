@@ -494,6 +494,15 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     # 401 input total must include small-business plain receipts (G10): per client, this period
     result["summary"]["small_business_receipts"] = export.period_summary(result)
     result["export_summary"] = str((rdir / "export_summary.csv").relative_to(OUT)).replace("\\", "/")
+    if platform == "auto":
+        # the whole period: platform e-invoices (data/platform), earlier filings (data/filed) and this run's paper
+        from . import period_check
+        try:
+            rep = period_check.check_period(clients, paper=result)
+            result["period_check"] = {k: rep[k] for k in ("summary", "rules_run", "not_checked", "by_client",
+                                                          "exceptions")}
+        except Exception as e:   # the paper audit stands on its own; say why the period view is missing
+            result["period_check"] = {"error": f"{type(e).__name__}: {e}"}
     export.write_csv(result, rdir / "export_media.csv")
     export.write_summary_csv(result, rdir / "export_summary.csv")
     (rdir / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")

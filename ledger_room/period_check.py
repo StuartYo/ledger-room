@@ -350,7 +350,8 @@ def _report(cl: dict, vouchers: list[dict], excs: list[dict], info: dict, has_pa
                  for cid in cl}
     line = (f"This period: {tot['einvoices']} e-invoices (from the platform download) + {tot['paper']} paper vouchers "
             f"(read), {tot['held']['total']} held for a person, {tot['ready']['total']} ready to book"
-            + (f", {tot['paper_on_platform']} photos booked from their platform line" if tot["paper_on_platform"] else "")
+            + (f", {tot['paper_on_platform']} photo{'' if tot['paper_on_platform'] == 1 else 's'} booked from "
+               "their platform line" if tot["paper_on_platform"] else "")
             + ".")
     n_no_items = tot["einvoices"] - tot["einvoices_with_item_names"]
     return {
