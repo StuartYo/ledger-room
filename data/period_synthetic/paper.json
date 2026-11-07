@@ -1,0 +1,1062 @@
+{
+ "synthetic": true,
+ "note": "fields as if read correctly",
+ "docs": [
+  {
+   "doc_id": "P01/2026-09/p01.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "CQ23046448",
+    "date": "2026-09-21",
+    "seller_name": "賣方717（虛構）",
+    "seller_ubn": "69012717",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 5985
+     }
+    ],
+    "net": 5700,
+    "tax": 285,
+    "total": 5985
+   }
+  },
+  {
+   "doc_id": "P01/2026-10/p02.jpg",
+   "client_id": "P01",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "AY41472267",
+    "date": "2026-10-02",
+    "seller_name": "賣方665（虛構）",
+    "seller_ubn": "94272665",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 18725
+     }
+    ],
+    "net": 17833,
+    "tax": 892,
+    "total": 18725
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p03.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "SY05443400",
+    "date": "2026-09-24",
+    "seller_name": "賣方275（虛構）",
+    "seller_ubn": "58248275",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 3786
+     }
+    ],
+    "net": 3606,
+    "tax": 180,
+    "total": 3786
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p04.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "HK61291216",
+    "date": "2026-09-21",
+    "seller_name": "賣方375（虛構）",
+    "seller_ubn": "91607375",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 4103
+     }
+    ],
+    "net": 3908,
+    "tax": 195,
+    "total": 4103
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p05.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "HY20611045",
+    "date": "2026-09-27",
+    "seller_name": "賣方542（虛構）",
+    "seller_ubn": "31633542",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "便利貼",
+      "qty": 1,
+      "amount": 19668
+     }
+    ],
+    "net": 18731,
+    "tax": 937,
+    "total": 19668
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p06.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "MM21553605",
+    "date": "2026-09-08",
+    "seller_name": "賣方695（虛構）",
+    "seller_ubn": "16447695",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "延長線",
+      "qty": 1,
+      "amount": 7917
+     }
+    ],
+    "net": 7540,
+    "tax": 377,
+    "total": 7917
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p07.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "XL95373365",
+    "date": "2026-09-01",
+    "seller_name": "賣方796（虛構）",
+    "seller_ubn": "86996796",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 9607
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 9607
+   }
+  },
+  {
+   "doc_id": "P01/2026-10/p08.jpg",
+   "client_id": "P01",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "YS86905367",
+    "date": "2026-10-18",
+    "seller_name": "賣方928（虛構）",
+    "seller_ubn": "90741928",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 18543
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 18543
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p01.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "NT46962619",
+    "date": "2026-09-03",
+    "seller_name": "賣方407（虛構）",
+    "seller_ubn": "54457407",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "延長線",
+      "qty": 1,
+      "amount": 8927
+     }
+    ],
+    "net": 8502,
+    "tax": 425,
+    "total": 8927
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p02.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "AJ92238942",
+    "date": "2026-10-16",
+    "seller_name": "賣方511（虛構）",
+    "seller_ubn": "92647511",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 17485
+     }
+    ],
+    "net": 16652,
+    "tax": 833,
+    "total": 17485
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p03.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "UW81514161",
+    "date": "2026-10-07",
+    "seller_name": "賣方511（虛構）",
+    "seller_ubn": "92647511",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 5713
+     }
+    ],
+    "net": 5441,
+    "tax": 272,
+    "total": 5713
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p04.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "DL92381781",
+    "date": "2026-10-03",
+    "seller_name": "賣方848（虛構）",
+    "seller_ubn": "81052848",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "文件夾",
+      "qty": 1,
+      "amount": 6264
+     }
+    ],
+    "net": 5966,
+    "tax": 298,
+    "total": 6264
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p05.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "KV13295598",
+    "date": "2026-10-16",
+    "seller_name": "賣方085（虛構）",
+    "seller_ubn": "18346085",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 14357
+     }
+    ],
+    "net": 13673,
+    "tax": 684,
+    "total": 14357
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p06.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "WP58148050",
+    "date": "2026-09-26",
+    "seller_name": "賣方387（虛構）",
+    "seller_ubn": "41659387",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 18842
+     }
+    ],
+    "net": 17945,
+    "tax": 897,
+    "total": 18842
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p07.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "NY67514677",
+    "date": "2026-09-26",
+    "seller_name": "賣方455（虛構）",
+    "seller_ubn": "40667455",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "便利貼",
+      "qty": 1,
+      "amount": 7972
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 7972
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p08.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "CB92837536",
+    "date": "2026-09-19",
+    "seller_name": "賣方774（虛構）",
+    "seller_ubn": "27975774",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "資料夾",
+      "qty": 1,
+      "amount": 19619
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 19619
+   }
+  },
+  {
+   "doc_id": "P03/2026-09/p01.jpg",
+   "client_id": "P03",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "YH59760032",
+    "date": "2026-09-26",
+    "seller_name": "賣方317（虛構）",
+    "seller_ubn": "97137317",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "文件夾",
+      "qty": 1,
+      "amount": 17552
+     }
+    ],
+    "net": 16716,
+    "tax": 836,
+    "total": 17552
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p02.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GP68137908",
+    "date": "2026-10-16",
+    "seller_name": "賣方209（虛構）",
+    "seller_ubn": "35516209",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "資料夾",
+      "qty": 1,
+      "amount": 1185
+     }
+    ],
+    "net": 1129,
+    "tax": 56,
+    "total": 1185
+   }
+  },
+  {
+   "doc_id": "P03/2026-09/p03.jpg",
+   "client_id": "P03",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "SK91347032",
+    "date": "2026-09-25",
+    "seller_name": "賣方774（虛構）",
+    "seller_ubn": "27975774",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 5236
+     }
+    ],
+    "net": 4987,
+    "tax": 249,
+    "total": 5236
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p04.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "TT50540463",
+    "date": "2026-10-21",
+    "seller_name": "賣方317（虛構）",
+    "seller_ubn": "97137317",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "文件夾",
+      "qty": 1,
+      "amount": 19658
+     }
+    ],
+    "net": 18722,
+    "tax": 936,
+    "total": 19658
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p05.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "LM46344423",
+    "date": "2026-10-07",
+    "seller_name": "賣方498（虛構）",
+    "seller_ubn": "76703498",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "白板筆",
+      "qty": 1,
+      "amount": 20495
+     }
+    ],
+    "net": 19519,
+    "tax": 976,
+    "total": 20495
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p06.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "HY21651735",
+    "date": "2026-10-19",
+    "seller_name": "賣方932（虛構）",
+    "seller_ubn": "84778932",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 18699
+     }
+    ],
+    "net": 17809,
+    "tax": 890,
+    "total": 18699
+   }
+  },
+  {
+   "doc_id": "P03/2026-09/p07.jpg",
+   "client_id": "P03",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "BK35731688",
+    "date": "2026-09-18",
+    "seller_name": "賣方511（虛構）",
+    "seller_ubn": "92647511",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 13235
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 13235
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p08.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZG93453266",
+    "date": "2026-10-07",
+    "seller_name": "賣方665（虛構）",
+    "seller_ubn": "94272665",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "資料夾",
+      "qty": 1,
+      "amount": 18720
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 18720
+   }
+  },
+  {
+   "doc_id": "P04/2026-09/p01.jpg",
+   "client_id": "P04",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "LB85482039",
+    "date": "2026-09-06",
+    "seller_name": "賣方387（虛構）",
+    "seller_ubn": "41659387",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "文件夾",
+      "qty": 1,
+      "amount": 2048
+     }
+    ],
+    "net": 1950,
+    "tax": 98,
+    "total": 2048
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p02.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GA18320486",
+    "date": "2026-10-08",
+    "seller_name": "賣方378（虛構）",
+    "seller_ubn": "79286378",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 4879
+     }
+    ],
+    "net": 4647,
+    "tax": 232,
+    "total": 4879
+   }
+  },
+  {
+   "doc_id": "P04/2026-09/p03.jpg",
+   "client_id": "P04",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "SQ79024546",
+    "date": "2026-09-05",
+    "seller_name": "賣方774（虛構）",
+    "seller_ubn": "27975774",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "延長線",
+      "qty": 1,
+      "amount": 4355
+     }
+    ],
+    "net": 4148,
+    "tax": 207,
+    "total": 4355
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p04.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "EV37769730",
+    "date": "2026-10-04",
+    "seller_name": "賣方403（虛構）",
+    "seller_ubn": "87274403",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "釘書針",
+      "qty": 1,
+      "amount": 13931
+     }
+    ],
+    "net": 13268,
+    "tax": 663,
+    "total": 13931
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p05.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "QT36015920",
+    "date": "2026-10-17",
+    "seller_name": "賣方317（虛構）",
+    "seller_ubn": "97137317",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 15049
+     }
+    ],
+    "net": 14332,
+    "tax": 717,
+    "total": 15049
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p06.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "VB91417461",
+    "date": "2026-10-16",
+    "seller_name": "賣方317（虛構）",
+    "seller_ubn": "97137317",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "釘書針",
+      "qty": 1,
+      "amount": 11795
+     }
+    ],
+    "net": 11233,
+    "tax": 562,
+    "total": 11795
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p07.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "YZ02805503",
+    "date": "2026-10-26",
+    "seller_name": "賣方375（虛構）",
+    "seller_ubn": "91607375",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "白板筆",
+      "qty": 1,
+      "amount": 6875
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 6875
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p08.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "YR79309730",
+    "date": "2026-10-19",
+    "seller_name": "賣方695（虛構）",
+    "seller_ubn": "16447695",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "影印紙A4",
+      "qty": 1,
+      "amount": 15332
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 15332
+   }
+  },
+  {
+   "doc_id": "P01/2026-09/p09.jpg",
+   "client_id": "P01",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "KH70781804",
+    "date": "2026-09-14",
+    "seller_name": "賣方717（虛構）",
+    "seller_ubn": "69012717",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "文件夾",
+      "qty": 1,
+      "amount": 27047
+     }
+    ],
+    "net": 25759,
+    "tax": 1288,
+    "total": 27047
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p09.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "HU90740574",
+    "date": "2026-10-11",
+    "seller_name": "賣方405（虛構）",
+    "seller_ubn": "42728405",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "白板筆",
+      "qty": 1,
+      "amount": 51570
+     }
+    ],
+    "net": 49114,
+    "tax": 2456,
+    "total": 51570
+   }
+  },
+  {
+   "doc_id": "P04/2026-09/p09.jpg",
+   "client_id": "P04",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "RW32545039",
+    "date": "2026-09-16",
+    "seller_name": "賣方275（虛構）",
+    "seller_ubn": "58248275",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 57349
+     }
+    ],
+    "net": 54618,
+    "tax": 2731,
+    "total": 57349
+   }
+  },
+  {
+   "doc_id": "P01/2026-10/p10.jpg",
+   "client_id": "P01",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "BX41460297",
+    "date": "2026-10-22",
+    "seller_name": "賣方209（虛構）",
+    "seller_ubn": "35516209",
+    "buyer_name": "合成甲商行有限公司（虛構）",
+    "buyer_ubn": "70138778",
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 7605
+     }
+    ],
+    "net": 7243,
+    "tax": 362,
+    "total": 7605
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p10.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "ZK97318357",
+    "date": "2026-09-06",
+    "seller_name": "賣方932（虛構）",
+    "seller_ubn": "84778932",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 22989
+     }
+    ],
+    "net": 21894,
+    "tax": 1095,
+    "total": 22989
+   }
+  },
+  {
+   "doc_id": "P03/2026-10/p09.jpg",
+   "client_id": "P03",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "DQ42529754",
+    "date": "2026-10-25",
+    "seller_name": "賣方534（虛構）",
+    "seller_ubn": "97560534",
+    "buyer_name": "合成丙餐飲有限公司（虛構）",
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "影印紙A4",
+      "qty": 1,
+      "amount": 28598
+     }
+    ],
+    "net": 27236,
+    "tax": 1362,
+    "total": 28598
+   }
+  },
+  {
+   "doc_id": "P02/2026-08/p11.jpg",
+   "client_id": "P02",
+   "month": "2026-08",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "GN36686614",
+    "date": "2026-08-19",
+    "seller_name": "賣方848（虛構）",
+    "seller_ubn": "81052848",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "原子筆",
+      "qty": 1,
+      "amount": 1822
+     }
+    ],
+    "net": 1735,
+    "tax": 87,
+    "total": 1822
+   }
+  },
+  {
+   "doc_id": "P04/2026-08/p10.jpg",
+   "client_id": "P04",
+   "month": "2026-08",
+   "fields": {
+    "doc_type": "triplicate_invoice",
+    "invoice_no": "CK59591556",
+    "date": "2026-08-03",
+    "seller_name": "賣方109（虛構）",
+    "seller_ubn": "91594109",
+    "buyer_name": "合成丁工程有限公司（虛構）",
+    "buyer_ubn": "98920190",
+    "items": [
+     {
+      "desc": "白板筆",
+      "qty": 1,
+      "amount": 19607
+     }
+    ],
+    "net": 18673,
+    "tax": 934,
+    "total": 19607
+   }
+  },
+  {
+   "doc_id": "P02/2026-10/p12.jpg",
+   "client_id": "P02",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "UG94396072",
+    "date": "2026-10-02",
+    "seller_name": "賣方042（虛構）",
+    "seller_ubn": "39199042",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "延長線",
+      "qty": 1,
+      "amount": 3885
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 3885
+   }
+  },
+  {
+   "doc_id": "P04/2026-10/p11.jpg",
+   "client_id": "P04",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "BK82715281",
+    "date": "2026-10-24",
+    "seller_name": "賣方717（虛構）",
+    "seller_ubn": "69012717",
+    "buyer_name": null,
+    "buyer_ubn": "12029615",
+    "items": [
+     {
+      "desc": "收納箱",
+      "qty": 1,
+      "amount": 14571
+     }
+    ],
+    "net": 13877,
+    "tax": 694,
+    "total": 14571
+   }
+  },
+  {
+   "doc_id": "P01/2026-10/p11.jpg",
+   "client_id": "P01",
+   "month": "2026-10",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "NG67845740",
+    "date": "2026-10-20",
+    "seller_name": "賣方511（虛構）",
+    "seller_ubn": "92647511",
+    "buyer_name": null,
+    "buyer_ubn": null,
+    "items": [
+     {
+      "desc": "碳粉匣",
+      "qty": 1,
+      "amount": 14397
+     }
+    ],
+    "net": null,
+    "tax": null,
+    "total": 14397
+   }
+  },
+  {
+   "doc_id": "P02/2026-09/p13.jpg",
+   "client_id": "P02",
+   "month": "2026-09",
+   "fields": {
+    "doc_type": "e_invoice",
+    "invoice_no": "EH57153411",
+    "date": "2026-09-12",
+    "seller_name": "賣方438（虛構）",
+    "seller_ubn": "37649438",
+    "buyer_name": "合成乙設計有限公司（虛構）",
+    "buyer_ubn": "55645352",
+    "items": [
+     {
+      "desc": "資料夾",
+      "qty": 1,
+      "amount": 3757
+     }
+    ],
+    "net": 3578,
+    "tax": 179,
+    "total": 3757
+   }
+  }
+ ]
+}

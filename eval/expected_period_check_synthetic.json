@@ -1,0 +1,1624 @@
+{
+ "synthetic": true,
+ "note": "Answer key written by synth/period_check.py from what it planted, before the checker was run. Frozen: not edited after the first run.",
+ "seed": 20261107,
+ "planted": {
+  "prior_filing_einvoice": 3,
+  "s19_einvoice": 2,
+  "s19_to_confirm": 1,
+  "fixed_asset": 2,
+  "record_conflict": 1,
+  "amount_diff": 3,
+  "prior_filing_paper": 2,
+  "cross_client": 3,
+  "void_paper": 1
+ },
+ "outcomes": {
+  "ready": 167,
+  "held": 13,
+  "on_platform": 6,
+  "left_out": 5
+ },
+ "vouchers": [
+  {
+   "voucher": "P01/platform/KH70781804",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/SN29408235",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FZ93388834",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/PR97412156",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/WB85281512",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/AF30425449",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/PJ44008868",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/YE30394602",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/CQ62204380",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/QD80658235",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FC26151310",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/XT21774346",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/LY24356908",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/WL78906300",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/MQ32156085",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/BB03971113",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/PP25868484",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FN34732287",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/KE34761060",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/ZU06067552",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FG26468376",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FC82862024",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/FS69461039",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/QZ61764282",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/AS32922535",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/SU17917368",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/UB72068724",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/RW06857233",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/GA16727138",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/UU96380483",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/VJ61901546/void",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "left_out"
+  },
+  {
+   "voucher": "P02/platform/ZC36980699",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/HU90740574",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/YY88289709",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/TQ68007982",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/FG92176267",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/CZ73064788",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/XW40542106",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/AS60803298",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/KL72016578",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/HZ47399458",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/YW47170745",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/RS34594842",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/FA26826542",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/NE56586079",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/EQ07607067",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/LY94505511",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/BV12179360",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/EK82645521",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/PS69384065",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/KA55809767",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/MX01236505",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/QM64691648",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/ES90164685",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/TU53239213",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/NC98813016",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/DC06351820",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/VA75028382",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/BB87695044",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/XA06705387",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/UB49964800",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/MP40057826",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/HV54342841",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/BJ27592337",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/BJ50774799",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/CZ41178172",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/CQ09859462",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/YD98431157/void",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "left_out"
+  },
+  {
+   "voucher": "P03/platform/YB22596674",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/DT11220706",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/QA32398813",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/PB94657020",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/LB81096775",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/KQ48551421",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/FU97774375",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/TB80604637",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/BR49597733",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/WS13402709",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/EZ28220651",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/ZS81844923",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/WU58161742",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/FV21490156",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/VX03717106",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/HD57400979",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/JV21085358",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/MG98980206",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/EL79207753",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/KC83687262",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/VK92124535",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/CH17306220",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/CE78082329",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/TG59804587",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/UH33654073/void",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "left_out"
+  },
+  {
+   "voucher": "P04/platform/UD12493046",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/RW32545039",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/GT54368939",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/LY77930011",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/QJ66787548",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/FV86334177",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/XV88811462",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/ZT43674235",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/XA10889895",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/KJ28036269",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/YZ17663758",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/HN77841581",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/JU01156964",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/JF34329188",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/EF70730445",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/FZ95454936",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/TH50078448",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/CP89262994",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/PS83568163",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/FW34983058",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/TN81930378",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/HC29364818",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/PA05237579",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/SZ61752585",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/PD71967140",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/QL31474771",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/AX00958772",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/NX25327587",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/HX50954611/void",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "left_out"
+  },
+  {
+   "voucher": "P01/platform/XM67385226",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [
+    "prior_filing_einvoice"
+   ],
+   "expected_rules": [
+    "DUP_PRIOR_FILING"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P01/platform/VR66934055",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [
+    "prior_filing_einvoice"
+   ],
+   "expected_rules": [
+    "DUP_PRIOR_FILING"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P03/platform/LM02673828",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [
+    "prior_filing_einvoice"
+   ],
+   "expected_rules": [
+    "DUP_PRIOR_FILING"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P01/platform/JR18283762",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/XB13834840",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [
+    "s19_einvoice"
+   ],
+   "expected_rules": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/AL69106198",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [
+    "s19_einvoice"
+   ],
+   "expected_rules": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/AM27653347",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [
+    "s19_to_confirm"
+   ],
+   "expected_rules": [
+    "S19_NONDEDUCTIBLE"
+   ],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/MQ33191880",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/platform/MS03827071",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/WQ42773258",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/MW53526339",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/PV52065888",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/TF98073724",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [
+    "fixed_asset"
+   ],
+   "expected_rules": [
+    "FIXED_ASSET_HINT"
+   ],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/LF90540161",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [
+    "fixed_asset"
+   ],
+   "expected_rules": [
+    "FIXED_ASSET_HINT"
+   ],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/platform/FE94521720",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [
+    "record_conflict"
+   ],
+   "expected_rules": [
+    "PLATFORM_RECORD_CONFLICT"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P04/platform/HG20689842",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/platform/ZC36980699/allowance",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/platform/BG23387971/allowance",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p01.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-10/p02.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p03.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p04.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p05.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p06.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p07.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-10/p08.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-09/p01.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-10/p02.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-10/p03.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-10/p04.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-10/p05.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-09/p06.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-09/p07.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-09/p08.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-09/p01.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-10/p02.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-09/p03.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-10/p04.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-10/p05.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-10/p06.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-09/p07.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P03/2026-10/p08.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-09/p01.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p02.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-09/p03.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p04.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p05.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p06.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p07.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p08.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-09/p09.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P02/2026-10/p09.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P04/2026-09/p09.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P01/platform/BX41460297",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [
+    "amount_diff"
+   ],
+   "expected_rules": [
+    "PLATFORM_AMOUNT_DIFF"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P01/2026-10/p10.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P02/platform/ZK97318357",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [
+    "amount_diff"
+   ],
+   "expected_rules": [
+    "PLATFORM_AMOUNT_DIFF"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P02/2026-09/p10.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P03/platform/DQ42529754",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [
+    "amount_diff"
+   ],
+   "expected_rules": [
+    "PLATFORM_AMOUNT_DIFF"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P03/2026-10/p09.jpg",
+   "client_id": "P03",
+   "side": "paper",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "on_platform"
+  },
+  {
+   "voucher": "P02/2026-08/p11.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [
+    "prior_filing_paper"
+   ],
+   "expected_rules": [
+    "DUP_PRIOR_FILING"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P04/2026-08/p10.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [
+    "prior_filing_paper"
+   ],
+   "expected_rules": [
+    "DUP_PRIOR_FILING"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P01/platform/UG94396072",
+   "client_id": "P01",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P02/2026-10/p12.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [
+    "cross_client"
+   ],
+   "expected_rules": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P03/platform/BK82715281",
+   "client_id": "P03",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P04/2026-10/p11.jpg",
+   "client_id": "P04",
+   "side": "paper",
+   "planted": [
+    "cross_client"
+   ],
+   "expected_rules": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P04/platform/NG67845740",
+   "client_id": "P04",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "ready"
+  },
+  {
+   "voucher": "P01/2026-10/p11.jpg",
+   "client_id": "P01",
+   "side": "paper",
+   "planted": [
+    "cross_client"
+   ],
+   "expected_rules": [
+    "DUP_CROSS_CLIENT"
+   ],
+   "expected_outcome": "held"
+  },
+  {
+   "voucher": "P02/platform/EH57153411/void",
+   "client_id": "P02",
+   "side": "e-invoice",
+   "planted": [],
+   "expected_rules": [],
+   "expected_outcome": "left_out"
+  },
+  {
+   "voucher": "P02/2026-09/p13.jpg",
+   "client_id": "P02",
+   "side": "paper",
+   "planted": [
+    "void_paper"
+   ],
+   "expected_rules": [
+    "VOID_ON_PLATFORM"
+   ],
+   "expected_outcome": "held"
+  }
+ ]
+}
