@@ -8,7 +8,7 @@ from pathlib import Path
 FIX = Path(__file__).parent / "fixtures" / "platform"
 GOLDEN = FIX / "golden"
 UBN = "67094646"
-TAXREG = "123456789"
+TAXREG = "700012345"   # synthetic; 5th digit 0-4 as the MOF checker requires
 PERIOD = ("2026-09-01", "2026-10-31")
 CLIENT = {"id": "H01", "ubn": UBN, "name": "白鷺旅行社有限公司", "period": list(PERIOD), "form": "401"}
 HEADER = {"county": "D", "self_or_agent": "2", "agent_reg_no": "台財北國稅字第0000000000X號", "filer_name": "王小明",

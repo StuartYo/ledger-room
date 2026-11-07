@@ -13,7 +13,7 @@ Checks:
   TXT    eval.media_file_check.check_file (附件五 layout), plus: serials 0000001.. in file order.
   TET_U  UTF-8 without BOM, CRLF, 112 fields (111 "|"), each field's picture and width, S9 last-character sign
          codes, header codes (資料別, 所屬年月, 申報代號 vs 總繳代號, 申報種類, 縣市別, 自行或委任), the form's own
-         sums (21, 22, 23, 44-47, 106, 110-115, 107 = 45 + 47 on a 401, 51 = (45 + 47) x (1 - 50) on a 403).
+         sums (21, 22, 23, 44-47, 106 (0 on a 401), 110-115, 107 = 45 + 47 on a 401, 51 = (45 + 47) x (1 - 50) on a 403).
   Cross  recomputes from the TXT lines, on its own, the sales boxes 1/2, 5/6, 9/10, 17/18, 7, 15 and the input boxes
          28-43, 78-81, and compares them with the TET_U (tax-inclusive lines totalled and split at 5/105).
 This is not the MOF checking program; passing here does not mean the MOF program accepts the files.
@@ -132,8 +132,10 @@ def check_tet_u(path: Path) -> dict:
             21: b[1] + b[5] + b[9] + b[13] - b[17], 22: b[2] + b[6] + b[10] + b[14] - b[18], 23: b[7] + b[15] - b[19],
             44: b[28] + b[32] + b[36] + b[78] - b[40], 45: b[29] + b[33] + b[37] + b[79] - b[41],
             46: b[30] + b[34] + b[38] + b[80] - b[42], 47: b[31] + b[35] + b[39] + b[81] - b[43],
-            106: b[101] + b[103] + b[104] + b[105], 110: b[107] + b[108] + b[109],
-            111: max(b[106] - b[110], 0), 112: max(b[110] - b[106], 0),
+            # 103-106 exist only on form 403; on a 401 the MOF checker wants 106 = 0 and the tax due is 101.
+            106: (b[101] + b[103] + b[104] + b[105]) if f[1] == "3" else 0, 110: b[107] + b[108] + b[109],
+            111: max(b[101] + b[103] + b[104] + b[105] - b[110], 0),
+            112: max(b[110] - (b[101] + b[103] + b[104] + b[105]), 0),
         }
         if f[1] == "1":
             sums[107] = b[45] + b[47]

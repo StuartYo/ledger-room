@@ -395,11 +395,14 @@ def return_totals(records: list[dict], *, form: str = "401", period=None, prior_
                          "not included; compute it with annual_adjustment() and pass year_end_adjustment (105 / 109)")
     else:
         b[107] = b[45] + b[47]
-    b[106] = b[101] + b[103] + b[104] + b[105]
+    # Boxes 103-106 exist only on form 403; the MOF checking program rejects a 401 whose box 106 is not zero
+    # ("401申報書[106欄]金額應為零"), so on 401 the tax due is box 101 alone and 106 stays 0.
+    due = b[101] + b[103] + b[104] + b[105]
+    b[106] = due if form == "403" else 0
     b[108] = prior_credit
     b[110] = b[107] + b[108] + b[109]
-    b[111] = max(b[106] - b[110], 0)
-    b[112] = max(b[110] - b[106], 0)
+    b[111] = max(due - b[110], 0)
+    b[112] = max(b[110] - due, 0)
     b[113] = _half_up(Fraction(b[23]) * 5 / 100) + b[47]
     b[114] = (b[113] if b[112] > b[113] else b[112]) if b[112] > 0 else 0
     b[115] = b[112] - b[114]
@@ -472,6 +475,8 @@ def tet_u_fields(totals: dict, *, ubn: str, tax_reg_no: str, period_end: str, fi
         raise ValueError(f"UBN must be 8 digits, got {ubn!r}")
     if not re.fullmatch(r"\d{9}", tax_reg_no or ""):
         raise ValueError(f"稅籍編號 must be 9 digits, got {tax_reg_no!r}")
+    if tax_reg_no[4] not in "01234":
+        raise ValueError(f"稅籍編號 {tax_reg_no!r}: the 5th digit must be 0-4 (the MOF checking program rejects it)")
     if county not in COUNTY_CODES:
         raise ValueError(f"縣市別 {county!r} is not an 附件七 code")
     if filing_kind not in ("1", "2") or self_or_agent not in ("1", "2") or total_pay_code not in ("0", "1", "2"):

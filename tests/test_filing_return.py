@@ -32,7 +32,7 @@ from tests.test_filing_scenario import CLIENT, FIX, GOLDEN, HEADER, PERIOD, TAXR
 WANT = {1: 0, 2: 0, 5: 103000, 6: 5150, 7: 0, 15: 30000, 17: 2000, 18: 100, 19: 0, 21: 101000, 22: 5050,
         23: 30000, 24: 0, 25: 131000, 28: 8000, 29: 400, 30: 0, 31: 0, 32: 24430, 33: 1222, 34: 90000, 35: 4500,
         36: 1000, 37: 50, 38: 0, 39: 0, 40: 1000, 41: 50, 42: 0, 43: 0, 44: 32430, 45: 1622, 46: 90000, 47: 4500,
-        48: 35930, 49: 90000, 78: 0, 79: 0, 80: 0, 81: 0, 101: 5050, 103: 0, 104: 0, 105: 0, 106: 5050,
+        48: 35930, 49: 90000, 78: 0, 79: 0, 80: 0, 81: 0, 101: 5050, 103: 0, 104: 0, 105: 0, 106: 0,
         107: 6122, 108: 0, 109: 0, 110: 6122, 111: 0, 112: 1072, 113: 6000, 114: 1072, 115: 0}
 
 
@@ -183,3 +183,11 @@ def test_customs_and_two_part_split():
     assert (b[78], b[79]) == (20000, 1000)
     assert (b[40], b[41]) == (200, 10)
     assert (b[44], b[45]) == (20000 - 200, 1000 - 10)
+
+
+def test_401_box_106_is_zero_and_tax_reg_fifth_digit_checked(filed):
+    # MOF checking program, 2026-11-07: "401申報書[106欄]金額應為零" -- boxes 103-106 belong to form 403 only.
+    b = filed["totals"]["boxes"]
+    assert b[106] == 0 and b[112] == b[110] - b[101]
+    with pytest.raises(ValueError, match="5th digit"):
+        filing.tet_u_line(filed["totals"], ubn=UBN, tax_reg_no="123456789", period_end="2026-10", **HEADER)
