@@ -421,8 +421,8 @@ What is in place, and what it does not do:
   is the firm's network setup. Usage records must be kept five years (regulation Art. 19); Ledger Room never deletes
   logs, but retention is the firm's backup policy.
 - **Security review, 2026-11-07:** a Claude Security scan of `web/` and `ledger_room/` found 9 issues (0 critical, 0
-  high, 7 medium, 2 low). All 9 are fixed, together with 8 fixes from a code review (878f798). 290 tests pass (1
-  skipped).
+  high, 7 medium, 2 low). All 9 are fixed, together with 8 fixes from a code review (878f798). 290 tests passed (1
+  skipped) at the time of the review; the suite has grown since.
 
 ## Model and runtime
 
