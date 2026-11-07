@@ -64,9 +64,13 @@ def test_crash_restarts_worker_and_retries_the_document(tmp_path):
     assert crash_doc in res["reads"]                         # retried after the restart, read fine
     assert len(res["crashes"]) == 1 and res["crashes"][0]["doc_id"] == crash_doc
     assert res["crashes"][0]["exitcode"] == 134
-    assert len(res["restarts"]) == 1 and res["restarts"][0]["load_s"] is not None
+    # one restart after the crash, and one after each reader error (the worker ends itself: on the B70 the GPU
+    # plugin is unusable after an inference exception), so the retry runs in a fresh process
+    assert [r["reason"] for r in res["restarts"]] == [f"crash on {crash_doc}", "after reader_error",
+                                                       "after reader_error"]
+    assert all(r["load_s"] is not None for r in res["restarts"])
     assert [r["doc_id"] for r in res["retries"] if r["reason"] == "reader_crash"] == [crash_doc]
-    # a Python error twice: not read, sent to a person, no restart
+    # a Python error twice: not read, sent to a person; reader errors are not counted as crashes
     assert res["failed"] == {"C1/2026-09/d4.jpg": {"reason": "reader_error", "attempts": 2,
                                                     "detail": res["failed"]["C1/2026-09/d4.jpg"]["detail"]}}
     assert len(res["reads"]) == 5

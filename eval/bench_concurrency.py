@@ -20,8 +20,9 @@ Supervisor (replaces bench_tiered --first-restart-every N): the GPU driver can a
 --doc-timeout-s) is logged with the document it was on, restarted (fresh process, model loaded again), and that
 document is retried once. If it dies on the same document again, the document is not read: pipeline.audit gets
 {"read_failed": {"reason": "reader_crash"}} for it and sends it to a person as READ_REVIEW (exception field
-reason = "reader_crash"). A Python exception while reading counts the same way (reason "reader_error"), without a
-restart. If no worker is left at all, the rest go to a person with reason "no_reader". No document is ever dropped.
+reason = "reader_crash"). A Python exception while reading counts the same way (reason "reader_error"), and the
+worker process ends after reporting it, so the retry runs in a fresh process (on the B70 the GPU plugin is unusable
+after such an exception). If no worker is left at all, the rest go to a person with reason "no_reader". No document is ever dropped.
 Healthy runs pay nothing: there are no precautionary reloads.
 
 Power and memory come from Intel's xpu-smi (see XpuSampler: the exact commands and field names are listed there and
@@ -91,6 +92,10 @@ def _worker_main(factory: str, model_dir: str, device: str, out_dir: str, conn) 
             conn.send(("done", d["doc_id"], res, round(time.perf_counter() - t, 3)))
         except Exception as ex:   # noqa: BLE001
             conn.send(("error", d["doc_id"], f"{type(ex).__name__}: {ex}"[:300], round(time.perf_counter() - t, 3)))
+            # on the B70 an inference exception leaves the GPU plugin unusable for this process ("any subsequent
+            # OpenCL API call may cause the application to hang"); end the process so the supervisor starts a fresh
+            # one, and the document is retried there
+            return
 
 
 def _exit_text(code) -> dict:
@@ -155,7 +160,7 @@ class Supervisor:
         s.conn, s.state, s.doc, s.t_state = parent, "loading", None, time.perf_counter()
 
     def _live(self) -> list[_Slot]:
-        return [s for s in self.slots if s.state in ("loading", "idle", "busy")]
+        return [s for s in self.slots if s.state in ("loading", "idle", "busy", "exiting")]
 
     def start(self) -> list[dict]:
         """Load the workers one after another (no load-time memory spike from K loads at once)."""
@@ -213,8 +218,11 @@ class Supervisor:
         now = time.perf_counter()
         for s in live:
             self._drain(s)
-            if s.state not in ("loading", "idle", "busy"):
+            if s.state not in ("loading", "idle", "busy", "exiting"):
                 continue
+            if s.state == "exiting" and s.proc.is_alive() and now - s.t_state > 30:
+                s.proc.kill()   # it should have ended by itself right after reporting the error
+                s.proc.join(timeout=10)
             if not s.proc.is_alive():
                 self._drain(s)   # an answer may have landed just before the end
                 self._died(s, timeout=False)
@@ -259,7 +267,7 @@ class Supervisor:
         elif kind == "error":
             _, doc_id, err, secs = msg
             d = s.doc
-            s.state, s.doc = "idle", None
+            s.state, s.doc, s.t_state = "exiting", None, time.perf_counter()   # worker ends itself; restarted in _died
             if d is not None:
                 self._fail(d, "reader_error", err, worker=s.idx)
 
@@ -273,6 +281,10 @@ class Supervisor:
             pass
         was, d = s.state, s.doc
         s.doc = None
+        if was == "exiting":   # expected: the worker reported a reader error and ended; not a crash
+            self.log(f"  [supervisor] worker {s.idx} ({s.device}) ended after a reader error; starting a fresh one")
+            self._restart(s, "after reader_error")
+            return
         if was == "loading":
             s.load_crashes += 1
             rec["during"] = "load"
