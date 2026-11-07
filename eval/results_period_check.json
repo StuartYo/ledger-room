@@ -1,0 +1,162 @@
+{
+ "synthetic": true,
+ "note": "SYNTHETIC firm period (synth/period_check.py). Rules are deterministic code, no model. Paper fields are given as if read correctly; reading accuracy is measured by the other evaluations. The answer key was committed (d93141e) before the checker existed and was not edited.",
+ "first_run": true,
+ "code_rev": "2eef0cc",
+ "key": "eval/expected_period_check_synthetic.json",
+ "clients": 4,
+ "einvoices": 140,
+ "einvoice_allowances": 2,
+ "einvoice_voided_left_out": 5,
+ "paper": 44,
+ "einvoices_with_item_names": 8,
+ "held": {
+  "einvoice": 7,
+  "paper": 6,
+  "total": 13
+ },
+ "ready": {
+  "einvoice": 135,
+  "paper": 32,
+  "total": 167
+ },
+ "paper_on_platform": 6,
+ "flagged_not_held": 5,
+ "held_by_rule": {
+  "DUP_CROSS_CLIENT": 3,
+  "DUP_PRIOR_FILING": 5,
+  "PLATFORM_AMOUNT_DIFF": 3,
+  "PLATFORM_RECORD_CONFLICT": 1,
+  "VOID_ON_PLATFORM": 1
+ },
+ "summary_line": "This period: 140 e-invoices (from the platform download) + 44 paper vouchers (read), 13 held for a person, 167 ready to book, 6 photos booked from their platform line.",
+ "rules_run": {
+  "e-invoice": [
+   "PLATFORM_RECORD_CONFLICT",
+   "DUP_PRIOR_FILING",
+   "PLATFORM_AMOUNT_DIFF",
+   "DUP_CROSS_CLIENT",
+   "S19_NONDEDUCTIBLE",
+   "FIXED_ASSET_HINT"
+  ],
+  "paper": [
+   "AMOUNT_MISMATCH",
+   "BUYER_NOT_CLIENT",
+   "BUYER_PRESUMED",
+   "CUSTOMS_KEY_BY_HAND",
+   "DUP_CROSS_CLIENT",
+   "DUP_CROSS_MONTH",
+   "FIXED_ASSET_HINT",
+   "IN_PLATFORM",
+   "NOT_A_VOUCHER",
+   "OVER_LIMIT",
+   "PERIOD_MISMATCH",
+   "READ_REVIEW",
+   "RECEIPT_TAX_UNVERIFIED",
+   "S19_NONDEDUCTIBLE",
+   "SMALL_RECEIPT_CAP",
+   "TRANSPORT_TICKET",
+   "UBN_CHECKSUM",
+   "UTILITY_BILL_PLATFORM",
+   "VOID_ON_PLATFORM",
+   "DUP_PRIOR_FILING",
+   "DUP_CROSS_CLIENT against other clients' platform lines"
+  ]
+ },
+ "not_checked": [
+  "VAT Act Art. 19 keywords on 132 e-invoice line(s) without item names: the media file has none (a carrier export next to the download adds them)",
+  "B2B exchange invoices the buyer has not confirmed: the media file layout has no confirmation field",
+  "UBN checksums on platform lines: the numbers come from the platform, not from a reading",
+  "allowances (formats 23 / 24): carried into the filing as deductions, not matched to their invoice",
+  "whether a photographed e-invoice should be on the download: upload delays and B2B confirmation make an absence weak evidence"
+ ],
+ "by_category": {
+  "amount_diff": {
+   "planted": 3,
+   "caught": 3,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "cross_client": {
+   "planted": 3,
+   "caught": 3,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "fixed_asset": {
+   "planted": 2,
+   "caught": 2,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "prior_filing_einvoice": {
+   "planted": 3,
+   "caught": 3,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "prior_filing_paper": {
+   "planted": 2,
+   "caught": 2,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "record_conflict": {
+   "planted": 1,
+   "caught": 1,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "s19_einvoice": {
+   "planted": 2,
+   "caught": 2,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "s19_to_confirm": {
+   "planted": 1,
+   "caught": 1,
+   "missed": 0,
+   "missed_vouchers": []
+  },
+  "void_paper": {
+   "planted": 1,
+   "caught": 1,
+   "missed": 0,
+   "missed_vouchers": []
+  }
+ },
+ "planted_total": 18,
+ "caught_total": 18,
+ "outcomes": {
+  "expected": {
+   "ready": 167,
+   "left_out": 5,
+   "held": 13,
+   "on_platform": 6
+  },
+  "got": {
+   "ready": 167,
+   "held": 13,
+   "left_out": 5,
+   "on_platform": 6
+  }
+ },
+ "false_holds": 0,
+ "false_hold_vouchers": [],
+ "missed_holds": 0,
+ "missed_hold_vouchers": [],
+ "unexpected_flags": 0,
+ "unexpected_flag_detail": [],
+ "vouchers_in_key": 191,
+ "vouchers_in_report": 191,
+ "vouchers_not_in_report": [],
+ "vouchers_not_in_key": [],
+ "ready_to_book": {
+  "expected": 167,
+  "got": 167,
+  "got_einvoice": 135,
+  "got_paper": 32
+ },
+ "seconds_total": 0.015
+}
