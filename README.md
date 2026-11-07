@@ -261,7 +261,7 @@ What is in place, and what it does not do:
   is the firm's network setup. Usage records must be kept five years (regulation Art. 19); Ledger Room never deletes
   logs, but retention is the firm's backup policy.
 - **Security review, 2026-11-07:** a Claude Security scan of `web/` and `ledger_room/` found 9 issues (0 critical, 0
-  high, 7 medium, 2 low). All 9 are fixed, together with 8 fixes from a code review (878f798). 288 tests pass (1
+  high, 7 medium, 2 low). All 9 are fixed, together with 8 fixes from a code review (878f798). 290 tests pass (1
   skipped).
 
 ## Model and runtime
@@ -543,6 +543,7 @@ checking program (營業稅離線審核, version 11500.01) on Windows:
   computed from box 101 (`filing.return_totals`, `eval/filing_check.py`, test
   `test_401_box_106_is_zero_and_tax_reg_fifth_digit_checked`).
 - The checker also rejects a 稅籍編號 whose 5th digit is not 0–4; `filing.tet_u_fields` now checks this first.
+- The files that passed are in `tests/fixtures/platform/mof_checked/`.
 - Form 403 and the zero-rate (T02) file were not run through the checker. Ledger Room writes no T02 file.
 
 **Input lines only.** `python -m ledger_room.export data/out/runs/<run id> --tax-reg taxreg.json`
@@ -564,6 +565,8 @@ Not verified yet:
 
 - Only the 401 pair has been through the MOF checking program, on synthetic data; form 403 and real client data
   have not.
+- The e-invoice platform import has only read synthetic downloads written from the published layout; no real
+  download from the platform has been parsed yet.
 - No accounting software has imported them, and no bookkeeper has compared lines with the paper vouchers.
 - The file number field of the TET_U is written as a placeholder (00000000), CRLF separates records, and text
   fields are padded with spaces on the right. The regulation does not spell these out; the checking program
