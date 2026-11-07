@@ -7,7 +7,10 @@ Access control (bookkeepers' safeguard regulation Arts. 15, 17 and 19):
   * binds to 127.0.0.1 unless told otherwise;
   * with accounts in users.json every request except the login page needs a session; roles admin / staff;
   * without accounts it runs as one local user and only on the loopback address;
-  * an operation log (who logged in, ran, viewed, exported) is appended with the same HMAC chain as the audit log.
+  * an operation log (who logged in, ran, viewed, exported) is appended with the same HMAC chain as the audit log;
+  * personal data in results, exports and logs is masked by default (Art. 17 顯示隱碼, ledger_room/privacy.py); a role
+    in privacy.UNMASK_ROLES can unmask one run for UNMASK_S seconds after giving a reason, which is logged;
+  * at start-up it warns when the data folder is on a volume without full-disk encryption (never blocks).
 """
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # allow `python web/server.py`
 
-from ledger_room import keys, pipeline  # noqa: E402
+from ledger_room import keys, pipeline, privacy  # noqa: E402
 from ledger_room.pipeline import DATA, OUT, AuditLog  # noqa: E402
 from web import users as userdb  # noqa: E402
 
@@ -44,6 +47,9 @@ _reader = None
 _reader_lock = threading.Lock()
 PUBLIC = {"/", "/index.html", "/api/login", "/api/me", "/api/logout"}
 ADMIN_ONLY = {"/api/audit-log", "/api/oplog"}
+UNMASK: dict[tuple, float] = {}      # (user, session token, run) -> expiry of an unmask grant
+UNMASK_S = 600
+IMG_EXT = {".jpg", ".jpeg", ".png"}
 
 
 def get_reader():
@@ -150,6 +156,19 @@ class H(BaseHTTPRequestHandler):
                 SESSIONS.pop(v, None)
         return None
 
+    def _unmasked(self, s: dict, run: str) -> bool:
+        exp = UNMASK.get((s["user"], s.get("token", "local"), run))
+        return bool(exp and exp > time.time() and privacy.can_unmask(s.get("role")))
+
+    @staticmethod
+    def _inside(p: Path, base: Path) -> Path | None:
+        try:
+            p = p.resolve()
+            p.relative_to(base.resolve())
+        except Exception:
+            return None
+        return p if p.is_file() else None
+
     def _gate(self, path: str):
         """None when allowed; otherwise an error response has been sent."""
         if path in PUBLIC or path.startswith("/static/"):
@@ -186,12 +205,19 @@ class H(BaseHTTPRequestHandler):
             return self._file(STATIC / path[len("/static/"):], STATIC)
         if path == "/api/me":
             me = self._session()
-            return self._json({"user": me["user"], "role": me["role"], "local": CFG["local"]} if me else
+            return self._json({"user": me["user"], "role": me["role"], "local": CFG["local"],
+                               "can_unmask": privacy.can_unmask(me["role"])} if me else
                               {"user": None, "local": CFG["local"]})
-        if path.startswith("/img/"):
-            return self._file(DATA / path[len("/img/"):], DATA)
-        if path.startswith("/out/"):
-            return self._file(OUT / path[len("/out/"):], OUT)
+        if path.startswith("/img/"):    # receipt images only: not clients.json, not data/out (results, logs, cache)
+            p = DATA / path[len("/img/"):]
+            if p.suffix.lower() not in IMG_EXT or self._inside(p, OUT) is not None:
+                return self._json({"error": "not found"}, 404)
+            return self._file(p, DATA)
+        if path.startswith("/out/"):    # evidence crops only; results, exports and logs go through the API below
+            p = OUT / path[len("/out/"):]
+            if p.suffix.lower() not in IMG_EXT or p.parent.name != "crops":
+                return self._json({"error": "not found"}, 404)
+            return self._file(p, OUT)
         if path == "/api/inboxes":
             return self._json(inboxes())
         if path == "/api/inbox":
@@ -199,7 +225,7 @@ class H(BaseHTTPRequestHandler):
             if st not in {i["set"] for i in inboxes()}:
                 return self._json({"error": "unknown inbox"}, 400)
             clients, docs = pipeline.load_inbox(st)
-            return self._json({"set": st, "clients": list(clients.values()),
+            return self._json({"set": st, "clients": [privacy.mask_client(c) for c in clients.values()],
                                "docs": [{k: v for k, v in d.items() if k != "path"} | {"image": f"{st}/clients/{d['doc_id']}"}
                                         for d in docs]})
         if path == "/api/runs":
@@ -207,12 +233,30 @@ class H(BaseHTTPRequestHandler):
             runs = sorted([p.name for p in rd.iterdir() if (p / "result.json").exists()], reverse=True) if rd.exists() else []
             return self._json(runs)
         if path == "/api/result":
-            oplog("view_result", user=s["user"], run_id=q.get("run", ""), ip=self._ip())
-            return self._file(OUT / "runs" / q.get("run", "") / "result.json", OUT / "runs")
+            run = q.get("run", "")
+            clear = q.get("unmask") == "1" and self._unmasked(s, run)
+            oplog("view_result", user=s["user"], run_id=run, ip=self._ip(), masked=not clear)
+            p = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+            if p is None:
+                return self._json({"error": "not found"}, 404)
+            if clear:
+                return self._file(p, OUT / "runs")
+            return self._json(privacy.mask_result(json.loads(p.read_text(encoding="utf-8"))))
         if path == "/api/export":
-            oplog("export_media_csv", user=s["user"], run_id=q.get("run", ""), ip=self._ip())
-            return self._file(OUT / "runs" / q.get("run", "") / "export_media.csv", OUT / "runs",
-                              download=f"ledger_room_{q.get('run', 'run')}_media.csv")
+            run = q.get("run", "")
+            clear = q.get("unmask") == "1" and self._unmasked(s, run)
+            oplog("export_media_csv", user=s["user"], run_id=run, ip=self._ip(), masked=not clear)
+            name = f"ledger_room_{run or 'run'}_media{'' if clear else '_masked'}.csv"
+            p = self._inside(OUT / "runs" / run / "export_media.csv", OUT / "runs")
+            if p is None or clear:
+                return self._file(OUT / "runs" / run / "export_media.csv", OUT / "runs", download=name)
+            rp = p.parent / "result.json"
+            names = privacy.personal_names(json.loads(rp.read_text(encoding="utf-8"))) if rp.exists() else set()
+            b = privacy.mask_csv(p.read_text(encoding="utf-8"), names).encode("utf-8")
+            self._headers("text/csv; charset=utf-8", len(b), 200,
+                          {"Content-Disposition": f'attachment; filename="{name}"'})
+            self.wfile.write(b)
+            return
         if path in ("/api/audit-log", "/api/oplog"):
             if path == "/api/oplog":
                 p = OUT / "oplog.jsonl"
@@ -227,6 +271,8 @@ class H(BaseHTTPRequestHandler):
             oplog("view_" + path.rsplit("/", 1)[-1].replace("-", "_"), user=s["user"], run_id=q.get("run"), ip=self._ip())
             v = AuditLog.verify_detail(p, keys.audit_key(create=False))
             entries = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines()]
+            if not (q.get("unmask") == "1" and self._unmasked(s, q.get("run") or "oplog")):
+                entries = privacy.mask_entries(entries)
             return self._json({"verified": v["chain_ok"] and v["mac_ok"] is not False, "chain_ok": v["chain_ok"],
                                "mac_ok": v["mac_ok"], "entries_verified": v["n"], "entries": entries[-500:]})
         if path.startswith("/api/job/"):
@@ -273,6 +319,19 @@ class H(BaseHTTPRequestHandler):
         bad, s = self._gate(path)
         if bad is False:
             return
+        if path == "/api/unmask":
+            body = self._body()
+            run, reason = str(body.get("run", ""))[:200], str(body.get("reason", "")).strip()[:300]
+            if not privacy.can_unmask(s["role"]):
+                oplog("denied", user=s["user"], path="/api/unmask", run_id=run, ip=self._ip())
+                return self._json({"error": "your role cannot unmask personal data"}, 403)
+            if run != "oplog" and self._inside(OUT / "runs" / run / "result.json", OUT / "runs") is None:
+                return self._json({"error": "unknown run"}, 400)
+            if len(reason) < 4:
+                return self._json({"error": "give a reason (it goes to the operation log)"}, 400)
+            UNMASK[(s["user"], s.get("token", "local"), run)] = time.time() + UNMASK_S
+            oplog("unmask", user=s["user"], role=s["role"], run_id=run, reason=reason, seconds=UNMASK_S, ip=self._ip())
+            return self._json({"ok": True, "run": run, "expires_s": UNMASK_S})
         if path == "/api/run":
             body = self._body()
             st = body.get("set", "main")
@@ -314,6 +373,8 @@ def main():
     OPLOG = AuditLog(OUT / "oplog.jsonl", append=True)
     oplog("server_start", host=a.host, port=a.port, mode="single local user" if CFG["local"] else
           f"{len(CFG['users'])} accounts", key_file=str(keys.audit_key_path()))
+    enc = privacy.encryption_self_check(DATA)       # warns on stderr when not encrypted; never blocks
+    oplog("encryption_check", status=enc["status"], volume=enc.get("volume"), method=enc.get("method"))
     srv = ThreadingHTTPServer((a.host, a.port), H)
     mode = ("single local user, no login (no accounts yet)" if CFG["local"]
             else f"login required, {len(CFG['users'])} account(s)")

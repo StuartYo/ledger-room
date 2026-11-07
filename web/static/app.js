@@ -1,7 +1,8 @@
 "use strict";
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const S = { set: "main", inbox: null, run: null, runId: null, client: "ALL", rules: new Set(), tab: "exceptions", me: null };
+const S = { set: "main", inbox: null, run: null, runId: null, client: "ALL", rules: new Set(), tab: "exceptions", me: null, unmasked: null };
+const um = () => (S.unmasked && S.unmasked === S.runId ? "&unmask=1" : "");
 const RULE_SHORT = {
   UBN_CHECKSUM: "UBN checksum", DUP_CROSS_MONTH: "Duplicate, same client", DUP_CROSS_CLIENT: "Duplicate, across clients",
   S19_NONDEDUCTIBLE: "Art. 19 non-deductible", OVER_LIMIT: "Over policy limit", PERIOD_MISMATCH: "Period mismatch",
@@ -44,6 +45,31 @@ function showUser() {
   const admin = me.role === "admin";
   $("#liveBtn").disabled = !admin;
   $("#liveBtn").title = admin ? "" : "Only an admin can run the model live";
+  showMask();
+}
+
+// Personal data is masked by default (safeguard regulation Art. 17). A role allowed to unmask gives a reason, which the
+// server writes to the operation log; the grant covers one run for ten minutes.
+function showMask() {
+  const shown = S.unmasked && S.unmasked === S.runId;
+  $("#maskPill").textContent = shown ? "Personal data shown (logged)" : "Personal data masked";
+  $("#maskPill").classList.toggle("ok", !shown);
+  const b = $("#unmaskBtn");
+  b.hidden = !(S.me && S.me.can_unmask) || !S.runId;
+  b.textContent = shown ? "Mask again" : "Show personal data";
+}
+
+async function toggleUnmask() {
+  if (S.unmasked === S.runId) { S.unmasked = null; return loadRun(S.runId); }
+  const reason = window.prompt("Why do you need to see personal data for this run? (goes to the operation log)");
+  if (!reason || reason.trim().length < 4) return;
+  const r = await fetch("/api/unmask", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run: S.runId, reason: reason.trim() }) });
+  const b = await r.json();
+  if (!r.ok) { window.alert(b.error || "Not allowed"); return; }
+  S.unmasked = S.runId;
+  setTimeout(() => { if (S.unmasked === b.run) { S.unmasked = null; loadRun(S.runId); } }, b.expires_s * 1000);
+  await loadRun(S.runId);
 }
 
 async function init() {
@@ -51,7 +77,8 @@ async function init() {
   if (!S.me.user) await login();
   showUser();
   $("#logoutBtn").onclick = async () => { await fetch("/api/logout", { method: "POST" }); location.reload(); };
-  $("#exportBtn").onclick = () => { if (S.runId) location.href = `/api/export?run=${encodeURIComponent(S.runId)}`; };
+  $("#exportBtn").onclick = () => { if (S.runId) location.href = `/api/export?run=${encodeURIComponent(S.runId)}${um()}`; };
+  $("#unmaskBtn").onclick = toggleUnmask;
   const boxes = await j("/api/inboxes");
   const sel = $("#inbox");
   sel.innerHTML = boxes.map((b) => `<option value="${esc(b.set)}">${esc(b.set)} (${b.n_docs} documents, ${b.n_clients} clients)</option>`).join("");
@@ -84,8 +111,9 @@ async function loadInbox(set) {
 
 async function loadRun(runId) {
   S.runId = runId;
-  S.run = await j(`/api/result?run=${encodeURIComponent(runId)}`);
+  S.run = await j(`/api/result?run=${encodeURIComponent(runId)}${um()}`);
   renderAll();
+  showMask();
   if (S.tab === "log") renderLog();
 }
 
@@ -234,7 +262,7 @@ async function renderLog() {
     $("#logHead").innerHTML = `<p class="muted">The audit log and the operation log are visible to admins only.</p>`;
     $("#logTable").innerHTML = ""; $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return;
   }
-  const L = await j(`/api/audit-log?run=${encodeURIComponent(S.runId)}`);
+  const L = await j(`/api/audit-log?run=${encodeURIComponent(S.runId)}${um()}`);
   $("#logHead").innerHTML = verifyBox(L) + `<p class="muted small">Every read and every exception is logged with the document's SHA-256, the model and the device.
     Each entry carries the hash of the previous entry and an HMAC under the operator key, which is kept outside the data folder. That detects edits,
     insertions and deletions made by anyone without the key; it cannot stop someone who holds both the disk and the key. Supports Art. 19 of the

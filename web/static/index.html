@@ -20,6 +20,8 @@
       <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Local only, no outbound requests</span>
     <span class="pill" id="modelPill">Model: Qwen3.5-2B INT4 on OpenVINO</span>
     <span class="pill" id="userPill" hidden></span>
+    <span class="pill" id="maskPill" title="Personal names, phone numbers and ID numbers in the read fields, messages, exports and logs are masked (safeguard regulation Art. 17). Receipt images are not masked.">Personal data masked</span>
+    <button class="pill linkbtn" id="unmaskBtn" hidden title="Shows personal data for this run for 10 minutes. You give a reason; it goes to the operation log.">Show personal data</button>
     <button class="pill linkbtn" id="logoutBtn" hidden>Log out</button>
   </div>
 </header>

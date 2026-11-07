@@ -8,6 +8,8 @@ python -m web.users remove ben
 Roles (the safeguard regulation, Art. 15, asks for different permissions per person):
   admin  everything: run the model live, read the audit log and the operation log, export
   staff  read exceptions and documents, replay cached runs, export the media-file CSV (進項媒體申報檔 layout)
+Both see personal data masked (Art. 17 顯示隱碼, ledger_room/privacy.py). Roles in LEDGER_UNMASK_ROLES (default: admin)
+may unmask one run for ten minutes after giving a reason, which goes to the operation log.
 
 Passwords are stored as PBKDF2-SHA256 (200,000 rounds, random salt). File: <secrets dir>/users.json (see keys.py),
 or LEDGER_USERS.
