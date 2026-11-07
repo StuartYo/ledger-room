@@ -30,11 +30,12 @@ without a person; *sent to a person* = held for a bookkeeper to check):
 2. **Public real Taiwan photos, strict reading: 0 let through** on 41 (real_tw, re-scored after the fix: the strict
    rule was written after seeing this set) and 0 on 17 (real_tw2, first run, key frozen before any read).
    `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` → `conditions.strict`
-3. **Why the B70: one UGen B70 runs both readers at once, 21.8 GB of its 32 GB.** The 9B reads every voucher; the 27B
-   re-reads the ones the 9B is unsure about (on the real box it cut wrong fields from 21.5% to 18.2%). Both loaded on
-   one card, 20 documents read by each, none failed: peak 21.8 GB of card memory, more than a 16 GB card has
-   (`eval/results_one_card.json`). Speed on the same host and code: the 9B takes 3.8 s a document on one B70 and 9.8 s
-   on the host's two 86-core Xeon CPUs (`eval/results_same_host_cpu_vs_b70.json`). The bigger reader is also the
+3. **On the UGen B70: one card reads about 1,000 vouchers an hour and uses 8 GB of its 32 GB.** Same host and code:
+   the 9B takes 3.8 s a document on one B70 and 9.8 s on the host's two 86-core Xeon CPUs
+   (`eval/results_same_host_cpu_vs_b70.json`). The spare memory leaves room: an optional 27B second reader, which
+   re-reads the ones the 9B is unsure about (on the real box it cut wrong fields from 21.5% to 18.2%), fits on the same
+   card beside the 9B, peak 21.8 GB, 20 documents read by each, none failed (`eval/results_one_card.json`). The web app
+   runs the 9B alone today. The bigger reader is also the
    accurate one. Same real documents, strict reading, Qwen3.5-2B against Qwen3.5-9B:
 
    | Same real documents, strict reading | 2B | 9B |
