@@ -599,6 +599,8 @@ on the B70 host on 2026-11-06 (code 3524145); the results are under
 (`eval/results_b70_dryrun.json`, `eval/results_tiered_dryrun.json`) only check that the scripts work; their timings are
 not results.
 
+**Page splitting (not yet connected to the pipeline).** A firm scans A4 pages with several vouchers taped on each. `ledger_room/split.py` (`split_page`, or `python -m ledger_room.split page.jpg [out_dir]`) returns one box per voucher with classical image processing on the CPU, about 0.03 s a page: the print is grouped into blobs, and each blob is cut again and again along the widest near-blank band that leaves both sides voucher sized; a printed rule across the band blocks the cut, a paper edge along it does not. It does not turn crops upright. On the private petty-cash pages (107 pages, 336 boxes drawn by hand; owner's consent, counts only) every threshold was set on 72 pages, and the other 35 (every third page by sorted file name) were run once after the method was frozen: 84 of 109 vouchers found at IoU 0.5 or more (69 at 0.7 or more), 25 missed, 20 extra boxes, 24 of 35 pages fully right. On the 72 tuning pages: 171 of 227 (151 at 0.7), 49 extra boxes, 47 pages fully right. It fails on touching vouchers with no blank band between them (e-invoice strips side by side, stacked postage receipts), on small receipts in a dense grid (0 of 13 two-part register receipts on the held-out pages) and on sideways bills, which it cuts in two (`eval/split_eval.py`, `eval/results_split.json`).
+
 ## Limits
 
 - Mostly synthetic photos. The real data so far: one person's own consumer e-invoices through the import path (no OCR)

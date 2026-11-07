@@ -1,0 +1,132 @@
+{
+ "what": "ledger_room.split.split_page: one box per voucher on scanned pages that hold several vouchers",
+ "data": "107 real scanned A4 pages of one small company's petty-cash vouchers (336 hand-drawn boxes). PRIVATE: used with the owner's consent for aggregate numbers only; no image, name or value is in this repository.",
+ "heldout_rule": "sorted page file names; index % 3 == 2 is held out, the rest is dev",
+ "tuning": "every threshold was set on the dev pages only; the held-out pages were run once, after the method was frozen, and that first run is the number reported",
+ "matching": "greedy one-to-one by IoU; a key box counts as found at IoU >= 0.5; matched_iou_0.7 is the stricter count; a page is fully right when every key box is found and no box is left over",
+ "code": "ledger_room/split.py sha256 8d1bc0cf9590ee0d7992d91c072896420bd14861ee0632a3b4752c56d610c080 (frozen before the held-out run; unchanged in this commit)",
+ "not_done": "boxes only: crops are not turned upright (the key's rotate field is not scored); split_page is not called by the pipeline yet",
+ "seen_failures_heldout": "looked at only after the first held-out run: touching vouchers with no blank band between them (e-invoice strips side by side, stacked postage receipts); small receipts in a dense grid; sideways bills cut in two along their blank middle; a pen note joined to the voucher next to it",
+ "dev": {
+  "which": "dev",
+  "pages": 72,
+  "truth_boxes": 227,
+  "predicted_boxes": 220,
+  "matched_iou_0.5": 171,
+  "matched_iou_0.7": 151,
+  "missed_truth_boxes": 56,
+  "extra_boxes": 49,
+  "pages_fully_right": 47,
+  "recall_0.5": 0.753,
+  "precision_0.5": 0.777,
+  "per_kind": {
+   "e_invoice": {
+    "truth": 57,
+    "matched_0.5": 34,
+    "matched_0.7": 32,
+    "recall_0.5": 0.596
+   },
+   "postage_receipt": {
+    "truth": 23,
+    "matched_0.5": 16,
+    "matched_0.7": 14,
+    "recall_0.5": 0.696
+   },
+   "receipt": {
+    "truth": 8,
+    "matched_0.5": 6,
+    "matched_0.7": 6,
+    "recall_0.5": 0.75
+   },
+   "tax_bill": {
+    "truth": 8,
+    "matched_0.5": 8,
+    "matched_0.7": 8,
+    "recall_0.5": 1.0
+   },
+   "three_part_invoice": {
+    "truth": 19,
+    "matched_0.5": 8,
+    "matched_0.7": 8,
+    "recall_0.5": 0.421
+   },
+   "two_part_register": {
+    "truth": 1,
+    "matched_0.5": 1,
+    "matched_0.7": 0,
+    "recall_0.5": 1.0
+   },
+   "utility_bill": {
+    "truth": 111,
+    "matched_0.5": 98,
+    "matched_0.7": 83,
+    "recall_0.5": 0.883
+   }
+  },
+  "seconds_per_page": {
+   "mean": 0.033,
+   "max": 0.045
+  }
+ },
+ "heldout_first_run": {
+  "which": "heldout",
+  "pages": 35,
+  "truth_boxes": 109,
+  "predicted_boxes": 104,
+  "matched_iou_0.5": 84,
+  "matched_iou_0.7": 69,
+  "missed_truth_boxes": 25,
+  "extra_boxes": 20,
+  "pages_fully_right": 24,
+  "recall_0.5": 0.771,
+  "precision_0.5": 0.808,
+  "per_kind": {
+   "e_invoice": {
+    "truth": 26,
+    "matched_0.5": 20,
+    "matched_0.7": 17,
+    "recall_0.5": 0.769
+   },
+   "postage_receipt": {
+    "truth": 11,
+    "matched_0.5": 7,
+    "matched_0.7": 5,
+    "recall_0.5": 0.636
+   },
+   "receipt": {
+    "truth": 4,
+    "matched_0.5": 2,
+    "matched_0.7": 1,
+    "recall_0.5": 0.5
+   },
+   "tax_bill": {
+    "truth": 6,
+    "matched_0.5": 6,
+    "matched_0.7": 6,
+    "recall_0.5": 1.0
+   },
+   "three_part_invoice": {
+    "truth": 5,
+    "matched_0.5": 5,
+    "matched_0.7": 5,
+    "recall_0.5": 1.0
+   },
+   "two_part_register": {
+    "truth": 13,
+    "matched_0.5": 0,
+    "matched_0.7": 0,
+    "recall_0.5": 0.0
+   },
+   "utility_bill": {
+    "truth": 44,
+    "matched_0.5": 44,
+    "matched_0.7": 35,
+    "recall_0.5": 1.0
+   }
+  },
+  "seconds_per_page": {
+   "mean": 0.034,
+   "max": 0.045
+  }
+ }
+}
