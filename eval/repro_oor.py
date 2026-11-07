@@ -10,6 +10,11 @@ A reader error ends the child process (the GPU plugin is unusable afterwards) an
 Host:
   .venv/bin/python -m eval.repro_oor --mode orig --device GPU.0 --reps 10 --out ~/oor_orig.json
   .venv/bin/python -m eval.repro_oor --mode pad  --device GPU.1 --reps 10 --out ~/oor_pad.json
+  .venv/bin/python -m eval.repro_oor --mode pipeline --device GPU.0 --reps 8 --out ~/oor_pipeline.json
+pipeline: the full read of each document (OCR + every model call, incl. the UBN zoom crop), recording the prompt and
+image size of every model call, so an error can be tied to the call that raised it.
+
+Result on the B70, 2026-11-07: orig 320 reads / 0 errors, pad 320 / 0 — the plain page read alone does not fail.
 """
 from __future__ import annotations
 
@@ -57,23 +62,38 @@ def child(model_dir, device, mode, pad_h, conn):
     import ledger_room  # noqa: F401
     from ledger_room.reader import Reader, EXTRACT_PROMPT
     r = Reader(model_dir, device)
+    calls = []          # pipeline mode: every generate call of the current document (prompt head, image size)
+    if mode == "pipeline":
+        from ledger_room import pipeline
+        pipeline.OUT = Path(os.path.expanduser("~/oor_pipeline_out"))
+        orig_gen = r.generate
+
+        def gen(prompt, image, *a, **k):
+            calls.append({"prompt": prompt[:30], "size": list(image.size)})
+            return orig_gen(prompt, image, *a, **k)
+        r.generate = gen
     conn.send(("ready", r.load_s))
     while True:
         job = conn.recv()
         if job is None:
             return
         t = time.time()
+        calls.clear()
         try:
-            r.generate(EXTRACT_PROMPT, prep(job, mode, pad_h))
-            conn.send(("ok", job, round(time.time() - t, 2)))
+            if mode == "pipeline":
+                d = {"doc_id": os.path.relpath(job, ROOT), "path": Path(job), "client": "x"}
+                pipeline.read_docs([d], r, cache=False)
+            else:
+                r.generate(EXTRACT_PROMPT, prep(job, mode, pad_h))
+            conn.send(("ok", job, {"s": round(time.time() - t, 2), "calls": list(calls)}))
         except Exception as ex:  # noqa: BLE001
-            conn.send(("error", job, f"{type(ex).__name__}: {ex}"[:200]))
+            conn.send(("error", job, {"detail": f"{type(ex).__name__}: {ex}"[:200], "calls": list(calls)}))
             return
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["orig", "pad"], required=True)
+    ap.add_argument("--mode", choices=["orig", "pad", "pipeline"], required=True)
     ap.add_argument("--device", default="GPU.0")
     ap.add_argument("--reps", type=int, default=10)
     ap.add_argument("--pad-h", type=int, default=704)
@@ -84,7 +104,7 @@ def main():
     queue = [p for _ in range(a.reps) for p in imgs]
     ctx = mp.get_context("spawn")
     ok = errors = restarts = 0
-    err_docs, lat = [], []
+    err_docs, lat, seen = [], [], {}
     t0 = time.time()
     while queue:
         pc, cc = ctx.Pipe()
@@ -102,10 +122,13 @@ def main():
             queue.pop(0)
             if kind == "ok":
                 ok += 1
-                lat.append(info)
+                lat.append(info["s"])
+                for c in info["calls"]:
+                    key = f'{c["prompt"][:12]}|{c["size"][0]}x{c["size"][1]}'
+                    seen[key] = seen.get(key, 0) + 1
             else:
                 errors += 1
-                err_docs.append({"doc": os.path.relpath(job, ROOT), "detail": info})
+                err_docs.append({"doc": os.path.relpath(job, ROOT), **(info if isinstance(info, dict) else {"detail": info})})
                 break
         try:
             pc.send(None)
@@ -121,7 +144,8 @@ def main():
            "model": Path(a.model).name, "images": len(imgs), "reps": a.reps, "reads": ok + errors, "ok": ok,
            "errors": errors, "restarts": restarts, "error_rate": round(errors / max(1, ok + errors), 4),
            "mean_latency_s": round(sum(lat) / max(1, len(lat)), 2), "wall_min": round((time.time() - t0) / 60, 1),
-           "error_docs": err_docs, "measured_on_b70": True}
+           "error_docs": err_docs, "ok_call_shapes": dict(sorted(seen.items(), key=lambda x: -x[1])[:200]),
+           "measured_on_b70": True}
     Path(os.path.expanduser(a.out)).write_text(json.dumps(res, indent=1))
     print(json.dumps({k: v for k, v in res.items() if k != "error_docs"}))
 
