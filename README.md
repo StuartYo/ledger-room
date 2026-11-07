@@ -36,6 +36,9 @@ bash scripts/setup_host.sh            # check the GPUs, make .venv, install, tel
 .venv/bin/python -m eval.bench_concurrency --set heldout --k 2,4,6,8 --devices GPU.0,GPU.1 --models-root ~/models --out results_concurrency_2cards.json
 .venv/bin/python -m eval.offline_check --model-dir ~/models/Qwen3.5-9B-int4-ov --device GPU.0 --out results_offline_b70.json
                                       # network watch during a live batch -> eval/results_offline_b70.json
+.venv/bin/python -m eval.bench_concurrency --sets heldout,hard,blind3,main --k 2 --devices GPU.0,GPU.1 --duration-min 70 --models-root ~/models --out results_longrun.json
+                                      # 70 minutes, two cards -> eval/results_longrun.json
+python3 eval/util_sampler.py 72 ~/util_longrun.csv   # start beside the long run; then --summary -> results_longrun_util.json
 ```
 
 The key fields to compare: `results["Qwen3.5-9B-int4-ov"].ledger_room.micro.f1` and `.reading.fields_wrong`
@@ -64,6 +67,8 @@ run; its blind3 and hard-set numbers are in the after-the-fix table below the no
 | **GPU driver error and workaround** | The first two blind3 attempts (code 7c3497b) stopped at document 8 of 53 with a GPU driver error (`CL_OUT_OF_RESOURCES`), before any scoring. Since then the bench reloads the 9B every 5 documents (`--first-restart-every 5`, about 9 s a reload). Counting the reloads, one card read 599 to 659 documents an hour (blind3 599, held-out 640, hard 651); leaving reload time out, 856 to 968. Replaced since by a fresh reader only after an error (after-the-fix table) | `eval/results_tiered.json` → `sets.blind3.note`, `sets.*.first_only` / `sets.*.tiered`: `docs_per_hour`, `docs_per_hour_excluding_first_reloads`, `first_restarts` |
 | **Readers per card**, one B70, 1 to 4 copies of the 9B reading one queue of the 47 held-out docs (code 34f5246) | 1 reader: 1,034/h; 2 readers: 1,013/h; 3 readers: 993/h; 4 readers: 976/h: more reader processes did not raise the rate (batching not tried). Card memory 6.59 GB per reader (6.63 GB peak with one, 25.41 GB with four). Card power while reading 193.59 W, idle 64.18 W; 187.25 Wh per 1,000 documents (sampled power × read wall clock; the card's energy counter did not move). Scoring the same at every count: F1 1.00, 0/319 fields wrong, 0 sent to a person; no crashes | `eval/results_concurrency.json` → `rows[]`: `docs_per_hour`, `memory`, `power`, `scoring` |
 | **Readers per card, both B70s**, the same queue split over two cards | 1 per card: 1,991/h; 2 per card: 1,944/h; 3 per card: 1,896/h; 4 per card: 1,857/h. One reader per card: 188.59 + 181.77 W while reading, 186.04 Wh per 1,000 documents. Same scoring as one card; no crashes | `eval/results_concurrency_2cards.json` → `rows[]` |
+| **Long run, both B70s**, one 9B per card, the held-out, hard, blind3 and main sets in a loop for 70 minutes (code 48ebaf8) | 2,201 documents read in 70.0 min: 1,886/h, GPU.0 1,102 (944/h), GPU.1 1,099 (942/h). 28 reader restarts (24/h for the two cards; 12 on GPU.0, 16 on GPU.1), every one after a GPU plugin error (`CL_OUT_OF_RESOURCES`); 0 process crashes; reloading after restarts took 230.6 s, about 5% of the time. 3 of 2,201 documents (0.14%) were not read and went to a person (reason `reader_error`). Power 189.4 + 183.6 W while reading; 200.6 and 195.0 Wh per 1,000 documents (sampled watts × wall clock; the energy counter did not move). Scoring over time: held-out F1 1.00 in all 11 passes; blind3 17 or 18 key fields wrong in every pass (one document read differently between passes), 12 sent to a person every pass; the hard and main sets differ between passes only where a document was not read | `eval/results_longrun.json` → `rows[0]`: `docs_per_hour`, `per_device`, `restarts`, `docs_not_read_reader_failure`, `power`, `stability`, `passes[]` |
+| **Compute engine busy**, both B70s, during the long run | GPU.0: busy 86% of the time (median 90%); GPU.1: 84% (median 89%). `xpu-smi` returns N/A for engine utilisation on this host, so `eval/util_sampler.py` read the Xe driver's DRM fdinfo every 5 s. Busy means the compute engine had work queued; it does not say how many execution units were active | `eval/results_longrun_util.json` → `cards`; raw samples `eval/longrun/util_longrun.csv` |
 | **Offline check** on the B70 | PASS: 47 documents read live, 175.8 s watched, 0 connections to a non-local address. The network adapter stayed up (a cloud host cannot unplug it), so this is not a cable-pulled test | `eval/results_offline_b70.json` |
 
 **Hard set, why two rows.** Both runs are the 9B with reader r8 on the same 49 documents. `eval/hard_eval.py` (first
@@ -80,17 +85,18 @@ was changed afterwards because of what this run showed (an invoice number split 
 amounts written one digit per box, a seller UBN equal to the client's own). Anything measured with r9 is labelled
 "after the fix" and does not replace the rows above.
 
-**Documents per hour, plainly.** One B70 with the 9B reads about 1,000 documents an hour (1,034 with one
-reader on held-out). More reader processes on the same card did not raise the rate (1,013, 993, 976 with 2, 3,
-4); batching inside one reader has not been tried, and GPU utilisation was not recorded. The rate does grow with cards: 1,991 an hour with one reader on each
-of the two B70s. A card draws about 190 W while reading, about 0.19 kWh per 1,000 documents.
-The 32 GB on a B70 is headroom (the 9B needs about 6.59 GB, the 27B fits), not a reason to
-stack readers. The 599 to 659 an hour in the reload row above was the old workaround for the GPU driver error.
-The bench now starts a fresh reader only after an error and retries that document: blind3 after the fix read
-883 an hour over 53 documents, one restart included. Each run is 47 to 53 documents, not a
-night-long batch.
+**Documents per hour, plainly.** Over 70 minutes on two B70s, one 9B reader per card read 1,886 documents an
+hour: about 940 per card (944 and 942). The 47-document batches gave about 1,000 per card (1,034 on one card, 1,991
+on two); the long run is the number to plan with. More reader processes on the same card did not raise the rate
+(1,013, 993, 976 with 2, 3, 4). In the long run each card's compute engine was busy about 85% of the time (86% and
+84%): one reader keeps the compute engine busy most of the time; batching inside one reader has not been tried. A card draws
+about 190 W while reading, about 0.2 kWh per 1,000 documents (sampled). The 32 GB on a B70 is headroom (the 9B
+needs about 6.59 GB, the 27B fits), not a reason to stack readers.
 
-<!-- long-run row goes here: cite eval/results_longrun.json (two cards, one hour or more, GPU utilisation) once it exists -->
+The GPU driver error is still there. The reader hits a GPU plugin error (`CL_OUT_OF_RESOURCES`) about every 5
+minutes per card; the supervisor starts a fresh reader and retries the document, so the 70-minute run had 28
+restarts, 0 crashes, and 3 of 2,201 documents sent to a person unread. The restarts cost about 5% of the time.
+Finding the cause is a next step. The 599 to 659 an hour in the reload row above was the old workaround.
 
 <!-- r9 after-fix rows go here -->
 
