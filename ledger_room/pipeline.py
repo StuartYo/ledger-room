@@ -193,13 +193,20 @@ class AuditLog:
     def verify_detail(path: Path, key: bytes | None = None, head: bool = False) -> dict:
         """chain_ok: hashes link up. mac_ok: every entry's HMAC matches `key` (None when no key was given).
         n: entries checked before the first failure. head=True with a key: when a head record exists for this log,
-        also tail_ok (False when the log ends before the last entry the head recorded, or is missing or empty)."""
+        also tail_ok (False when the log ends before the last entry the head recorded, or is missing or empty).
+        unsigned=True: no entry carries a MAC (logged before signing was added); only the hash chain was checked."""
         prev = "0" * 64
         n = 0
         mac_ok = None if key is None else True
         seen: dict = {}
         res = None
-        for line in (AuditLog.lines(path) if path.exists() else []):
+        all_lines = AuditLog.lines(path) if path.exists() else []
+        # A log written before HMAC signing existed has no "mac" on any line: check the hash chain only and say so.
+        # One mac-less line among signed ones is still a mismatch (stripping one entry's MAC does not hide an edit).
+        unsigned = bool(all_lines) and not any('"mac":' in x for x in all_lines)
+        if unsigned:
+            key = None
+        for line in all_lines:
             try:
                 e = json.loads(line)
                 h = e.pop("hash")
@@ -220,7 +227,9 @@ class AuditLog:
             prev = h
             n += 1
         if res is None:
-            res = {"chain_ok": True, "mac_ok": mac_ok, "n": n}
+            res = {"chain_ok": True, "mac_ok": None if unsigned else mac_ok, "n": n}
+        if unsigned:
+            res["unsigned"] = True
         if head and key is not None:
             hd = AuditLog._read_head(AuditLog.head_path(path), key, str(Path(path).resolve()))
             if hd is not None:

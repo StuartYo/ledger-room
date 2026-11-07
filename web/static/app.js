@@ -279,9 +279,11 @@ function verifyBox(L) {
   const ok = L.verified;
   const what = !L.chain_ok ? `Hash chain broken after entry ${L.entries_verified}`
     : L.mac_ok === false ? `HMAC mismatch after entry ${L.entries_verified}: an entry was changed without the operator key`
+    : L.tail_ok === false ? `Entries are missing from the end of the log (the signed head record points past the last entry)`
+    : L.unsigned ? `Hash chain verified (${L.entries_verified} entries). This run was logged before HMAC signing was added, so it carries no HMAC`
     : L.mac_ok ? `Hash chain and HMAC verified: ${L.entries_verified} entries, none altered`
     : `Hash chain verified (${L.entries_verified} entries); operator key not found on this machine, HMAC not checked`;
-  return `<div class="verify ${ok ? "ok" : "bad"}"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>${ok ? '<path d="M9 12l2 2 4-4"/>' : ""}</svg>${esc(what)}</div>`;
+  return `<div class="verify ${ok ? "ok" : L.unsigned && L.chain_ok ? "warn" : "bad"}"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>${ok ? '<path d="M9 12l2 2 4-4"/>' : ""}</svg>${esc(what)}</div>`;
 }
 
 async function renderOplog() {

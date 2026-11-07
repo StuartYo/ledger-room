@@ -36,7 +36,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # allow `python web/server.py`
 
-from ledger_room import keys, pipeline, privacy  # noqa: E402
+from ledger_room import export, keys, pipeline, privacy  # noqa: E402
 from ledger_room.pipeline import DATA, OUT, AuditLog  # noqa: E402
 from web import users as userdb  # noqa: E402
 
@@ -326,6 +326,11 @@ class H(BaseHTTPRequestHandler):
             clear = q.get("unmask") == "1" and self._unmasked(s, run)
             oplog("export_media_csv", user=s["user"], run_id=run, ip=self._ip(), masked=not clear)
             name = f"ledger_room_{run}_media{'' if clear else '_masked'}.csv"
+            rdir = OUT / "runs" / run
+            if (valid_run(run) and lexically_inside(rdir, OUT / "runs") and (rdir / "result.json").is_file()
+                    and not (rdir / "export_media.csv").exists()):
+                # runs from before the CSV was written at the end of each run: build it from the stored result
+                export.write_csv(json.loads((rdir / "result.json").read_text(encoding="utf-8")), rdir / "export_media.csv")
             p = self._inside(OUT / "runs" / run / "export_media.csv", OUT / "runs")
             if p is None or clear:
                 return self._file(OUT / "runs" / run / "export_media.csv", OUT / "runs", download=name)
@@ -356,8 +361,10 @@ class H(BaseHTTPRequestHandler):
                     entries.append({"event": "unreadable_line"})
             if not (q.get("unmask") == "1" and self._unmasked(s, q.get("run") or "oplog")):
                 entries = privacy.mask_entries(entries)
-            return self._json({"verified": v["chain_ok"] and v["mac_ok"] is not False and v.get("tail_ok") is not False,
+            return self._json({"verified": v["chain_ok"] and v["mac_ok"] is not False and v.get("tail_ok") is not False
+                               and not v.get("unsigned"),
                                "chain_ok": v["chain_ok"], "mac_ok": v["mac_ok"], "tail_ok": v.get("tail_ok"),
+                               "unsigned": bool(v.get("unsigned")),
                                "entries_verified": v["n"], "entries": entries[-500:]})
         if path.startswith("/api/job/"):
             j = JOBS.get(path.rsplit("/", 1)[-1])

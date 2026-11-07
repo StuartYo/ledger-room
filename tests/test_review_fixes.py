@@ -68,3 +68,27 @@ def test_platform_hooks_by_client_and_audit_auto():
     issued, void = plat.platform_hooks_by_client([CLIENT], root=FIX)
     assert void["H01"] == {"AB00000004"} and issued["H01"]
     assert "platform" in inspect.signature(pipeline.audit).parameters
+
+
+def test_log_written_before_signing_is_unsigned_not_tampered(tmp_path):
+    import json as _json
+    from ledger_room.pipeline import AuditLog
+    key = b"k" * 32
+    p = tmp_path / "a.jsonl"
+    log = AuditLog(p, key=key)
+    log.add("one"); log.add("two")
+    assert AuditLog.verify_detail(p, key) == {"chain_ok": True, "mac_ok": True, "n": 2}
+    lines = [_json.loads(x) for x in p.read_text(encoding="utf-8").splitlines()]
+    for e in lines:
+        e.pop("mac")
+    p.write_text("".join(_json.dumps(e, sort_keys=True) + "\n" for e in lines), encoding="utf-8")
+    r = AuditLog.verify_detail(p, key)
+    assert r["chain_ok"] and r["mac_ok"] is None and r["unsigned"] is True
+    # stripping one MAC among signed lines is still a mismatch
+    log2 = AuditLog(tmp_path / "b.jsonl", key=key)
+    log2.add("one"); log2.add("two")
+    ls = [_json.loads(x) for x in (tmp_path / "b.jsonl").read_text(encoding="utf-8").splitlines()]
+    ls[1].pop("mac")
+    (tmp_path / "b.jsonl").write_text("".join(_json.dumps(e, sort_keys=True) + "\n" for e in ls), encoding="utf-8")
+    r2 = AuditLog.verify_detail(tmp_path / "b.jsonl", key)
+    assert r2["mac_ok"] is False and "unsigned" not in r2

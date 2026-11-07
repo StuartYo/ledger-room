@@ -140,6 +140,7 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .verify { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13.5px; }
 .verify.ok { background: var(--ok-soft); color: var(--ok); }
 .verify.bad { background: var(--stamp-soft); color: var(--stamp); }
+.verify.warn { background: var(--warn-soft); color: var(--warn); }
 
 dialog { border: 0; padding: 0; border-radius: 14px; width: min(1200px, 96vw); max-height: 92vh; background: var(--card); color: var(--ink); }
 dialog::backdrop { background: rgba(10, 14, 25, .55); }
