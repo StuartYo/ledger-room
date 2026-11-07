@@ -372,7 +372,8 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/status":
             return self._json({"model_loaded": _reader is not None,
                                "model": _reader.model_id if _reader else None,
-                               "device": _reader.device if _reader else None})
+                               "device": _reader.device if _reader else None,
+                               "strict": pipeline.STRICT})
         return self._json({"error": "not found"}, 404)
 
     def _login(self, b: dict):
@@ -513,9 +514,14 @@ def main():
     ap.add_argument("--port", type=int, default=8780)
     ap.add_argument("--cert", help="TLS certificate (PEM); serve HTTPS")
     ap.add_argument("--key", help="TLS private key (PEM) for --cert")
+    ap.add_argument("--not-strict", action="store_true",
+                    help="accept a value on one source (development only); the app checks strictly by default")
     ap.add_argument("--behind-tls-proxy", action="store_true",
                     help="plain HTTP here, but only an HTTPS reverse proxy reaches this port; marks the cookie Secure")
     a = ap.parse_args()
+    # The app always runs strict reading unless told not to (docs/strict_draft.md): a filing value needs two agreeing
+    # sources, otherwise a person sees it. LEDGER_STRICT_READ=0 or --not-strict turns it off for development.
+    pipeline.STRICT = not a.not_strict and os.environ.get("LEDGER_STRICT_READ", "1") != "0"
     if bool(a.cert) != bool(a.key):
         sys.exit("--cert and --key go together.")
     CFG["users"] = userdb.load()
@@ -537,7 +543,7 @@ def main():
         ctx.load_cert_chain(a.cert, a.key)
     OPLOG = AuditLog(OUT / "oplog.jsonl", append=True)
     oplog("server_start", host=a.host, port=a.port, mode="single local user" if CFG["local"] else
-          f"{len(CFG['users'])} accounts", key_file=str(keys.audit_key_path()))
+          f"{len(CFG['users'])} accounts", key_file=str(keys.audit_key_path()), strict=pipeline.STRICT)
     enc = privacy.encryption_self_check(DATA)       # warns on stderr when not encrypted; never blocks
     oplog("encryption_check", status=enc["status"], volume=enc.get("volume"), method=enc.get("method"))
     srv = Server((a.host, a.port), H)

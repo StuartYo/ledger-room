@@ -18,7 +18,7 @@
   <div class="pills">
     <span class="pill ok" title="OCR and the model run on this machine through OpenVINO. The app makes no outbound requests.">
       <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Local only, no outbound requests</span>
-    <span class="pill" id="modelPill">Model: Qwen3.5-2B INT4 on OpenVINO</span>
+    <span class="pill" id="modelPill">Model: loading…</span>
     <span class="pill" id="userPill" hidden></span>
     <span class="pill" id="maskPill" title="Personal names, phone numbers and ID numbers in the read fields, messages, exports and logs are masked (safeguard regulation Art. 17). Receipt images are not masked.">Personal data masked</span>
     <button class="pill linkbtn" id="unmaskBtn" hidden title="Shows personal data for this run for 10 minutes. You give a reason; it goes to the operation log.">Show personal data</button>
@@ -48,8 +48,8 @@
         </div>
         <div class="btns">
           <button id="exportBtn" class="btn" disabled>Export CSV <small>進項媒體申報檔 fields</small></button>
-          <button id="replayBtn" class="btn">Replay batch <small>cached reads</small></button>
-          <button id="liveBtn" class="btn primary">Run live <small>re-read with the model</small></button>
+          <button id="replayBtn" class="btn">Show last check <small>no re-reading</small></button>
+          <button id="liveBtn" class="btn primary">Check this period <small>read every voucher</small></button>
         </div>
       </div>
       <div class="progress" id="progress" hidden>

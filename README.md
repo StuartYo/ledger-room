@@ -530,7 +530,7 @@ disabled is still on the Stage II list.
    `data/out/cache`, so a second run with `--cache-only` replays them in seconds without loading the model.
    `--set main` runs the other inbox.
 5. **Open the web app.** `.venv\Scripts\python -m web.server`, then browse to http://127.0.0.1:8780, pick the
-   `heldout` inbox and press **Run live** (re-reads with the model) or, after a first run, **Replay batch** (cached reads).
+   `heldout` inbox and press **Check this period** (reads every voucher with the model) or, after a first run, **Show last check** (cached reads, no re-reading). The app reads strictly by default (a filing value needs two agreeing sources); `--not-strict` turns that off for development.
    **Export CSV** downloads the media-file lines of the run shown. To share it on the office LAN, first add accounts
    (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with `--host 0.0.0.0 --cert cert.pem --key key.pem` (HTTPS); the documents still
    stay on this machine.

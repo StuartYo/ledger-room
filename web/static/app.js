@@ -99,7 +99,8 @@ async function init() {
 async function status() {
   try {
     const s = await j("/api/status");
-    if (s.model_loaded) $("#modelPill").textContent = `Model: ${s.model} on OpenVINO (${s.device})`;
+    if (s.model_loaded) $("#modelPill").textContent = `Model: ${s.model} on OpenVINO (${s.device})${s.strict ? " · strict" : ""}`;
+    else $("#modelPill").textContent = `Model loads on first check${s.strict ? " · strict" : ""}`;
   } catch (e) { /* ignore */ }
 }
 
@@ -203,7 +204,7 @@ function clientName(id) { return S.inbox.clients.find((c) => c.id === id)?.name 
 
 function renderExceptions() {
   const list = exceptions();
-  if (!S.run) { $("#exList").innerHTML = `<div class="card empty">No run yet for this inbox. Press <b>Replay batch</b> or <b>Run live</b>.</div>`; return; }
+  if (!S.run) { $("#exList").innerHTML = `<div class="card empty">No run yet for this inbox. Press <b>Check this period</b>.</div>`; return; }
   if (!list.length) { $("#exList").innerHTML = `<div class="card empty">No exceptions for this selection.</div>`; return; }
   $("#exList").innerHTML = list.map((e, i) => {
     const plat = e.source === "e-invoice";
