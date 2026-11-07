@@ -1,9 +1,10 @@
 # Ledger Room
 
-**A private receipt clerk for Taiwanese bookkeeping firms (記帳業者), on one machine inside the office.** The firm
-gives it a client's box of paper vouchers. Ledger Room reads every voucher, books a value only when two independent
-sources agree on it, and sends everything else to a person with the reason, so a misread does not slip into the VAT
-return. Client data never leaves the office network.
+**Office software for Taiwanese bookkeeping firms (記帳業者) that checks a client's vouchers before the VAT return is
+filed.** AI reads the paper vouchers, code checks paper and platform e-invoices against the tax rules, and a person
+sees only what is unsure, with the reason, so a misread does not slip into the return. It runs on one machine inside
+the office (built and measured on an ASUS UGen workstation with an Intel Arc Pro B70); client data never leaves the
+office network.
 
 <!-- START-HERE: add the video and slide links in the first two rows on submission day -->
 | Start here | |
