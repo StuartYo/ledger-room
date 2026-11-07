@@ -151,14 +151,16 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | No
                 model_reply: str | None = None) -> rules.Doc:
     prov = prov or {}
     ocr_text = " ".join(l["text"] for l in (ocr_lines or []))
+    # a utility bill prints an earlier period's e-invoice number: it is not this document's number (duplicates, platform)
+    utility = rules.utility_bill(ocr_text + " " + rules.fields_text(f))
     return rules.Doc(
-        doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
+        doc_kind="utility_bill" if utility else rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
         small_business_receipt=rules.small_business_receipt(ocr_text),
         tax_voucher_kind=tax_voucher_kind(f, ocr_lines),
         uncertain={**{k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
                    **(strict_uncertain(f, prov, ocr_lines, model_reply) if STRICT else {})},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
-        invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
+        invoice_no=None if utility else rules.norm_invoice_no(f.get("invoice_no")),
         date=date.fromisoformat(f["date"]) if f.get("date") else None,
         invoice_period=f.get("invoice_period"),
         seller_name=f.get("seller_name"), seller_ubn=f.get("seller_ubn"),
@@ -385,9 +387,13 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     platform="auto": load both from data/platform/<client UBN>/ for each client's own period (the web app does this;
     the evaluation does not, so its scores are unchanged). Explicit platform_invoices / platform_void win."""
     clients, docs = load_inbox(set_name)
+    platform_records = None
     if platform == "auto":
         from . import einvoice_platform
         issued, void = einvoice_platform.platform_hooks_by_client(clients)
+        # input records, only to tell whether a utility bill's e-invoice is already in the download
+        platform_records = {c["id"]: einvoice_platform.load_client(c, c.get("period"))["input"]
+                            for c in clients.values()}
         platform_invoices = issued if platform_invoices is None else platform_invoices
         platform_void = void if platform_void is None else platform_void
     run_id = run_id or f"{set_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -414,7 +420,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                          reads[d["doc_id"]].get("raw"))
              for d in docs if d["doc_id"] not in failed]
     excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices,
-                           platform_void=platform_void)
+                           platform_void=platform_void, platform_records=platform_records)
     rdoc_by_id = {r.doc_id: r for r in rdocs}
     for d in docs:   # tiered mode: the second reader's process died before re-reading this document
         crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")

@@ -167,6 +167,7 @@ Routing rules, outside the six evaluated types (the answer keys were frozen befo
 | `IN_PLATFORM` (info) | a photographed invoice whose number is already in the client's e-invoice platform download for the period: not entered again (the platform line stands for it), so the same input tax is not claimed twice | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `VOID_ON_PLATFORM` (hold) | a photographed invoice the platform download marks voided: held, and never written to the filing file | [VAT Act Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `CUSTOMS_KEY_BY_HAND` (hold) | a customs-collected VAT payment certificate (format code 28) is recognised from its printed words and always held: the bookkeeper keys the certificate number and tax by hand; Ledger Room does not read it into the filing file | [Enforcement Rules Art. 38(1)(2)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340081&flno=38) |
+| `UTILITY_BILL_PLATFORM` (info) | an electricity, water, telecom or gas bill or payment notice, recognised from printed words: a utility's name and a bill marker (such as 繳費期限 or 應繳總金額), never on an e-invoice proof (證明聯). Not keyed and not sent to a person: its input tax comes from the utility's e-invoice in the platform download, and the bill is kept as proof of payment. The invoice number printed on it (an earlier period's e-invoice) is not used for duplicates, and the bill never becomes a line in the export, the filing file or the voucher list. With the platform download loaded, the message says whether a platform record has the same seller UBN and total | [VAT Act Art. 33](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=33), [Art. 51(1)(5)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340080&flno=51) |
 | `SMALL_RECEIPT_CAP` (warning) | plain receipts (普通收據) from small businesses (printed 免用統一發票), cumulative per client, above 3% (千分之三十) of the year's manufacturing expenses plus operating expenses (`annual_manufacturing_expenses` + `annual_operating_expenses` in `clients.json`, ideally the amounts the tax office assesses); off unless both are set. Other receipts are not capped by this rule | [Audit Regulations Art. 67(3)](https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=G0340051&flno=67) |
 
 Deduction codes: the export sets 1 (deductible purchases and expenses) or 3 (non-deductible, VAT Act Art. 19). Codes 2
@@ -613,6 +614,11 @@ not results.
 - The expense category can come from the buyer's name. On held-out set 2 a receipt made out to a company named
   穗田便當有限公司 was taken as a meal and reported over the meal limit. It is not fixed in this version, because
   changing the rule after that run would leave held-out set 2 no longer blind.
+- Utility bills. On a private set of 336 real vouchers from one small company's petty-cash box (used with the owner's
+  consent; only counts are published, in `eval/results_utility_detect.json`), 155 are utility bills. On OCR text alone
+  the recogniser found all 155 and nothing else (155 found, 0 false, 0 missed). That is an after-the-fix number: the
+  keywords were written after looking at that set. On the public sets (real_tw, real_tw2 and the four synthetic sets,
+  259 documents, none of them a utility bill) it recognised none. The platform match is tested on synthetic records only.
 - About half of the test documents carry a planted issue; real folders will have far fewer, so real precision will
   be lower.
 - Only the 401 filing pair has passed the MOF checking program, and only on synthetic data; form 403 has not been

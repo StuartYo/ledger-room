@@ -1,0 +1,52 @@
+{
+ "base_code_rev": "2d9712a (measured on the working tree on top of this revision)",
+ "recognizer": "ledger_room/rules.py utility_bill(): a utility's name AND a bill marker in the OCR text (+ read fields), simplified characters folded; never on a slip with invoice-proof words (證明聯, 統一發票)",
+ "private_real_set": {
+  "n": 336,
+  "utility_bills": 155,
+  "tp": 155,
+  "fp": 0,
+  "fn": 0,
+  "after_fix": true,
+  "note": "keywords written after seeing this private set",
+  "text": "OCR only (no model reads exist for this set)"
+ },
+ "public_sets_false_positive_check": {
+  "real_tw": {
+   "n": 41,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 41
+  },
+  "real_tw2": {
+   "n": 17,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 0
+  },
+  "heldout": {
+   "n": 47,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 47
+  },
+  "main": {
+   "n": 52,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 52
+  },
+  "blind3": {
+   "n": 53,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 0
+  },
+  "hard": {
+   "n": 49,
+   "recognized_as_utility_bill": 0,
+   "files": [],
+   "with_saved_read_fields": 49
+  }
+ }
+}

@@ -11,7 +11,9 @@ status that says whether the line can go into this period's filing:
               voucher kind Ledger Room recognises, a customs certificate to key by hand)
   NOT_IN_FILE  no input tax for this client (a taxi receipt, a consumer e-invoice without buyer UBN, another company's
               UBN): an expense voucher, not a VAT input line; or the invoice is already in the e-invoice platform
-              download (IN_PLATFORM), which is imported on its own
+              download (IN_PLATFORM), which is imported on its own; or a utility bill (UTILITY_BILL_PLATFORM): its
+              e-invoice is in the platform download, and the number printed on the bill is an earlier period's
+              e-invoice
 
 Codes used (the bookkeeper must confirm them against the firm's own accounting software before relying on them):
   格式代號 21  三聯式、電子計算機統一發票 (input)
@@ -92,7 +94,11 @@ def rows(result: dict) -> list[dict]:
             if code is None and tax > 0 and buyer == c["ubn"]:
                 code, other_tax = "22", True    # a receipt that states tax and names the client: held (G6)
         notes = []
-        if "IN_PLATFORM" in ids:
+        if "UTILITY_BILL_PLATFORM" in ids:
+            # never an input line from paper: the utility's e-invoice comes in with the platform download
+            status, code, ded, tax = "NOT_IN_FILE", "", "", 0
+            notes.append("utility bill: input tax comes from the platform e-invoice; keep the bill as payment proof")
+        elif "IN_PLATFORM" in ids:
             status, code, ded = "NOT_IN_FILE", "", ""
             notes.append("already in the platform download: not entered again")
         elif code is None:
@@ -138,7 +144,8 @@ def rows(result: dict) -> list[dict]:
             "client_id": d["client_id"], "client_ubn": c["ubn"], "doc_id": d["doc_id"], "status": status,
             "status_label": STATUS_LABEL[status],
             "format_code_格式代號": code, "deduction_code_扣抵代號": ded, "tax_type_課稅別": "1" if code else "",
-            "invoice_no": f.get("invoice_no") or "", "date": f.get("date") or "", "date_roc": _roc(f.get("date")),
+            "invoice_no": "" if "UTILITY_BILL_PLATFORM" in ids else (f.get("invoice_no") or ""),
+            "date": f.get("date") or "", "date_roc": _roc(f.get("date")),
             "seller_ubn": f.get("seller_ubn") or "", "buyer_ubn": f.get("buyer_ubn") or "",
             "net": f.get("net") if f.get("net") is not None else "", "tax": tax if code else "",
             "total": f.get("total") if f.get("total") is not None else "",

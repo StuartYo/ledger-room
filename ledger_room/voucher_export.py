@@ -10,6 +10,7 @@ Columns (fixed, in this order):
   platform-unchecked   a line from the e-invoice platform download: exact numbers, but no item names, so the VAT Act
                        Art. 19 check did not run on it
 Photographed vouchers already on the platform (rule IN_PLATFORM) are left out: the platform row stands for them.
+Utility bills (rule UTILITY_BILL_PLATFORM) are left out too: they are booked from the utility's platform e-invoice.
 
 建議科目 is left blank unless the voucher matched a keyword in the rules' own tables (rules.S19_LEXICON with keyword
 evidence, or rules.EXPENSE_LEXICON taxi / lodging). Codes and names are from the MOEA 商業會計項目表（112年度及以後
@@ -80,8 +81,8 @@ def rows(result: dict, platform_records=None) -> list[dict]:
     out = []
     for r in export.rows(result):
         exs = ex_by_doc.get(r["doc_id"], [])
-        if any(e["rule_id"] == "IN_PLATFORM" for e in exs):
-            continue
+        if any(e["rule_id"] in ("IN_PLATFORM", "UTILITY_BILL_PLATFORM") for e in exs):
+            continue   # the platform row stands for it (a utility bill is booked from its platform e-invoice)
         f = docs[r["doc_id"]]["fields"]
         total = f.get("total")
         tax = r["tax"] if r["tax"] != "" else (f.get("tax") or 0)

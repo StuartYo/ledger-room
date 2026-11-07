@@ -216,6 +216,18 @@ RULES["VOID_ON_PLATFORM"] = {
                             "invoice carries no input tax; claiming it is over-claiming (VAT Act Art. 51(1)(5)).",
                    "url": LAW + "G0340080&flno=51"}],
 }
+RULES["UTILITY_BILL_PLATFORM"] = {
+    "title": "Utility bill / payment notice: book the input tax from the platform e-invoice, not from this paper",
+    "severity": "info",
+    "citations": [
+        {"label": "VAT Act Art. 33: the input-tax voucher is the uniform invoice. A utility (electricity, water, telecom, "
+                  "gas) issues an e-invoice for the bill, and the client's copy is in the MOF e-invoice platform "
+                  "download; the paper bill is a payment notice / proof of payment, kept with the books but not keyed",
+         "url": LAW + "G0340080&flno=33"},
+        {"label": "VAT Act Art. 51(1)(5): keying the bill as well as importing its e-invoice would claim the same input "
+                  "tax twice", "url": LAW + "G0340080&flno=51"},
+    ],
+}
 RULES["IN_PLATFORM"] = {
     "title": "Already in the e-invoice platform download: not entered again",
     "severity": "info",
@@ -278,7 +290,7 @@ class Doc:
     total: int | None = None
     note: str | None = None
     model_category: str | None = None   # category proposed by the model (fallback only)
-    doc_kind: str | None = None          # transaction_detail | payment_slip | None, from printed keywords (voucher_kind)
+    doc_kind: str | None = None          # transaction_detail | payment_slip | utility_bill | None, from printed keywords
     small_business_receipt: bool = False   # a plain receipt that prints 免用統一發票 (issuer exempt from uniform invoices)
     uncertain: dict = field(default_factory=dict)   # field -> why it is not confirmed on the page
     tax_voucher_kind: str | None = None    # transport_ticket | customs_payment | None (other_voucher_kind)
@@ -340,6 +352,36 @@ def voucher_kind(ocr_text: str, invoice_no: str | None) -> str | None:
     if any(k in ocr_text for k in DETAIL_KW):
         return "transaction_detail"
     return None
+
+
+# Utility bills and payment notices (台電, 自來水, 中華電信 and other telecoms, gas). Public utilities issue e-invoices:
+# the buyer's input-tax voucher is that e-invoice in the platform download, and the "已開立發票號碼" printed on the paper
+# bill is an earlier period's e-invoice. Two signals are required: a utility's name AND a bill marker, so a shop receipt
+# that only mentions 電信 is not caught. OCR mixes simplified characters into a line, so the text is folded to
+# traditional characters (_UTIL_FOLD) before matching instead of listing every mixed spelling.
+UTILITY_ISSUER_KW = ("台灣電力", "台電", "電力公司", "電費", "電號",
+                     "自來水", "水費", "水號", "水務",
+                     "中華電信", "電信費", "電信公司", "台灣大哥大", "遠傳", "亞太電信", "台灣之星",
+                     "天然氣", "瓦斯")
+UTILITY_BILL_KW = ("繳費通知", "繳款通知", "繳費憑證", "繳費證明", "繳費收據", "繳費單", "應繳總金額", "應繳金額",
+                   "本期應繳", "繳費期限", "繳費截止", "繳納期限", "計費期間", "計費期", "用電期間", "用水期間",
+                   "用戶編號", "用戶號碼", "電號", "水號", "抄表", "度數", "本期電費", "本期水費", "代收")
+_UTIL_FOLD = str.maketrans("臺电费缴应计间户编号华传亚气湾来务单额总资讯话线网帐账发证联统业时数电纳缴",
+                           "台電費繳應計間戶編號華傳亞氣灣來務單額總資訊話線網帳帳發證聯統業時數電納繳")
+# the words that keep a slip an invoice in voucher_kind (證明聯, 統一發票 ...), folded the same way
+UTILITY_PROOF_KW = tuple(sorted({k.translate(_UTIL_FOLD) for k in INVOICE_PROOF_KW}))
+
+
+def utility_bill(text: str) -> bool:
+    """A utility bill / payment notice from printed words (OCR text and / or the read fields). A slip that prints the
+    words of an invoice proof (INVOICE_PROOF_KW: 證明聯, 統一發票) is an invoice, never a bill, as in voucher_kind."""
+    t = (text or "").replace(" ", "").replace("　", "").translate(_UTIL_FOLD)
+    if any(k in t for k in UTILITY_PROOF_KW):
+        return False
+    issuer = [k for k in UTILITY_ISSUER_KW if k in t]
+    marker = [k for k in UTILITY_BILL_KW if k in t]
+    # 電號 / 水號 count once: as the issuer signal or as the bill marker, not both
+    return bool(issuer) and bool(marker) and len(set(issuer) | set(marker)) >= 2
 
 
 def doc_text(d: Doc) -> str:
@@ -534,9 +576,47 @@ def _platform_set(platform_invoices, client_id: str) -> set[str]:
     return set(platform_invoices)
 
 
+def _platform_list(platform_records, client_id: str) -> list[dict]:
+    if not platform_records:
+        return []
+    if isinstance(platform_records, dict):
+        return list(platform_records.get(client_id) or ())
+    return list(platform_records)
+
+
+def utility_platform_match(d: Doc, records: list[dict]) -> dict | None:
+    """The platform input record for this utility bill: an issued uniform invoice from the same seller UBN with the same
+    total (amount + tax, or the amount when it already includes tax). The records are the client's filing period."""
+    if not d.seller_ubn or d.total is None:
+        return None
+    for r in records:
+        if r.get("side", "input") != "input" or r.get("status") != "issued" or r.get("seller_ubn") != d.seller_ubn:
+            continue
+        total = r["amount"] if r.get("tax_inclusive") else (r.get("amount") or 0) + (r.get("tax") or 0)
+        if total == d.total:
+            return r
+    return None
+
+
+def _utility_exception(d: Doc, records: list[dict], platform_loaded: bool) -> "Exception_":
+    head = ("Utility bill or payment notice (electricity, water, telecom or gas). Book the input tax from the utility's "
+            "e-invoice in the client's e-invoice platform download; keep this bill as proof of payment and do not key "
+            "it. The invoice number printed on the bill belongs to an earlier period's e-invoice and is not used.")
+    m = utility_platform_match(d, records)
+    if m:
+        tail = (f" Matched: platform e-invoice {m.get('invoice_no') or m.get('other_voucher_no') or ''} "
+                f"({m.get('month')}), same seller UBN and total.")
+    elif platform_loaded:
+        tail = " Not yet matched: no platform record with the same seller UBN and total; check the platform download."
+    else:
+        tail = " Not yet matched: check the platform download for this bill's e-invoice."
+    return Exception_(d.doc_id, d.client_id, "UTILITY_BILL_PLATFORM", "info", head + tail, ["seller_name", "total"])
+
+
 def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
               platform_invoices: set[str] | dict[str, set[str]] | None = None,
-              platform_void: set[str] | dict[str, set[str]] | None = None) -> list[Exception_]:
+              platform_void: set[str] | dict[str, set[str]] | None = None,
+              platform_records: list[dict] | dict[str, list[dict]] | None = None) -> list[Exception_]:
     """registry: optional ledger_room.registry.Registry (local copy of the MOF business-registration file).
     With it, a checksum failure that is one digit away from a registered business is reported as a likely misread,
     and a well-formed number missing from the register gets a UBN_NOT_REGISTERED warning.
@@ -544,11 +624,19 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
     (every client) or {client_id: set}. A photographed voucher whose number is in it gets IN_PLATFORM (info) and the
     export leaves it out of the file (NOT_IN_FILE), so the same input tax is not claimed twice. Default: none.
     platform_void: invoice numbers the platform download marks 作廢 (einvoice_platform.platform_void_numbers), same
-    shapes; a photographed voucher with one of them gets VOID_ON_PLATFORM (high) and is held. Default: none."""
+    shapes; a photographed voucher with one of them gets VOID_ON_PLATFORM (high) and is held. Default: none.
+    platform_records: the platform download's input records for the client's period (einvoice_platform.load_client(...)
+    ["input"]), one list or {client_id: list}; only used to say whether a utility bill's e-invoice is already there."""
     out: list[Exception_] = []
 
     for d in docs:
         c = clients[d.client_id]
+        # 00. a utility bill is not keyed: its input tax comes from the utility's e-invoice in the platform download.
+        #     No other per-document rule runs on it (its fields never reach the filing), so it does not go to a person.
+        if d.doc_kind == "utility_bill":
+            out.append(_utility_exception(d, _platform_list(platform_records, d.client_id),
+                                          platform_records is not None))
+            continue
         # 0b. the platform download marks this invoice number as voided
         if d.invoice_no and d.invoice_no in _platform_set(platform_void, d.client_id):
             out.append(Exception_(d.doc_id, d.client_id, "VOID_ON_PLATFORM", "high",
@@ -785,6 +873,8 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
     by_no: dict[str, list[int]] = defaultdict(list)
     by_comp: dict[tuple, list[int]] = defaultdict(list)
     for i, d in enumerate(docs):
+        if d.doc_kind == "utility_bill":
+            continue   # not keyed; its printed invoice number is an earlier period's e-invoice (UTILITY_BILL_PLATFORM)
         if d.invoice_no:
             by_no[d.invoice_no].append(i)
         if d.seller_ubn and d.date and d.total is not None:
@@ -796,7 +886,7 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
     # a payment slip or a transaction detail is paired on date + amount with any other document of that day
     by_day: dict[tuple, list[int]] = defaultdict(list)
     for i, d in enumerate(docs):
-        if d.date and d.total and d.total >= 100:
+        if d.date and d.total and d.total >= 100 and d.doc_kind != "utility_bill":
             by_day[(d.date, d.total)].append(i)
     for idx in by_day.values():
         for a in range(len(idx)):
