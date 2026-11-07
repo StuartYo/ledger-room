@@ -1,0 +1,678 @@
+{
+ "what": "Per-document summary of the first official blind3 run (reader r8, code 77fa568, 9B on one B70). Field names and rule ids only: no read values, no images. Recounted from that run's result.json, which is not committed (it holds the read values).",
+ "run_id": "tiered-blind3 first-20261106-171554",
+ "code_rev": "77fa568",
+ "answer_key": "eval/expected_blind3.json",
+ "key_fields": [
+  "doc_type",
+  "invoice_no",
+  "date",
+  "seller_ubn",
+  "buyer_ubn",
+  "net",
+  "tax",
+  "total"
+ ],
+ "definitions": {
+  "key_fields_wrong": "as eval/read_accuracy.score_reads: a field is compared when the key or the read has a value",
+  "sent_to_person": "any hold or review exception, as eval/run_eval.held_docs",
+  "other_flags": "warning / high / medium exceptions, which do not send the document to a person"
+ },
+ "checks": "key_fields_wrong / key_fields_compared and docs_sent_to_person equal results_tiered.json -> sets.blind3.first_only",
+ "summary": {
+  "docs": 53,
+  "key_fields_wrong": 40,
+  "key_fields_compared": 326,
+  "docs_with_a_wrong_key_field": 13,
+  "of_those_sent_to_person": 11,
+  "of_those_accepted": [
+   "Q02/2026-07/IMG_20260726_181709.jpg",
+   "Q03/2026-08/IMG_20260808_162615.jpg"
+  ],
+  "docs_sent_to_person": 11,
+  "sent_without_a_wrong_key_field": 0
+ },
+ "docs": [
+  {
+   "doc_id": "Q01/2026-07/IMG_20260716_074443.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q01/2026-07/IMG_20260717_145855.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q01/2026-07/IMG_20260719_191125.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "PERIOD_MISMATCH"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-07/IMG_20260719_203829.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q01/2026-07/IMG_20260727_144824.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260804_113126.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "DUP_CROSS_MONTH"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260806_163457.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 1,
+   "wrong_fields": [
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "S19_NONDEDUCTIBLE"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260808_181508.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 3,
+   "wrong_fields": [
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "READ_REVIEW"
+   ],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260809_151251.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "OVER_LIMIT"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260811_144640.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "DUP_CROSS_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260816_162032.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 4,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "AMOUNT_MISMATCH",
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q01/2026-08/IMG_20260821_212535.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-07/IMG_20260705_180018.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "DUP_CROSS_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-07/IMG_20260716_140340.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 5,
+   "wrong_fields": [
+    "invoice_no",
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "AMOUNT_MISMATCH",
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-07/IMG_20260717_134125.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q02/2026-07/IMG_20260726_181709.jpg",
+   "layout": "hotel_folio",
+   "key_fields_wrong": 2,
+   "wrong_fields": [
+    "seller_ubn",
+    "buyer_ubn"
+   ],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-07/IMG_20260802_141559.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 1,
+   "wrong_fields": [
+    "net"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "AMOUNT_MISMATCH"
+   ],
+   "other_flags": [
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-08/IMG_20260806_154141.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-08/IMG_20260822_162513.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q02/2026-08/IMG_20260825_154314.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q02/2026-08/IMG_20260903_161934.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "OVER_LIMIT"
+   ]
+  },
+  {
+   "doc_id": "Q02/2026-08/IMG_20260906_091413.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "PERIOD_MISMATCH"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-07/IMG_20260701_080248.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "S19_NONDEDUCTIBLE"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-07/IMG_20260706_161635.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-07/IMG_20260725_135219.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q03/2026-07/IMG_20260725_173248.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 4,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-07/IMG_20260730_103653.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260805_180512.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "DUP_CROSS_MONTH"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260808_162615.jpg",
+   "layout": "hotel_folio",
+   "key_fields_wrong": 2,
+   "wrong_fields": [
+    "seller_ubn",
+    "buyer_ubn"
+   ],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "OVER_LIMIT"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260826_161117.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260831_144409.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260831_164548.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q03/2026-08/IMG_20260903_200754.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "PERIOD_MISMATCH"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-07/IMG_20260704_185914.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "DUP_CROSS_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-07/IMG_20260706_102706.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 3,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "AMOUNT_MISMATCH",
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-07/IMG_20260720_083514.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 4,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-07/IMG_20260720_132928.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q04/2026-07/IMG_20260804_171101.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-08/IMG_20260811_121454.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q04/2026-08/IMG_20260816_132649.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q04/2026-08/IMG_20260830_174525.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 4,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "BUYER_PRESUMED",
+    "READ_REVIEW"
+   ],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q04/2026-08/IMG_20260905_115358.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "PERIOD_MISMATCH"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260705_200128.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "PERIOD_MISMATCH"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260706_155733.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "OVER_LIMIT"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260717_205125.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 4,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "tax",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "AMOUNT_MISMATCH",
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260718_184050.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260719_141729.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "BUYER_NOT_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-07/IMG_20260724_152640.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q05/2026-08/IMG_20260803_113613.jpg",
+   "layout": "hand_receipt_pad",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  },
+  {
+   "doc_id": "Q05/2026-08/IMG_20260806_203410.jpg",
+   "layout": "hand_triplicate",
+   "key_fields_wrong": 3,
+   "wrong_fields": [
+    "buyer_ubn",
+    "net",
+    "total"
+   ],
+   "sent_to_person": true,
+   "sent_because": [
+    "READ_REVIEW"
+   ],
+   "other_flags": [
+    "BUYER_NOT_CLIENT",
+    "DUP_CROSS_MONTH",
+    "UBN_CHECKSUM"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-08/IMG_20260817_082654.jpg",
+   "layout": "taxi_slip",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "DUP_CROSS_CLIENT"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-08/IMG_20260817_134902.jpg",
+   "layout": "thermal_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": [
+    "S19_NONDEDUCTIBLE"
+   ]
+  },
+  {
+   "doc_id": "Q05/2026-08/IMG_20260901_190727.jpg",
+   "layout": "a4_einvoice",
+   "key_fields_wrong": 0,
+   "wrong_fields": [],
+   "sent_to_person": false,
+   "sent_because": [],
+   "other_flags": []
+  }
+ ]
+}
