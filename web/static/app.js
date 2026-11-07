@@ -167,7 +167,23 @@ function periodLine() {
   const who = S.client === "ALL" ? "This period" : `This period, ${esc(clientName(S.client))}`;
   return `<div class="period"><b>${who}:</b> <span class="n">${s.einvoices}</span> e-invoices (from the platform download)
     + <span class="n">${s.paper}</span> paper vouchers (read) · <span class="n hot">${s.held.total}</span> held for a person
-    (${s.held.einvoice} e-invoice, ${s.held.paper} paper) · <span class="n">${s.ready.total}</span> ready to book</div>`;
+    (${s.held.einvoice} e-invoice, ${s.held.paper} paper) · <span class="n">${s.ready.total}</span> ready to book</div>` +
+    riskLine(pc, s);
+}
+
+// Tax at risk: which client to look at first before the filing deadline (wrong claims first, then unconfirmed tax).
+function riskLine(pc, s) {
+  const nt = (n) => "NT$" + Number(n || 0).toLocaleString("en-US");
+  const amounts = (r) => `<span class="n hot">${nt(r.wrong_claim)}</span> would be claimed wrongly, <span class="n">${nt(r.unconfirmed)}</span> unconfirmed`;
+  const note = `<div class="period muted">Corrected before the tax office asks: tax plus interest, no fine (Tax Collection Act Art. 48-1).</div>`;
+  if (S.client !== "ALL") {
+    const r = s.tax_at_risk;
+    return r ? `<div class="period"><b>Tax at risk:</b> ${amounts(r)}</div>` + note : "";
+  }
+  const top = (pc.risk_ranking || []).filter((r) => r.wrong_claim || r.unconfirmed).slice(0, 3);
+  if (!top.length) return "";
+  return `<div class="period"><b>Look at first:</b> ` +
+    top.map((r) => `${esc(clientName(r.client_id))}: ${amounts(r)}`).join(" · ") + `</div>` + note;
 }
 
 function renderChips() {

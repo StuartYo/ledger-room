@@ -29,6 +29,21 @@
   "PLATFORM_RECORD_CONFLICT": 1,
   "VOID_ON_PLATFORM": 1
  },
+ "tax_at_risk": {
+  "input_tax_claimed": 214256,
+  "wrong_claim": 5582,
+  "unconfirmed": 2733,
+  "vouchers_wrong_claim": 10,
+  "vouchers_unconfirmed": 3,
+  "tax_unknown": 2,
+  "clients_above_2000": 1,
+  "clients_above_5pct": 2,
+  "flag_basis": {
+   "above_2000": "wrong_claim over NT$2,000: Penalty Reduction Standard Art. 15 leaves a VAT Act Art. 51 case unfined only at NT$2,000 or less of missed tax a period",
+   "above_5pct": "held input tax over 5% of the period's input tax: Penalty Reduction Standard Art. 15 leaves keying errors under 5% unfined when filing by media file (non-deductible items and double claims are not keying errors)"
+  }
+ },
+ "tax_at_risk_note": "added by a rerun on 31ff058 plus the uncommitted tax-at-risk change; every other field is the first run's (code_rev, seconds_total) or came out identical",
  "summary_line": "This period: 140 e-invoices (from the platform download) + 44 paper vouchers (read), 13 held for a person, 167 ready to book, 6 photos booked from their platform line.",
  "rules_run": {
   "e-invoice": [

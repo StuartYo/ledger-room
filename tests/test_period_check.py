@@ -145,3 +145,78 @@ def test_real_mode_refuses_output_inside_repo(tmp_path):
     with pytest.raises(SystemExit):
         ev.main(["--ubn", A_UBN, "--period", "2026-09/2026-10", "--platform-root", str(tmp_path),
                  "--out", str(ev.ROOT / "eval" / "x.json")])
+
+
+# ---------------------------------------------------------------------------------------------------- tax at risk
+
+def test_tax_at_risk_on_the_firm(firm):
+    a = firm["by_client"]["A"]["tax_at_risk"]
+    # held: AA00000002 prior filing (100) + AA00000009 record conflict (45) + paper x4 voided on the platform (35)
+    # are wrong claims; AA00000004 photo and platform differ (200) is unconfirmed
+    assert (a["wrong_claim"], a["unconfirmed"], a["vouchers_wrong_claim"], a["vouchers_unconfirmed"]) == (180, 200, 3, 1)
+    assert a["input_tax_claimed"] == 5730 and a["tax_unknown"] == 0
+    assert a["above_2000"] is False and a["above_5pct"] is True        # 380 / 5,730 = 6.6%
+    b = firm["by_client"]["B"]["tax_at_risk"]
+    # x1: a consumer-style photo of A's invoice, no tax on it: counted as a voucher, NT$0, tax unknown
+    assert (b["wrong_claim"], b["vouchers_wrong_claim"], b["tax_unknown"]) == (75, 2, 1)
+    t = firm["summary"]["tax_at_risk"]
+    assert (t["wrong_claim"], t["unconfirmed"], t["clients_above_2000"], t["clients_above_5pct"]) == (255, 200, 0, 2)
+    assert "above_2000" not in t                                      # fine limits are per business, not per firm
+    assert [r["client_id"] for r in firm["risk_ranking"]] == ["A", "B"]
+    agg = pc.aggregate_only(firm)["tax_at_risk"]
+    assert agg["wrong_claim"] == 255 and agg["clients_above_5pct"] == 2
+
+
+def _hv(i, tax, outcome="held", side="e-invoice", filed=True, cid="A"):
+    return {"id": f"v{i}", "client_id": cid, "side": side, "outcome": outcome, "tax": tax, "filed": filed,
+            "period_rules": []}
+
+
+def _ex(vid, rule, severity="high", cid="A"):
+    return {"voucher": vid, "client_id": cid, "rule_id": rule, "severity": severity}
+
+
+def test_tax_split_wrong_and_unconfirmed():
+    vs = [_hv(1, 1000, "ready"), _hv(2, 300), _hv(3, 70), _hv(4, 50, side="paper"), _hv(5, 20, side="paper"),
+          _hv(6, 999, "on_platform", side="paper"), _hv(7, 40, side="paper", filed=False)]
+    excs = [_ex("v2", "DUP_PRIOR_FILING"), _ex("v3", "PLATFORM_AMOUNT_DIFF", "hold")]
+    paper_exc = {"v4": [_ex("v4", "READ_REVIEW", "review"), _ex("v4", "S19_NONDEDUCTIBLE", "medium")],
+                 "v5": [_ex("v5", "READ_REVIEW", "review"), _ex("v5", "S19_NONDEDUCTIBLE", "warning")]}
+    r = pc._tax_at_risk(vs, excs, paper_exc)
+    # v2 and v4 wrong (a medium Art. 19 finding); v3 and v5 unconfirmed (a "to confirm" warning is not a finding);
+    # v6 is booked from its platform line; v7 is held but not in the media file: a voucher, NT$0
+    assert (r["wrong_claim"], r["unconfirmed"]) == (350, 90)
+    assert (r["vouchers_wrong_claim"], r["vouchers_unconfirmed"]) == (2, 3)
+    assert r["input_tax_claimed"] == 1000 + 300 + 70 + 50 + 20
+
+
+@pytest.mark.parametrize("wrong, above", [(2000, False), (2001, True)])
+def test_flag_2000_boundary(wrong, above):
+    r = pc._tax_at_risk([_hv(1, 1_000_000, "ready"), _hv(2, wrong)], [_ex("v2", "DUP_CROSS_MONTH")], {})
+    assert r["wrong_claim"] == wrong and r["above_2000"] is above
+
+
+@pytest.mark.parametrize("held, above", [(500, False), (501, True)])
+def test_flag_5pct_boundary(held, above):
+    r = pc._tax_at_risk([_hv(1, 10_000 - held, "ready"), _hv(2, held)], [], {})
+    assert r["input_tax_claimed"] == 10_000 and r["unconfirmed"] == held
+    assert r["above_5pct"] is above and r["above_2000"] is False
+
+
+def test_paper_tax_none_counts_as_voucher():
+    r = pc._tax_at_risk([_hv(1, None, side="paper"), _hv(2, None, "ready", side="paper")], [], {})
+    assert (r["input_tax_claimed"], r["unconfirmed"], r["vouchers_unconfirmed"], r["tax_unknown"]) == (0, 0, 1, 2)
+    assert r["above_5pct"] is False
+
+
+def test_risk_ranking_order():
+    cl = {c: {"id": c} for c in ("A", "B", "C", "D")}
+    vs = [_hv(1, 100, cid="A"), _hv(2, 500, cid="B"), _hv(3, 500, cid="C"), _hv(4, 900, cid="C"),
+          _hv(5, 10, "ready", cid="D")]
+    excs = [_ex("v1", "DUP_CROSS_CLIENT", cid="A"), _ex("v2", "DUP_PRIOR_FILING", cid="B"),
+            _ex("v3", "VOID_ON_PLATFORM", cid="C")]
+    rep = pc._report(cl, vs, excs, {}, False, {})
+    rk = rep["risk_ranking"]
+    assert [r["client_id"] for r in rk] == ["C", "B", "A", "D"]     # 500 + 900 unconfirmed beats 500 + 0
+    assert rk[0] == {"client_id": "C", "wrong_claim": 500, "unconfirmed": 900, "input_tax_claimed": 1400,
+                     "above_2000": False, "above_5pct": True}

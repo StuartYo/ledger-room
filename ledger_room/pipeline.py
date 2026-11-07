@@ -500,7 +500,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         try:
             rep = period_check.check_period(clients, paper=result)
             result["period_check"] = {k: rep[k] for k in ("summary", "rules_run", "not_checked", "by_client",
-                                                          "exceptions")}
+                                                          "risk_ranking", "exceptions")}
         except Exception as e:   # the paper audit stands on its own; say why the period view is missing
             result["period_check"] = {"error": f"{type(e).__name__}: {e}"}
     export.write_csv(result, rdir / "export_media.csv")

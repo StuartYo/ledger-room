@@ -211,7 +211,7 @@ def check_period(clients, *, paper: dict | None = None, platform_root: Path | No
             v = {"id": d["doc_id"], "client_id": d["client_id"], "side": "paper", "image": d.get("image"),
                  "invoice_no": None if utility else rules.norm_invoice_no(f.get("invoice_no")),
                  "seller_ubn": f.get("seller_ubn"), "buyer_ubn": f.get("buyer_ubn"), "total": f.get("total"),
-                 "status": row.get("status"), "existing": sorted(ids),
+                 "net": f.get("net"), "tax": f.get("tax"), "status": row.get("status"), "existing": sorted(ids),
                  "filed": row.get("status") in ("READY", "HOLD")}
             vouchers.append(v)
             # PLATFORM_AMOUNT_DIFF: photo vs the client's own platform line
@@ -311,6 +311,56 @@ def check_period(clients, *, paper: dict | None = None, platform_root: Path | No
     return _report(cl, vouchers, excs, per_client_info, paper is not None, paper_exc)
 
 
+# Rules after which claiming the voucher's input tax would be wrong, not merely unconfirmed. All seven ids exist in
+# rules.RULES (the period-check ones are defined there too). Non-deductible items and double claims are not keying
+# errors, so the 5% keying-error allowance does not cover them.
+WRONG_CLAIM_RULES = {"DUP_PRIOR_FILING", "DUP_CROSS_CLIENT", "DUP_CROSS_MONTH", "S19_NONDEDUCTIBLE", "VOID_ON_PLATFORM",
+                     "BUYER_NOT_CLIENT", "PLATFORM_RECORD_CONFLICT"}
+# The flags only rank which client to look at first. Being under a limit does not make a claim right.
+FLAG_BASIS = {
+    "above_2000": "wrong_claim over NT$2,000: Penalty Reduction Standard Art. 15 leaves a VAT Act Art. 51 case "
+                  "unfined only at NT$2,000 or less of missed tax a period",
+    "above_5pct": "held input tax over 5% of the period's input tax: Penalty Reduction Standard Art. 15 leaves keying "
+                  "errors under 5% unfined when filing by media file (non-deductible items and double claims are not "
+                  "keying errors)",
+}
+
+
+def _tax_at_risk(vs: list[dict], excs: list[dict], paper_exc: dict) -> dict:
+    """Input tax this client would claim, split into what is held because the claim would be wrong and what is held
+    because it is not confirmed yet. Deterministic arithmetic on the outcomes above, no model."""
+    exc_by_v: dict[str, list[dict]] = defaultdict(list)
+    for e in excs:
+        exc_by_v[e["voucher"]].append(e)
+    claimed = wrong = unconf = n_wrong = n_unconf = unknown = 0
+    for v in vs:
+        if v.get("kind") or v["outcome"] not in ("ready", "held"):
+            continue
+        if v["outcome"] == "ready" and not v.get("filed"):
+            continue                       # an expense voucher without input tax: nothing claimed
+        tax = v.get("tax")
+        if tax is None:
+            unknown += 1
+        t = (tax or 0) if v.get("filed") else 0
+        claimed += t
+        if v["outcome"] != "held":
+            continue
+        # a "to confirm" warning (e.g. an Art. 19 keyword that may be a business cost) is unconfirmed, not wrong
+        is_wrong = any(e["rule_id"] in WRONG_CLAIM_RULES and e.get("severity") != "warning"
+                       for e in exc_by_v.get(v["id"], []) + paper_exc.get(v["id"], []))
+        if is_wrong:
+            wrong += t
+            n_wrong += 1
+        else:
+            unconf += t
+            n_unconf += 1
+    return {"input_tax_claimed": claimed, "wrong_claim": wrong, "unconfirmed": unconf,
+            "vouchers_wrong_claim": n_wrong, "vouchers_unconfirmed": n_unconf, "tax_unknown": unknown,
+            "above_2000": wrong > 2000,
+            "above_5pct": claimed > 0 and (wrong + unconf) * 20 > claimed,      # integer form of > 5%
+            "flag_basis": FLAG_BASIS}
+
+
 def _counts(vs: list[dict], excs: list[dict], paper_exc: dict) -> dict:
     ein = [v for v in vs if v["side"] == "e-invoice"]
     pap = [v for v in vs if v["side"] == "paper"]
@@ -340,6 +390,7 @@ def _counts(vs: list[dict], excs: list[dict], paper_exc: dict) -> dict:
         "period_exceptions_by_rule": dict(sorted(
             {r: sum(1 for e in excs if e["rule_id"] == r and e["voucher"] in ids) for r in
              {e["rule_id"] for e in excs}}.items())),
+        "tax_at_risk": _tax_at_risk(vs, excs, paper_exc),
     }
 
 
@@ -348,6 +399,18 @@ def _report(cl: dict, vouchers: list[dict], excs: list[dict], info: dict, has_pa
     by_client = {cid: {**_counts([v for v in vouchers if v["client_id"] == cid],
                                  [e for e in excs if e["client_id"] == cid], paper_exc), **info.get(cid, {})}
                  for cid in cl}
+    # the fine limits apply per business and period, so the whole-firm block counts flagged clients instead of
+    # carrying flags of its own
+    tr = tot["tax_at_risk"]
+    for k in ("above_2000", "above_5pct", "flag_basis"):
+        tr.pop(k)
+    tr["clients_above_2000"] = sum(1 for b in by_client.values() if b["tax_at_risk"]["above_2000"])
+    tr["clients_above_5pct"] = sum(1 for b in by_client.values() if b["tax_at_risk"]["above_5pct"])
+    risk_ranking = sorted(
+        ({"client_id": cid, **{k: b["tax_at_risk"][k] for k in ("wrong_claim", "unconfirmed", "input_tax_claimed",
+                                                                 "above_2000", "above_5pct")}}
+         for cid, b in by_client.items()),
+        key=lambda r: (-r["wrong_claim"], -r["unconfirmed"], r["client_id"]))
     line = (f"This period: {tot['einvoices']} e-invoices (from the platform download) + {tot['paper']} paper vouchers "
             f"(read), {tot['held']['total']} held for a person, {tot['ready']['total']} ready to book"
             + (f", {tot['paper_on_platform']} photo{'' if tot['paper_on_platform'] == 1 else 's'} booked from "
@@ -374,6 +437,9 @@ def _report(cl: dict, vouchers: list[dict], excs: list[dict], info: dict, has_pa
             "absence weak evidence",
         ],
         "by_client": by_client,
+        # who to look at first before the filing deadline: wrong claims first, then unconfirmed tax
+        "risk_ranking": risk_ranking,
+        "flag_basis": FLAG_BASIS,
         "exceptions": excs,
         "vouchers": [{k: v[k] for k in ("id", "client_id", "side", "outcome", "period_rules") if k in v}
                      | ({"kind": v["kind"]} if v.get("kind") else {})
@@ -385,6 +451,6 @@ def aggregate_only(report: dict) -> dict:
     """The report without invoice numbers, voucher ids, messages or per-voucher lines: for real client data."""
     s = {k: v for k, v in report["summary"].items() if k != "line"}
     return {"privacy": "aggregates only: no invoice numbers, UBNs, voucher ids, messages or single transactions",
-            "summary": s, "rules_run": report["rules_run"],
+            "summary": s, "tax_at_risk": dict(s["tax_at_risk"]), "rules_run": report["rules_run"],
             "not_checked": [x for x in report["not_checked"]],
             "clients": len(report["by_client"])}

@@ -398,7 +398,12 @@ flowchart LR
    has none), B2B exchange invoices the buyer has not confirmed (the media file has no such field), and whether a
    photographed e-invoice should be on the download (upload delays make an absence weak evidence). The `heldout`
    inbox has synthetic platform downloads and earlier filings (`synth/period_demo.py`) so the screen has something
-   to show; the evaluation does not load them.
+   to show; the evaluation does not load them. Each client also gets a tax-at-risk ranking ("Look at first" in the web
+   app): held input tax that would be claimed wrongly (double claim, voided, non-deductible) first, then tax not yet
+   confirmed. Two flags only set the order of work: over NT$2,000 wrongly claimed (Penalty Reduction Standard Art. 15,
+   VAT Act Art. 51 cases) and held tax over 5% of the period's input tax (Art. 15 keying errors in a media-file filing;
+   double claims and non-deductible items are not keying errors). Synthetic period: NT$5,582 would be claimed wrongly
+   (10 vouchers), NT$2,733 is unconfirmed (3); 1 of 4 clients is over NT$2,000, 2 are over 5%.
 
 Scans are working copies. The paper originals stay with the client and are kept at least five years (Art. 27 of the
 regulation on account books and vouchers); Ledger Room does not replace paper. Documents should reach the box through

@@ -122,6 +122,8 @@ def run_synthetic(write: bool = True) -> dict:
         "einvoices_with_item_names": s["einvoices_with_item_names"],
         "held": s["held"], "ready": s["ready"], "paper_on_platform": s["paper_on_platform"],
         "flagged_not_held": s["flagged_not_held"], "held_by_rule": s["held_by_rule"],
+        # input tax held because a claim would be wrong / is not confirmed, and clients above each fine limit
+        "tax_at_risk": {**pc.aggregate_only(report)["tax_at_risk"], "flag_basis": pc.FLAG_BASIS},
         "summary_line": s["line"],
         "rules_run": report["rules_run"], "not_checked": report["not_checked"],
         **score(report, key),
