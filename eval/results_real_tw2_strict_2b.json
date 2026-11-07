@@ -1,0 +1,59 @@
+{
+ "set": "real_tw2",
+ "model": "Qwen3.5-2B-int4-ov",
+ "code_rev": "b6fd8bd",
+ "generated_at": "2026-11-07T12:35:03+00:00",
+ "note": "re-scored from saved reads; the reader re-ran only what was not saved",
+ "conditions": {
+  "default": {
+   "photos": 17,
+   "fields_scored": 66,
+   "fields_wrong": 19,
+   "field_error_rate": 0.288,
+   "by_field": {
+    "invoice_no": "4 wrong / 16",
+    "date": "5 wrong / 16",
+    "seller_ubn": "4 wrong / 15",
+    "total": "6 wrong / 17",
+    "net": "0 wrong / 1",
+    "tax": "0 wrong / 1"
+   },
+   "values_not_printed": {},
+   "fields_unreadable_not_scored": 4,
+   "photos_with_a_wrong_field": 10,
+   "photos_sent_to_a_person": 10,
+   "wrong_and_not_held": 1,
+   "held_with_all_fields_right": 1,
+   "wrong_and_not_held_files": [
+    "TW212.jpg"
+   ],
+   "hold_rules": {
+    "READ_REVIEW": 13
+   }
+  },
+  "strict": {
+   "photos": 17,
+   "fields_scored": 66,
+   "fields_wrong": 19,
+   "field_error_rate": 0.288,
+   "by_field": {
+    "invoice_no": "4 wrong / 16",
+    "date": "5 wrong / 16",
+    "seller_ubn": "4 wrong / 15",
+    "total": "6 wrong / 17",
+    "net": "0 wrong / 1",
+    "tax": "0 wrong / 1"
+   },
+   "values_not_printed": {},
+   "fields_unreadable_not_scored": 4,
+   "photos_with_a_wrong_field": 10,
+   "photos_sent_to_a_person": 14,
+   "wrong_and_not_held": 0,
+   "held_with_all_fields_right": 4,
+   "wrong_and_not_held_files": [],
+   "hold_rules": {
+    "READ_REVIEW": 28
+   }
+  }
+ }
+}
