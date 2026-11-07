@@ -564,6 +564,16 @@ def run_rules(docs: list[Doc], clients: dict[str, dict], registry=None,
             out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
                                   f"Total not confirmed on the page (read NT${d.total:,}); check it by eye." if d.total
                                   else "Total not found on the page; fill it in by eye.", ["total"], confidence="low"))
+        # 0a'. strict reading (pipeline.STRICT): invoice number, date or voucher type without two agreeing sources
+        for k, label in (("invoice_no", "Invoice number"), ("date", "Date")):
+            if d.uncertain.get(k):
+                out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                      f"{label} read from one source only ({d.uncertain[k]}); check it by eye.", [k],
+                                      confidence="low"))
+        if d.uncertain.get("doc_type"):
+            out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",
+                                  "Voucher type 'receipt' comes from the model alone and no invoice number was read: "
+                                  "check whether it is a uniform invoice.", ["doc_type", "invoice_no"], confidence="low"))
         # 0b. a uniform invoice always prints its number and the seller's UBN: a blank one goes to a person
         if prints_invoice_ids(d) and not d.invoice_no:
             out.append(Exception_(d.doc_id, d.client_id, "READ_REVIEW", "review",

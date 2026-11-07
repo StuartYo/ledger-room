@@ -92,3 +92,30 @@ def test_log_written_before_signing_is_unsigned_not_tampered(tmp_path):
     (tmp_path / "b.jsonl").write_text("".join(_json.dumps(e, sort_keys=True) + "\n" for e in ls), encoding="utf-8")
     r2 = AuditLog.verify_detail(tmp_path / "b.jsonl", key)
     assert r2["mac_ok"] is False and "unsigned" not in r2
+
+
+def test_strict_reading_needs_two_sources(monkeypatch):
+    from ledger_room import pipeline, tiered
+    f = {"doc_type": "e_invoice", "invoice_no": "CQ12345678", "date": "2026-10-03", "seller_ubn": "22210975",
+         "total": 100}
+    prov = {"doc_type": "ocr-keyword", "invoice_no": "snapped", "date": "ocr-confirmed", "seller_ubn": "ocr-role",
+            "total": "ocr-confirmed"}
+    u = pipeline.strict_uncertain(f, prov)
+    assert set(u) == {"invoice_no"} or set(u) == {"invoice_no", "seller_ubn"}   # seller depends on its checksum
+    d = {"doc_id": "A/2026-10/x.jpg", "client_id": "A", "month": "2026-10"}
+    monkeypatch.setattr(pipeline, "STRICT", False)
+    assert "invoice_no" not in pipeline.to_rule_doc(d, f, prov).uncertain
+    monkeypatch.setattr(pipeline, "STRICT", True)
+    doc = pipeline.to_rule_doc(d, f, prov)
+    ex = rules.run_rules([doc], {"A": {"id": "A", "ubn": "67094646", "period": ["2026-09-01", "2026-10-31"],
+                                       "policy": {}}})
+    assert any(e.rule_id == "READ_REVIEW" and "invoice_no" in e.evidence_fields for e in ex)
+    # the second reader agreeing with the kept OCR value confirms it
+    first = {"fields": dict(f), "provenance": dict(prov), "parsed": True}
+    second = {"fields": dict(f), "provenance": {**prov, "invoice_no": "ocr-confirmed"}, "parsed": True}
+    assert "invoice_no_strict" in tiered.escalation_reasons(first)
+    merged = tiered.merge(first, second, ["invoice_no_strict"])
+    assert merged["provenance"]["invoice_no"] == "ocr-confirmed (second reader)"
+    second_diff = {"fields": {**f, "invoice_no": "CO12345678"}, "provenance": {**prov, "invoice_no": "ocr-confirmed"},
+                   "parsed": True}
+    assert tiered.merge(first, second_diff, [])["provenance"]["invoice_no"] == "snapped"

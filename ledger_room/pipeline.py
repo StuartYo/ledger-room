@@ -9,6 +9,7 @@ import getpass
 import hashlib
 import hmac
 import json
+import os
 import platform as _platform_mod   # the name "platform" is audit()'s e-invoice platform switch
 import subprocess
 import threading
@@ -19,6 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 from . import export, keys, rules
+from . import ubn as ubnlib
 from .reader import EXTRACT_PROMPT, TOTAL_ASK_KEY
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,6 +66,31 @@ def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
 
 UNCONFIRMED = {"model-only", "unconfirmed"}
 
+# Strict reading (docs/strict_draft.md, fixed 2026-11-07 before the real_tw2 run): a value that goes into the filing
+# file is accepted without a person only when two independent sources agree (OCR text, a model reading, a check digit).
+STRICT = os.environ.get("LEDGER_STRICT_READ") == "1"
+STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)"}
+UBN_ONE_READING = {"ocr-role", "ocr", "snapped"}   # one OCR reading: the check digit is the second source
+
+
+def strict_uncertain(f: dict, prov: dict) -> dict:
+    """Fields strict reading sends to a person: {field: provenance}. Empty when every filed value has two sources."""
+    out = {}
+    for k in ("invoice_no", "date"):
+        if f.get(k) and prov.get(k) not in STRICT_CONFIRMED:
+            out[k] = prov.get(k) or "unconfirmed"
+    for k in ("seller_ubn", "buyer_ubn"):
+        v, p = f.get(k), prov.get(k)
+        if not v or p in STRICT_CONFIRMED or str(p).startswith("zoom-vote"):
+            continue
+        if p in UBN_ONE_READING and len(str(v)) == 8 and str(v).isdigit() and ubnlib.is_valid_new(str(v)):
+            continue
+        out[k] = p or "unconfirmed"
+    # "no invoice number needed" rests on the voucher type; a type only the model gave is one source
+    if prov.get("doc_type") == "model-only" and f.get("doc_type") == "receipt" and not f.get("invoice_no"):
+        out["doc_type"] = "model-only"
+    return out
+
 
 def tax_voucher_kind(f: dict, ocr_lines: list | None = None) -> str | None:
     """transport_ticket / customs_payment (rules.other_voucher_kind) from the OCR text and the read fields."""
@@ -78,7 +105,8 @@ def to_rule_doc(d: dict, f: dict, prov: dict | None = None, ocr_lines: list | No
         doc_kind=rules.voucher_kind(ocr_text, rules.norm_invoice_no(f.get("invoice_no"))),
         small_business_receipt=rules.small_business_receipt(ocr_text),
         tax_voucher_kind=tax_voucher_kind(f, ocr_lines),
-        uncertain={k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
+        uncertain={**{k: prov[k] for k in ("seller_ubn", "buyer_ubn", "total") if prov.get(k) in UNCONFIRMED},
+                   **(strict_uncertain(f, prov) if STRICT else {})},
         doc_id=d["doc_id"], client_id=d["client_id"], month=d["month"], doc_type=f.get("doc_type"),
         invoice_no=rules.norm_invoice_no(f.get("invoice_no")),
         date=date.fromisoformat(f["date"]) if f.get("date") else None,

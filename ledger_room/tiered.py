@@ -53,6 +53,10 @@ def escalation_reasons(res: dict) -> list[str]:
     f = res.get("fields") or {}
     if rules.amounts_inconsistent(f.get("net"), f.get("tax"), f.get("total")):
         reasons.append("amounts_inconsistent")
+    if pipeline.STRICT:   # docs/strict_draft.md: the second reader can be the second source for these
+        for k in ("invoice_no", "date"):
+            if k in pipeline.strict_uncertain(f, prov) and f"{k}_unconfirmed" not in reasons:
+                reasons.append(f"{k}_strict")
     return reasons
 
 
@@ -103,6 +107,14 @@ def merge(first: dict, second: dict, reasons: list[str]) -> dict:
         if _confirmed(p2.get(k), f2.get(k)) or (unparsed and second_parsed and f2.get(k) is not None
                                                  and fields.get(k) is None):
             take(k)
+    if pipeline.STRICT:
+        # docs/strict_draft.md: OCR and the first model disagreed (or only OCR read it); the second model reading the
+        # same OCR lines lands on the value the first reading kept -> OCR and two models agree
+        for k in ("invoice_no", "date"):
+            if (fields.get(k) and prov.get(k) not in pipeline.STRICT_CONFIRMED and k not in taken
+                    and p2.get(k) == "ocr-confirmed" and f2.get(k) == fields.get(k)):
+                prov[k] = "ocr-confirmed (second reader)"
+                taken.append(k + " (confirmed)")
     if "total" in taken:
         for k in ("net", "tax"):
             take(k)
