@@ -24,3 +24,4 @@ eval/runs/
 
 # private real-data inboxes (never committed)
 data/private_*/
+eval/*private_*

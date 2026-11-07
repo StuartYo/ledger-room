@@ -49,6 +49,13 @@ if str(ROOT) not in sys.path:   # run as a script with python -I: the repository
 
 TW_SET = "real_tw"
 TW_SETS = ("real_tw", "real_tw2")   # same layout, key and freeze format; pick one with --set
+
+
+def tw_set(name: str) -> str:
+    """--set: a public set, or a private_* set (data/private_*/ is gitignored; its key and freeze stay local)."""
+    if name in TW_SETS or (name.startswith("private_") and name[8:].replace("_", "").isalnum()):
+        return name
+    raise argparse.ArgumentTypeError(f"unknown set {name!r}")
 TW_FIELDS = ["invoice_no", "date", "seller_ubn", "total", "net", "tax"]
 ONLY_WHEN_PRINTED = {"net", "tax"}   # scored only on vouchers that print an untaxed amount and a tax line
 DRY_RUN_MAX = 5
@@ -417,7 +424,7 @@ def main(argv=None):
         s.add_argument("--out")
         if name == "tw":
             s.add_argument("--official", action="store_true", help="first full model run on the set (B70)")
-            s.add_argument("--set", default=TW_SET, choices=TW_SETS, help="real_tw (default) or real_tw2")
+            s.add_argument("--set", default=TW_SET, type=tw_set, help="real_tw (default), real_tw2, or a private_* set kept out of git")
         else:
             s.add_argument("--root", required=True, help="prepared folder with truth.json (on F:)")
             s.add_argument("--split", help="e.g. validation,test")
