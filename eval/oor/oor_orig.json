@@ -1,0 +1,17 @@
+{
+ "mode": "orig",
+ "pad_h": null,
+ "device": "GPU.0",
+ "model": "Qwen3.5-9B-int4-ov",
+ "images": 40,
+ "reps": 8,
+ "reads": 320,
+ "ok": 320,
+ "errors": 0,
+ "restarts": 0,
+ "error_rate": 0.0,
+ "mean_latency_s": 3.26,
+ "wall_min": 17.5,
+ "error_docs": [],
+ "measured_on_b70": true
+}

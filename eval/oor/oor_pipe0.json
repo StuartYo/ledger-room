@@ -1,0 +1,127 @@
+{
+ "mode": "pipeline",
+ "pad_h": null,
+ "device": "GPU.0",
+ "model": "Qwen3.5-9B-int4-ov",
+ "images": 40,
+ "reps": 8,
+ "reads": 320,
+ "ok": 318,
+ "errors": 2,
+ "restarts": 2,
+ "error_rate": 0.0063,
+ "mean_latency_s": 4.05,
+ "wall_min": 22.1,
+ "error_docs": [
+  {
+   "doc": "data/main/clients/C01/2026-10/IMG_3459.jpg",
+   "detail": "RuntimeError: Exception from src/inference/src/cpp/infer_request.cpp:224:\nException from src/plugins/intel_gpu/src/runtime/ocl/ocl_stream.cpp:395:\n[GPU] clFinish, error code: -5 CL_OUT_OF_RESOURCES\n\n",
+   "calls": [
+    {
+     "prompt": "You are reading ONE photo of a",
+     "size": [
+      1134,
+      834
+     ]
+    },
+    {
+     "prompt": "This crop shows a Taiwanese Un",
+     "size": [
+      852,
+      140
+     ]
+    }
+   ]
+  },
+  {
+   "doc": "data/main/clients/C03/2026-09/IMG_8109.jpg",
+   "detail": "RuntimeError: Exception from src/inference/src/cpp/infer_request.cpp:224:\nException from src/plugins/intel_gpu/src/runtime/ocl/ocl_stream.cpp:395:\n[GPU] clFinish, error code: -5 CL_OUT_OF_RESOURCES\n\n",
+   "calls": [
+    {
+     "prompt": "You are reading ONE photo of a",
+     "size": [
+      1130,
+      830
+     ]
+    },
+    {
+     "prompt": "This crop shows a Taiwanese Un",
+     "size": [
+      852,
+      140
+     ]
+    }
+   ]
+  }
+ ],
+ "ok_call_shapes": {
+  "You are read|1124x824": 32,
+  "You are read|1144x844": 24,
+  "You are read|1134x834": 23,
+  "You are read|970x728": 16,
+  "You are read|1258x916": 16,
+  "This photo i|1258x916": 16,
+  "This crop sh|854x140": 16,
+  "You are read|1150x850": 16,
+  "You are read|1148x848": 16,
+  "This crop sh|874x156": 16,
+  "This crop sh|860x152": 16,
+  "You are read|1152x852": 16,
+  "You are read|1130x830": 15,
+  "This crop sh|852x140": 14,
+  "You are read|1206x906": 8,
+  "This crop sh|930x172": 8,
+  "You are read|1164x864": 8,
+  "This photo i|1164x864": 8,
+  "This crop sh|888x140": 8,
+  "You are read|1124x844": 8,
+  "This photo i|1124x844": 8,
+  "You are read|1120x840": 8,
+  "You are read|958x716": 8,
+  "You are read|1248x906": 8,
+  "This photo i|1248x906": 8,
+  "This crop sh|1018x140": 8,
+  "You are read|1222x880": 8,
+  "This photo i|1222x880": 8,
+  "This crop sh|1000x140": 8,
+  "You are read|1252x910": 8,
+  "This photo i|1252x910": 8,
+  "This crop sh|992x160": 8,
+  "This crop sh|1016x134": 8,
+  "You are read|1230x888": 8,
+  "This photo i|1230x888": 8,
+  "This crop sh|990x140": 8,
+  "You are read|1228x886": 8,
+  "This photo i|1228x886": 8,
+  "This crop sh|994x140": 8,
+  "You are read|934x692": 8,
+  "You are read|1242x900": 8,
+  "This photo i|1242x900": 8,
+  "This crop sh|1026x166": 8,
+  "You are read|938x696": 8,
+  "This photo i|970x728": 8,
+  "You are read|1240x898": 8,
+  "This photo i|1240x898": 8,
+  "This crop sh|976x160": 8,
+  "This crop sh|1000x160": 8,
+  "You are read|1138x838": 8,
+  "This crop sh|840x140": 8,
+  "This crop sh|858x140": 8,
+  "This crop sh|870x134": 8,
+  "This crop sh|864x126": 8,
+  "This crop sh|878x134": 8,
+  "This crop sh|856x156": 8,
+  "You are read|1126x826": 8,
+  "This crop sh|868x126": 8,
+  "This crop sh|854x156": 8,
+  "This crop sh|858x156": 8,
+  "You are read|1140x840": 8,
+  "This crop sh|866x146": 8,
+  "You are read|1146x846": 8,
+  "This crop sh|878x146": 8,
+  "This crop sh|850x140": 8,
+  "This crop sh|882x140": 8,
+  "This crop sh|860x140": 8
+ },
+ "measured_on_b70": true
+}

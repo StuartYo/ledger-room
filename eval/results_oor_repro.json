@@ -1,0 +1,116 @@
+{
+ "what": "Where the B70 reader error (CL_OUT_OF_RESOURCES) comes from: the 40 landscape photos around the long-run failures, read 8 times each per card (eval/repro_oor.py, 2026-11-07, code c370a45).",
+ "page_read_only": {
+  "reads": 640,
+  "errors": 0
+ },
+ "full_pipeline_before": {
+  "reads": 640,
+  "errors": 4,
+  "every_error_on": "the UBN zoom strip, 852 x 140 px"
+ },
+ "full_pipeline_strip_padded_to_448": {
+  "reads": 640,
+  "errors": 0
+ },
+ "note": "4 of 640 vs 0 of 640 is suggestive, not proof on its own (one-sided Fisher exact p about 0.06); the 70-minute long run with the padding (results_longrun_zoompad.json) is the larger test.",
+ "runs": {
+  "fix0": {
+   "mode": "pipeline",
+   "device": "GPU.0",
+   "reads": 320,
+   "errors": 0,
+   "mean_latency_s": 4.07,
+   "zoom_min_h": 448,
+   "error_calls": []
+  },
+  "fix1": {
+   "mode": "pipeline",
+   "device": "GPU.1",
+   "reads": 320,
+   "errors": 0,
+   "mean_latency_s": 4.02,
+   "zoom_min_h": 448,
+   "error_calls": []
+  },
+  "orig": {
+   "mode": "orig",
+   "device": "GPU.0",
+   "reads": 320,
+   "errors": 0,
+   "mean_latency_s": 3.26,
+   "zoom_min_h": 0,
+   "error_calls": []
+  },
+  "pad": {
+   "mode": "pad",
+   "device": "GPU.1",
+   "reads": 320,
+   "errors": 0,
+   "mean_latency_s": 3.17,
+   "zoom_min_h": 0,
+   "error_calls": []
+  },
+  "pipe0": {
+   "mode": "pipeline",
+   "device": "GPU.0",
+   "reads": 320,
+   "errors": 2,
+   "mean_latency_s": 4.05,
+   "zoom_min_h": 0,
+   "error_calls": [
+    {
+     "doc": "data/main/clients/C01/2026-10/IMG_3459.jpg",
+     "last_call": {
+      "prompt": "This crop shows a Taiwanese Un",
+      "size": [
+       852,
+       140
+      ]
+     }
+    },
+    {
+     "doc": "data/main/clients/C03/2026-09/IMG_8109.jpg",
+     "last_call": {
+      "prompt": "This crop shows a Taiwanese Un",
+      "size": [
+       852,
+       140
+      ]
+     }
+    }
+   ]
+  },
+  "pipe1": {
+   "mode": "pipeline",
+   "device": "GPU.1",
+   "reads": 320,
+   "errors": 2,
+   "mean_latency_s": 3.99,
+   "zoom_min_h": 0,
+   "error_calls": [
+    {
+     "doc": "data/main/clients/C01/2026-10/IMG_3459.jpg",
+     "last_call": {
+      "prompt": "This crop shows a Taiwanese Un",
+      "size": [
+       852,
+       140
+      ]
+     }
+    },
+    {
+     "doc": "data/main/clients/C03/2026-09/IMG_8109.jpg",
+     "last_call": {
+      "prompt": "This crop shows a Taiwanese Un",
+      "size": [
+       852,
+       140
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "measured_on_b70": true
+}
