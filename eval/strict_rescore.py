@@ -25,6 +25,9 @@ def main(argv=None):
     ap.add_argument("--model", required=True)
     ap.add_argument("--key", help="answer key (default eval/expected_<set>.json)")
     ap.add_argument("--out")
+    ap.add_argument("--model-dir", help="load the reader: saved model replies are reused, the model only runs what is "
+                                        "not saved (the UBN zoom vote, replies from an older prompt)")
+    ap.add_argument("--device", default="GPU")
     a = ap.parse_args(argv)
     from eval import real_photo_eval as R
     from ledger_room import pipeline, rules
@@ -32,11 +35,15 @@ def main(argv=None):
     clients, docs = pipeline.load_inbox(a.set)
     keep = {t["file"] for t in key["docs"]}
     docs = [d for d in docs if d["path"].name in keep]
-    reads = pipeline.read_docs(docs, None, cache=True, model_id=a.model)
+    reader = None
+    if a.model_dir:
+        from ledger_room.reader import Reader
+        reader = Reader(a.model_dir, a.device)
+    reads = pipeline.read_docs(docs, reader, cache=True, model_id=a.model)
     fields = {Path(k).name: v["fields"] for k, v in reads.items()}
     res = {"set": a.set, "model": a.model, "code_rev": pipeline.git_rev(),
            "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-           "note": "re-scored from saved reads; no new model run", "conditions": {}}
+           "note": "re-scored from saved reads" + ("; the reader re-ran only what was not saved" if a.model_dir else "; no model run"), "conditions": {}}
     for name, strict in (("default", False), ("strict", True)):
         pipeline.STRICT = strict
         rdocs = [pipeline.to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"],
