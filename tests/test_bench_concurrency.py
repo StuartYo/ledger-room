@@ -170,29 +170,33 @@ def test_parse_xpu_smi_dump_old_csv_names():
     # columns found by name, not position
     rows2 = C.parse_dump("Timestamp, DeviceId, GPU Memory Used (MiB), GPU Utilization (%), GPU Power (W)\n"
                          "06:14:46.000, 1, 2048, 99, 150.5\n")
-    assert rows2 == [{"power_w": 150.5, "mem_gb": 2.0}]
+    assert rows2 == [{"power_w": 150.5, "mem_gb": 2.0, "util_pct": 99.0}]
     # power column missing -> None, not a wrong number
     assert C.parse_dump("Timestamp, DeviceId, GPU Utilization (%)\n06:14:46.000, 0, 99\n") == \
-        [{"power_w": None, "mem_gb": None}]
+        [{"power_w": None, "mem_gb": None, "util_pct": 99.0}]
 
 
 def test_dump_command_uses_long_flags():
     cmd = C.XpuSampler({"GPU.0": "0"}, cmd=["xpu-smi-x"]).dump_cmd("1")
     assert cmd[:2] == ["xpu-smi-x", "dump"]
     assert all(not (c.startswith("-") and not c.startswith("--")) for c in cmd[2:])
-    assert cmd[cmd.index("--device") + 1] == "1" and cmd[cmd.index("--metrics") + 1] == "1,18"
+    assert cmd[cmd.index("--device") + 1] == "1" and cmd[cmd.index("--metrics") + 1] == "0,1,18"
     assert "--interval" in cmd and "--number" in cmd
 
 
 def test_parse_xpu_smi_stats_host_json_old_json_and_table():
-    assert C.parse_stats(HOST_STATS) == {"power_w": 76.4, "mem_gb": None, "energy_j": 13.03}
+    assert C.parse_stats(HOST_STATS) == {"power_w": 76.4, "mem_gb": None, "energy_j": 13.03, "util_pct": None}
     two_tiles = json.loads(HOST_STATS)
     two_tiles["power"]["gpu_power_w"]["tile_1"] = {"avg": 20.0, "current": 20.0}
     two_tiles["memory"] = {"memory_used_mib": 8192}
-    assert C.parse_stats(json.dumps(two_tiles)) == {"power_w": 96.4, "mem_gb": 8.0, "energy_j": 13.03}
-    assert C.parse_stats(STATS_JSON) == {"power_w": 172.4, "mem_gb": 24.0, "energy_j": None}
-    assert C.parse_stats(STATS_TABLE) == {"power_w": 165.0, "mem_gb": 16.0, "energy_j": None}
-    assert C.parse_stats("xpu-smi: device not found") == {"power_w": None, "mem_gb": None, "energy_j": None}
+    # utilisation over two tiles is their mean, not their sum
+    two_tiles["utilization"] = {"gpu_utilization_pct": {"tile_0": {"current": 90.0}, "tile_1": {"current": 70.0}}}
+    assert C.parse_stats(json.dumps(two_tiles)) == {"power_w": 96.4, "mem_gb": 8.0, "energy_j": 13.03,
+                                                    "util_pct": 80.0}
+    assert C.parse_stats(STATS_JSON) == {"power_w": 172.4, "mem_gb": 24.0, "energy_j": None, "util_pct": 97.0}
+    assert C.parse_stats(STATS_TABLE) == {"power_w": 165.0, "mem_gb": 16.0, "energy_j": None, "util_pct": 95.0}
+    assert C.parse_stats("xpu-smi: device not found") == {"power_w": None, "mem_gb": None, "energy_j": None,
+                                                          "util_pct": None}
 
 
 def test_energy_per_thousand_documents():
@@ -258,3 +262,187 @@ def test_sampler_streams_a_fake_xpu_smi(tmp_path):
     assert C.power_summary(got)["mean_w"] >= 100 and C.mem_peak_gb(got) == 4.0
     assert s.mode["GPU.0"].startswith("dump:")
     assert s.raw_head["GPU.0"][0].startswith("Timestamp")
+
+
+# ---- GPU utilisation ---------------------------------------------------------------------------------------------
+UTIL_HEADER_CSV = "Timestamp, DeviceId, GPU Utilization (%), power.draw (W), memory.used (MiB)"
+UTIL_HEADER_WS = "Timestamp      DeviceId    GPU Utilization (%)    power.draw (W)    memory.used (MiB)"
+
+
+@pytest.mark.parametrize("header,row", [
+    (UTIL_HEADER_CSV, "06:14:46.000,    0, 97.5, 180.25, 2048.0"),
+    (UTIL_HEADER_WS, "18:03:53...           0           97.5            180.25         2048.0"),
+])
+def test_utilisation_column_comma_and_whitespace(header, row):
+    cols = C.dump_columns(header)
+    assert cols["names"] == ["Timestamp", "DeviceId", "GPU Utilization (%)", "power.draw (W)", "memory.used (MiB)"]
+    assert cols["names"][cols["util"]] == "GPU Utilization (%)" and cols["raw"] == header
+    assert C.parse_dump_row(cols, row) == {"power_w": 180.25, "mem_gb": 2.0, "util_pct": 97.5}
+    assert C.parse_dump_row(cols, row.replace("97.5", "N/A"))["util_pct"] is None
+
+
+def test_utilisation_column_names():
+    # the dotted name a newer build probably prints; memory utilisation is not GPU utilisation
+    cols = C.dump_columns("Timestamp, DeviceId, GPU Memory Utilization (%), utilization.gpu (%), power.draw (W)")
+    assert cols["names"][cols["util"]] == "utilization.gpu (%)"
+    assert C.parse_dump(f"{cols['raw']}\n06:14:46.000, 0, 12, 88, 150\n")[0]["util_pct"] == 88.0
+    assert not C.is_gpu_util("GPU Memory Utilization (%)") and C.is_gpu_util("GPU Utilization (%)")
+
+
+def test_utilisation_missing_is_null_with_raw_header():
+    header = "Timestamp      DeviceId    power.draw (W)    memory.used (MiB)"
+    cols = C.dump_columns(header)
+    assert "util" not in cols
+    assert C.parse_dump_row(cols, "18:03:53...  0  76.83  1547.6")["util_pct"] is None
+    s = C.XpuSampler({"GPU.0": "0"})
+    s.header["GPU.0"] = cols["raw"]
+    out = C.util_block(s, "GPU.0", C.util_summary([(0, 76.8, 1.5, None)]))
+    assert out["mean_pct"] is None and out["p95_pct"] is None and out["frac_ge_90"] is None
+    assert out["column"] is None and out["raw_header"] == header and "util" in out["note"]
+
+
+def test_utilisation_summary():
+    vals = [10, 50, 91, 95, 99, 100, 100, 100, 90, 0]
+    smp = [(i, 100.0, 1.0, u) for i, u in enumerate(vals)] + [(10, 1.0, 1.0, None)]
+    u = C.util_summary(smp)
+    assert u["samples"] == 10 and u["mean_pct"] == 73.5
+    assert u["p50_pct"] == 91 and u["p95_pct"] == 100
+    assert u["frac_ge_90"] == 0.7   # 91, 95, 99, 100, 100, 100, 90
+    assert C.util_summary([]) == {"mean_pct": None, "p50_pct": None, "p95_pct": None, "frac_ge_90": None,
+                                  "samples": 0}
+
+
+def test_sampler_memory_is_bounded_and_samples_spill_to_a_file(tmp_path):
+    s = C.XpuSampler({"GPU.0": "0"}, max_keep=50, spill_dir=tmp_path)
+    s.open_spill()
+    for i in range(5000):
+        s._add("GPU.0", 100.0 + (i % 2) * 100, 4.0, 95.0 if i % 4 else 40.0)
+    s.close_spill()
+    assert len(s.samples["GPU.0"]) <= 50 and s.stride["GPU.0"] > 1
+    snap = s.acc_snapshot()["GPU.0"]   # exact over all 5,000, not over the thinned list
+    assert snap["power"] == {"mean_w": 150.0, "max_w": 200.0, "samples": 5000}
+    assert snap["util"]["samples"] == 5000 and snap["util"]["frac_ge_90"] == 0.75
+    lines = Path(s.spill_files["GPU.0"]).read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "unix_time,power_w,mem_gb,util_pct" and len(lines) == 5001
+    s.reset_acc()
+    assert s.acc_snapshot()["GPU.0"]["power"]["samples"] == 0
+
+
+def test_restarts_per_hour():
+    # 3 restarts in 30 minutes = 6 an hour; 1 crash in an 85 s run = 42.35 an hour (why a short run says little)
+    assert C.per_hour(3, 1800) == 6.0
+    assert C.per_hour(1, 85) == 42.35
+    assert C.per_hour(0, 3600) == 0.0
+    assert C.per_hour(2, 0) is None
+
+
+def test_results_file_is_trimmed_under_the_limit():
+    passes = [{"pass": i, "set": "s", "docs": 50, "util_mean_pct": {"GPU.0": 90.0}, "power_mean_w": {"GPU.0": 200.0},
+               "latency_s": {"p50": 3.0, "p95": 5.0}, "pad": "x" * 200} for i in range(2000)]
+    doc = {"notes": [], "rows": [{"k": 2, "docs_read": 100000, "crash_log": [{"x": "y" * 100}] * 100,
+                                  "passes": passes}]}
+    txt = C.fit_json(doc, limit=60_000)
+    assert len(txt.encode("utf-8")) <= 60_000
+    out = json.loads(txt)
+    assert out["rows"][0]["docs_read"] == 100000 and out["rows"][0]["passes_trimmed"]["dropped"] > 0
+    assert any("trimmed" in n for n in out["notes"])
+    small = {"notes": [], "rows": [{"k": 1}]}
+    assert json.loads(C.fit_json(small)) == small
+
+
+# ---- long run with the fake reader --------------------------------------------------------------------------------
+FAKE_SMI = textwrap.dedent("""\
+    import json, sys, time
+    args = sys.argv[1:]
+    if args[0] == "discovery":
+        print("Device 0: fake")
+        sys.exit(0)
+    if args[0] == "stats":   # a running energy counter at about 150 W
+        print(json.dumps({"power": {"gpu_power_w": {"tile_0": {"current": 150.0}},
+                                    "energy_consumed_j": round(time.time() * 150.0, 1)}}))
+        sys.exit(0)
+    print("Timestamp      DeviceId    GPU Utilization (%)    power.draw (W)    memory.used (MiB)", flush=True)
+    i = 0
+    while True:
+        print(f"18:03:53...           0           {95 if i % 5 else 60}            150.00         4096.0", flush=True)
+        i += 1
+        time.sleep(0.05)
+    """)
+
+
+def _longrun_env(tmp_path, monkeypatch, **cfg):
+    from ledger_room import pipeline
+    monkeypatch.setattr(pipeline, "DATA", tmp_path / "data")
+    monkeypatch.setattr(pipeline, "OUT", tmp_path / "data" / "out")
+    _inbox(tmp_path / "data", "fakeset")
+    _inbox(tmp_path / "data", "fakeset2")
+    return _cfg(tmp_path, **cfg)
+
+
+def test_longrun_repeat_gives_one_scoring_block_per_pass_and_set(tmp_path, monkeypatch):
+    from eval import bench_tiered
+    # an answer key for the fake sets, so F1 and key fields are scored in every pass
+    monkeypatch.setattr(bench_tiered, "expected_for", lambda name, ids: {"docs": [
+        {"doc_id": d, "issues": [], "truth": {"doc_type": "receipt", "total": 100}} for d in sorted(ids)]})
+    cfg = _longrun_env(tmp_path, monkeypatch, crash_once=["d2.jpg"], error_always=["d4.jpg"])
+    out = tmp_path / "longrun.json"
+    rc = C.main(["--sets", "fakeset,fakeset2", "--repeat", "2", "--k", "2", "--devices", "CPU", "--factory", FACTORY,
+                 "--model", cfg, "--no-inventory", "--no-power", "--settle-s", "0", "--idle-s", "0",
+                 "--out", str(out)])
+    assert rc == 0
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert res["mode"] == "longrun" and res["docs_per_pass"] == 12
+    row = res["rows"][0]
+    assert "error" not in row, row
+    assert row["stopped_by"] == "repeat" and row["passes_complete"] == 4
+    assert [(p["pass"], p["set"]) for p in row["passes"]] == [(1, "fakeset"), (1, "fakeset2"), (2, "fakeset"),
+                                                              (2, "fakeset2")]
+    for p in row["passes"]:
+        assert not p["partial"] and p["docs"] == 6 and p["docs_read"] == 5 and p["docs_not_read"] == 1
+        assert p["not_read_reasons"] == {"reader_error": 1}
+        assert p["key_fields_wrong"] is not None and p["key_fields_compared"] > 0   # (F1: no issues in this key)
+    for name in ("fakeset", "fakeset2"):
+        st = row["stability"][name]
+        assert st["complete_passes"] == 2 and st["all_complete_passes_same_scoring"] is True
+        assert len(st["rule_f1_values"]) == 1 and st["max_docs_fields_differ_vs_first_pass"] == 0
+    # d4 fails twice in each of the 4 blocks (8 restarts after reader errors), d2 crashes once (1 restart)
+    assert row["docs"] == 24 and row["docs_read"] == 20 and row["docs_not_read_reader_failure"] == 4
+    assert row["crashes"] == 1 and row["restarts"] == 9 and row["restarts_after_reader_error"] == 8
+    assert row["restarts_per_hour"] == pytest.approx(9 * 3600 / row["wall_s"], rel=0.02)
+    cpu = row["per_device"]["CPU"]
+    assert cpu["docs_read"] == 20 and cpu["docs_not_read_reader_failure"] == 4 and cpu["restarts"] == 9
+    assert cpu["crashes_per_hour"] == pytest.approx(3600 / row["wall_s"], rel=0.02)
+    assert cpu["reached_1000_docs"] is False and any("< 1,000" in n for n in res["notes"])
+    # the reads went to side files, one per block
+    side = tmp_path / "data" / "out" / "bench_concurrency" / "longrun"
+    assert len(list(side.glob("*/blocks/*.jsonl"))) == 4
+
+
+def test_longrun_duration_stops_and_records_utilisation(tmp_path, monkeypatch):
+    cfg = _longrun_env(tmp_path, monkeypatch, sleep_s=0.05)
+    smi = tmp_path / "fake_smi.py"
+    smi.write_text(FAKE_SMI, encoding="utf-8")
+    out = tmp_path / "longrun.json"
+    duration_min = 0.04   # 2.4 s of read wall clock
+    t = time.time()
+    rc = C.main(["--sets", "fakeset,fakeset2", "--duration-min", str(duration_min), "--k", "2", "--devices", "CPU",
+                 "--factory", FACTORY, "--model", cfg, "--no-inventory", "--settle-s", "0", "--idle-s", "0",
+                 "--xpu-smi-ids", "CPU=0", "--xpu-smi-cmd", f"{sys.executable} {smi}", "--out", str(out)])
+    assert rc == 0 and time.time() - t < 120
+    assert out.stat().st_size < C.MAX_JSON_BYTES
+    row = json.loads(out.read_text(encoding="utf-8"))["rows"][0]
+    assert "error" not in row, row
+    assert row["stopped_by"] == "duration"
+    assert duration_min * 60 <= row["wall_s"] < duration_min * 60 + 20   # stops once the last documents are back
+    assert row["passes_started"] >= 2 and row["docs_read"] == row["docs"] > 12
+    assert sum(p["docs"] for p in row["passes"]) == row["docs"]
+    assert all(not p["partial"] for p in row["passes"][:-1])   # only the last block can be partial
+    cpu = row["per_device"]["CPU"]
+    u = cpu["utilisation"]
+    assert u["column"] == "GPU Utilization (%)" and u["raw_header"].startswith("Timestamp")
+    assert u["samples"] > 0 and 60 <= u["mean_pct"] <= 95 and u["p95_pct"] == 95 and 0.5 < u["frac_ge_90"] < 1
+    assert cpu["power"]["mean_w"] == 150.0 and cpu["wh_per_1000_docs"] is not None
+    assert cpu["xpu_smi_peak_used_gb"] == 4.0
+    side = tmp_path / "data" / "out" / "bench_concurrency" / "longrun"
+    csv = next(side.glob("*/xpu_smi_CPU.csv")).read_text(encoding="utf-8").splitlines()
+    assert csv[0] == "unix_time,power_w,mem_gb,util_pct" and len(csv) > 1
