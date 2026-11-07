@@ -6,11 +6,11 @@
  "pre_freeze_checks": "images opened and resized only; labels checked against the UBN checksum (all seller UBNs pass). No OCR, no model.",
  "expected": {
   "path": "eval/expected_real_tw2.json",
-  "sha256": "b2a21f22e559a430494f6c5eb976c4262fdaa467d00cefce7324b481f801697c"
+  "sha256": "76dd04e279cb30f4a7e3b6b8fe3b4c4ab63b9cf03d94105a337cf6dbdaf8e30e"
  },
  "clients_json": {
   "path": "data/real_tw2/clients.json",
-  "sha256": "fc1036c8e09fa8f275e6593593136425f45f7b7d0c8805e5ca9cd26a6f46e8d2"
+  "sha256": "0c8937685774ebde6e16f97fbf332d70651f017828ff3e5d034afde03d3a6fe7"
  },
  "attribution": {
   "path": "data/real_tw2/ATTRIBUTION.md",
@@ -34,5 +34,6 @@
   "TW/2026-11/TW215.jpg": "418ad2ea9e8cb5c6826164db88b26fa052ce7e32ac28967721feccd18923bdef",
   "TW/2026-11/TW216.jpg": "5e819ca8c52165062faa512f6599a400457a7d442850d98f7511243321cc7227",
   "TW/2026-11/TW217.jpg": "564754a332f46d35f2e176ecf9785636ce0ab9fdb068016798d9b5614fd3e8af"
- }
+ },
+ "eol_note": "2026-11-07: expected and clients_json hashes recomputed on LF line endings (git stores LF; the agent hashed its CRLF working copy). Content unchanged; no reader had run on real_tw2."
 }
