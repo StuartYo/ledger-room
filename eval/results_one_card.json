@@ -1,0 +1,66 @@
+{
+ "what": "Both readers on ONE B70: the 9B and the 27B second reader loaded on the same card, in one process -> eval/results_one_card.json\n\n    .venv/bin/python -m eval.bench_one_card --set heldout --n 20 --device GPU.0\n\nAnswers one question a judge asked: \"a 9B fits any 8 GB card, why a 32 GB B70?\" The Pro set-up keeps the 9B\n(reads every document) and the 27B (re-reads the ones the 9B is unsure about, ledger_room/tiered.py) loaded at the\nsame time. Earlier each was measured alone (eval/results_b70.json: 7.99 GB and 17.04 GB peak card memory).\nThis run loads both on one card, reads N documents fresh (cache off) with the 9B, re-reads EVERY one of them with\nthe 27B (worst case for memory: both models busy, both KV caches filled), and records:\n\n  peak card memory of this process (Linux DRM fdinfo, same method as eval/bench_b70.py PeakMemory),\n  seconds a document for each reader, and whether any read failed (e.g. out of card memory).",
+ "set": "heldout",
+ "device": "GPU.0",
+ "code_rev": "49780df",
+ "generated_at": "2026-11-07T16:54:50+00:00",
+ "ok": true,
+ "stages": {
+  "9B loaded": {
+   "s": 9.0,
+   "mem": {
+    "gpu_total_system_gb": 0.28,
+    "gpu_resident_system_gb": 0.01,
+    "gpu_total_gtt_gb": 4.77,
+    "gpu_resident_gtt_gb": 4.77,
+    "gpu_total_vram0_gb": 5.8,
+    "gpu_resident_vram0_gb": 5.8
+   }
+  },
+  "27B loaded too": {
+   "s": 19.0,
+   "mem": {
+    "gpu_total_system_gb": 0.85,
+    "gpu_resident_system_gb": 0.02,
+    "gpu_total_gtt_gb": 14.18,
+    "gpu_resident_gtt_gb": 14.18,
+    "gpu_total_vram0_gb": 20.55,
+    "gpu_resident_vram0_gb": 20.55
+   }
+  },
+  "9B read all": {
+   "docs": 20,
+   "sec_per_doc": 3.92,
+   "mem": {
+    "gpu_total_system_gb": 0.85,
+    "gpu_resident_system_gb": 0.02,
+    "gpu_total_gtt_gb": 14.18,
+    "gpu_resident_gtt_gb": 14.18,
+    "gpu_total_vram0_gb": 21.31,
+    "gpu_resident_vram0_gb": 21.31
+   }
+  },
+  "27B re-read all": {
+   "docs": 20,
+   "failed": 0,
+   "sec_per_doc": 5.12,
+   "mem": {
+    "gpu_total_system_gb": 0.85,
+    "gpu_resident_system_gb": 0.02,
+    "gpu_total_gtt_gb": 14.18,
+    "gpu_resident_gtt_gb": 14.18,
+    "gpu_total_vram0_gb": 21.8,
+    "gpu_resident_vram0_gb": 21.8
+   }
+  }
+ },
+ "peak_card_memory": {
+  "gpu_total_system_gb": 0.85,
+  "gpu_resident_system_gb": 0.02,
+  "gpu_total_gtt_gb": 14.18,
+  "gpu_resident_gtt_gb": 14.18,
+  "gpu_total_vram0_gb": 21.8,
+  "gpu_resident_vram0_gb": 21.8
+ },
+ "copied_from_host": "~/b70_keep/night/one_card.json on the organizers' B70 host (code 49780df + this script, uncommitted at run time); xpu-smi showed 22,219 MiB used on GPU.0 mid-run"
+}

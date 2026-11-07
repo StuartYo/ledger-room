@@ -1,0 +1,62 @@
+{
+ "what": "Same host, same code, same 12 held-out synthetic documents: the 9B on the host CPU against the 9B on one B70. Replaces the old comparison (laptop CPU, older code c445b35) that two mock judges called unfair.",
+ "command": ".venv/bin/python -m eval.bench_b70 --models 9b --device {CPU|GPU.0} --n 12 --skip-baseline --no-download",
+ "host": {
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "cpu_logical": 344,
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4"
+ },
+ "code_rev": "49780df",
+ "generated_at": "2026-11-07T16:59:18+00:00",
+ "runs": {
+  "CPU": {
+   "device": "CPU",
+   "sec_per_doc": {
+    "mean": 9.8,
+    "median": 9.3,
+    "n": 12
+   },
+   "sec_per_doc_excluding_first": {
+    "mean": 9.6,
+    "n": 11
+   },
+   "docs_per_hour": 367,
+   "wall_s": 118.1,
+   "fields_wrong": 0,
+   "fields_compared": 85,
+   "rule_micro": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 1,
+    "f1": 0.909
+   },
+   "run_id": "b70-Qwen3.5-9B-int4-ov-20261107-165921"
+  },
+  "GPU.0": {
+   "device": "GPU.0",
+   "sec_per_doc": {
+    "mean": 3.8,
+    "median": 3.7,
+    "n": 12
+   },
+   "sec_per_doc_excluding_first": {
+    "mean": 3.6,
+    "n": 11
+   },
+   "docs_per_hour": 947,
+   "wall_s": 45.9,
+   "fields_wrong": 0,
+   "fields_compared": 85,
+   "rule_micro": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 1,
+    "f1": 0.909
+   },
+   "run_id": "b70-Qwen3.5-9B-int4-ov-20261107-165830"
+  }
+ },
+ "copied_from_host": "~/b70_keep/night/b70_cpu_n12.json and b70_gpu_n12.json (key fields copied; full files stay on the host)",
+ "note": "The host CPU is a two-socket server part (344 threads); a bookkeeping firm's desktop CPU has far fewer cores. Same reads: both runs got every compared field right."
+}

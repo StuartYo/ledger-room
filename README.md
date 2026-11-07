@@ -5,6 +5,15 @@ gives it a client's box of paper vouchers. Ledger Room reads every voucher, book
 sources agree on it, and sends everything else to a person with the reason, so a misread does not slip into the VAT
 return. Client data never leaves the office network.
 
+<!-- START-HERE: add the video and slide links in the first two rows on submission day -->
+| Start here | |
+|---|---|
+| The result | [113 real invoices: the old ledger let 15 wrong rows through, Ledger Room let 0](#evidence) |
+| Where it runs | One ASUS workstation with a UGen B70, no internet: [measured on the B70](#measured-on-the-intel-arc-pro-b70-stage-ii) |
+| What it checks | Duplicates, tax IDs, amounts, non-deductible input tax, each rule with its legal source: [rules](#what-it-checks) |
+| Re-run the numbers | [On the B70 host](#reproduce-on-the-b70-host) · [on a laptop](#reproduce-the-evaluation) · [run it in five steps](#run-it-in-five-steps-windows-python-312) |
+| What it does not do yet | [Limits, and what we do about each](#limits) |
+
 ### Evidence
 
 **113 real invoices: the old ledger let 15 wrong rows through, Ledger Room let 0.**
@@ -21,8 +30,12 @@ without a person; *sent to a person* = held for a bookkeeper to check):
 2. **Public real Taiwan photos, strict reading: 0 let through** on 41 (real_tw, re-scored after the fix: the strict
    rule was written after seeing this set) and 0 on 17 (real_tw2, first run, key frozen before any read).
    `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` → `conditions.strict`
-3. **Why the B70: the bigger reader is the accurate one, and it needs a workstation GPU: 3.7 s a voucher on the B70, 78 s on a laptop CPU.** Same real documents,
-   strict reading, Qwen3.5-2B against Qwen3.5-9B:
+3. **Why the B70: one UGen B70 runs both readers at once, 21.8 GB of its 32 GB.** The 9B reads every voucher; the 27B
+   re-reads the ones the 9B is unsure about (on the real box it cut wrong fields from 21.5% to 18.2%). Both loaded on
+   one card, 20 documents read by each, none failed: peak 21.8 GB of card memory, more than a 16 GB card has
+   (`eval/results_one_card.json`). Speed on the same host and code: the 9B takes 3.8 s a document on one B70 and 9.8 s
+   on the host's two 86-core Xeon CPUs (`eval/results_same_host_cpu_vs_b70.json`). The bigger reader is also the
+   accurate one. Same real documents, strict reading, Qwen3.5-2B against Qwen3.5-9B:
 
    | Same real documents, strict reading | 2B | 9B |
    |---|---|---|
