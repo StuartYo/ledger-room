@@ -33,6 +33,10 @@ from .ocr import Line, read_lines
 
 DEFAULT_MODEL_DIR = os.environ.get("LEDGER_MODEL_DIR", r"E:\models\Qwen3.5-2B-int4-ov")
 VLM_MAX_SIDE = int(os.environ.get("LEDGER_VLM_MAX_SIDE", "896"))
+# The UBN zoom crop is a thin strip (about 850 x 140). On the Arc Pro B70 (OpenVINO GPU plugin) reading such a strip
+# now and then fails with CL_OUT_OF_RESOURCES (eval/repro_oor.py: 4 of 640 full reads, every one on this crop).
+# White padding above and below to at least this height; 0 keeps the strip as it is.
+ZOOM_MIN_H = int(os.environ.get("LEDGER_ZOOM_MIN_H", "0"))
 CATEGORIES = ["office", "equipment", "materials", "logistics", "software", "printing", "meal", "taxi",
               "lodging", "entertainment", "employee_benefit", "passenger_car", "non_business", "other"]
 CONFIRMED = {"ocr-confirmed", "ocr-role", "snapped", "ocr", "ocr-keyword", "ocr-total-line", "zoom-vote 2/3", "zoom-vote 3/3"}
@@ -824,6 +828,10 @@ class Reader:
             reads["ocr_zoom"] = read_boxed_digits(crop)       # one digit per printed box
             clean = ink_only(crop)
             big = clean.resize((clean.width * 2, clean.height * 2), Image.LANCZOS)
+            if big.height < ZOOM_MIN_H:
+                pad = Image.new(big.mode, (big.width, ZOOM_MIN_H), "white")
+                pad.paste(big, (0, (ZOOM_MIN_H - big.height) // 2))
+                big = pad
             txt, _ = self.generate(ZOOM_PROMPT, big, max_new_tokens=16)
             d = re.sub(r"\D", "", txt)
             reads["vlm_zoom"] = d if len(d) == 8 else None
