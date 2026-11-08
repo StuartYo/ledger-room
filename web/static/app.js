@@ -52,7 +52,9 @@ function ago(ms) {
 }
 function runTime(id) {
   const m = /(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/.exec(id || "");
-  return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : NaN;
+  // the id is in the server's local time, which can differ from this browser's (a host in UTC, a firm in Taipei)
+  const off = S.me?.tz_offset_s ?? -new Date().getTimezoneOffset() * 60;
+  return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) - off * 1000 : NaN;
 }
 const tsMs = (ts) => (ts ? Date.parse(ts) : NaN);
 const um = () => (S.unmasked && S.unmasked === S.runId ? "&unmask=1" : "");

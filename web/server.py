@@ -142,6 +142,12 @@ def inboxes() -> list[dict]:
     return sorted(out, key=lambda b: order.index(b["set"]) if b["set"] in order else len(order))
 
 
+def server_utc_offset_s():
+    """Seconds the server's local clock is ahead of UTC (run ids are named in local time)."""
+    import datetime
+    return int(datetime.datetime.now().astimezone().utcoffset().total_seconds())
+
+
 def public_job(job: dict) -> dict:
     return {k: v for k, v in job.items() if not k.startswith("_") and k != "trace"}
 
@@ -429,9 +435,10 @@ class H(BaseHTTPRequestHandler):
             return self._file(STATIC / path[len("/static/"):], STATIC)
         if path == "/api/me":
             me = self._session()
-            return self._json({"user": me["user"], "role": me["role"], "local": CFG["local"],
+            tz = server_utc_offset_s()   # run ids carry the server's local time; the page needs this to show "x min ago"
+            return self._json({"user": me["user"], "role": me["role"], "local": CFG["local"], "tz_offset_s": tz,
                                "can_unmask": privacy.can_unmask(me["role"])} if me else
-                              {"user": None, "local": CFG["local"]})
+                              {"user": None, "local": CFG["local"], "tz_offset_s": tz})
         if path.startswith("/img/"):    # receipt images only: not clients.json, not data/out (results, logs, cache)
             p = DATA / path[len("/img/"):]
             if p.suffix.lower() not in IMG_EXT or self._inside(p, OUT) is not None:
