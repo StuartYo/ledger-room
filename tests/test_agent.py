@@ -221,6 +221,16 @@ def test_pipeline_clears_only_what_code_verified_and_logs_it(inbox, monkeypatch)
     assert row["status"] == "READY" and row["total"] == 1155 and "agent" in row["note"]
 
 
+def test_agent_progress_counts_the_held_vouchers_it_looks_at(inbox, monkeypatch):
+    # the web page shows "the agent is on the held vouchers: i of n" instead of standing at "3 of 3"
+    data, read_fn = inbox
+    monkeypatch.setattr(A.Tools, "zoom", lambda self, box: (self.crop_texts.append("x"), "zoomed", None)[1:])
+    calls = []
+    pipeline.audit("demo", None, read_fn=read_fn, agent=A.Agent(scripted()), run_id="demo-p",
+                   agent_progress=lambda i, n, doc_id, rec: calls.append((i, n, doc_id)))
+    assert calls == [(0, 2, "C01/2026-09/a.jpg"), (1, 2, "C01/2026-09/b.jpg"), (2, 2, None)]
+
+
 def test_no_agent_on_this_machine_runs_no_agent_step(inbox):
     data, read_fn = inbox
     res = pipeline.audit("demo", None, read_fn=read_fn, run_id="demo-2")

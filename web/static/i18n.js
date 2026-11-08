@@ -49,7 +49,8 @@ const I18N = {
 
     // progress of a running check
     loadingModel: "正在這台電腦上載入模型…", queued: "排隊中…",
-    progTitle: "正在檢查這一期", progMain: "第 {i} / {n} 張", progEta: "大約還要 {m} 分鐘", progEtaS: "不到 1 分鐘",
+    progTitle: "正在檢查這一期", progMain: "第 {i} / {n} 張",
+    progAgent: "代理正在看被攔下的單據：第 {i} / {n} 張", progAgentRead: "{n} 張都讀完了", chkAgent: "代理處理中：{i} / {n}", progEta: "大約還要 {m} 分鐘", progEtaS: "不到 1 分鐘",
     progPer: "每張約 {s} 秒", progFail: "{n} 張讀不到，會交給人看", progCached: "沿用已讀過的結果",
     progLeave: "檢查在這台電腦上跑，可以關掉這一頁，回來會自動接上。",
 
@@ -242,7 +243,8 @@ const I18N = {
     thisPeriod: "This period", thisPeriodOf: "This period, {c}", periodErr: "Period check not run: {e}",
 
     loadingModel: "Loading the model on this computer…", queued: "Queued…",
-    progTitle: "Checking this period", progMain: "Voucher {i} of {n}", progEta: "about {m} min left", progEtaS: "under a minute left",
+    progTitle: "Checking this period", progMain: "Voucher {i} of {n}",
+    progAgent: "The agent is on the held vouchers: {i} of {n}", progAgentRead: "all {n} read", chkAgent: "Agent at work: {i} of {n}", progEta: "about {m} min left", progEtaS: "under a minute left",
     progPer: "about {s} s each", progFail: "{n} could not be read; a person will look at them", progCached: "reused an earlier reading",
     progLeave: "The check runs on this computer: you can close this page and come back.",
 

@@ -69,7 +69,7 @@ RUN_LOCK = threading.Lock()
 REVIEW_LOGS: dict[str, AuditLog] = {}  # run id -> its review log (decisions on held vouchers, exports)
 REVIEW_LOCK = threading.Lock()
 OVERRIDE_LOCK = threading.Lock()
-RUNNING = {"queued", "loading model", "reading"}
+RUNNING = {"queued", "loading model", "reading", "agent"}
 UI_INBOXES = ROOT / "web" / "inboxes.json"
 BOX_CACHE: dict[str, dict] = {}       # run id -> runs/<run>/field_boxes.json (tight field boxes, drawing only)
 BOX_LOCK = threading.Lock()
@@ -264,10 +264,20 @@ def run_job(job_id: str, set_name: str, live: bool, user: str, reuse: set[str] |
             if not live:
                 time.sleep(0.12)   # replay pacing so the progress is visible; reads come from cache
 
+        ag_t: list[float] = []
+
+        def agent_prog(i, n, doc_id, _rec):
+            # the agent's turn on the held vouchers: its own counter, so the page does not sit at "50 of 50"
+            ag_t.append(time.time())
+            per = round((ag_t[-1] - ag_t[0]) / i, 1) if i and len(ag_t) > 1 else None
+            job.update(status="agent", agent_i=i, agent_n=n, agent_avg_s=per,
+                       **({"doc_id": doc_id} if doc_id else {}))
+            save_job(job)
+
         from ledger_room.registry import load_default
         res = pipeline.audit(set_name, reader, cache=not live, progress=prog, registry=load_default(), operator=user,
                              platform="auto", run_id=job["run_id"], reuse=reuse, resumed_from=resumed_from,
-                             on_read_error="hold", agent=agent,
+                             on_read_error="hold", agent=agent, agent_progress=agent_prog,
                              # a replay (no model loaded) shows the agent runs stored for these documents, checked again
                              # by code; a live check without an agent model has no agent step, and says so
                              agent_replay=not live)

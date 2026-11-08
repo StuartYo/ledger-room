@@ -577,17 +577,21 @@ function renderOverview() {
   const st = stepState();
   let head = "", sub = "", btns = "";
   if (S.job) {
-    const j0 = S.job, per = j0.avg_s || j0.last_s, left = j0.n ? j0.n - j0.i : 0;
+    // after the reading, the agent takes the held vouchers: its own counter and bar, not "50 of 50" standing still
+    const ag = j0.status === "agent", gi = ag ? j0.agent_i || 0 : j0.i, gn = ag ? j0.agent_n || 0 : j0.n;
+    const per = ag ? j0.agent_avg_s : j0.avg_s || j0.last_s, left = gn ? gn - gi : 0;
     const eta = per && left ? (left * per < 60 ? t("progEtaS") : t("progEta", { m: Math.ceil((left * per) / 60) })) : "";
-    const main = j0.status === "loading model" ? t("loadingModel") : j0.status === "queued" ? t("queued") : t("progMain", { i: j0.i, n: j0.n });
-    const bits = [eta, per ? t("progPer", { s: Math.round(per * 10) / 10 }) : "", j0.n_failed ? t("progFail", { n: j0.n_failed }) : "", j0.cached ? t("progCached") : ""].filter(Boolean);
+    const main = j0.status === "loading model" ? t("loadingModel") : j0.status === "queued" ? t("queued")
+      : ag ? t("progAgent", { i: Math.min(gi + 1, gn), n: gn }) : t("progMain", { i: j0.i, n: j0.n });
+    const bits = [ag ? t("progAgentRead", { n: j0.n }) : "", eta, per ? t("progPer", { s: Math.round(per * 10) / 10 }) : "",
+      !ag && j0.n_failed ? t("progFail", { n: j0.n_failed }) : "", !ag && j0.cached ? t("progCached") : ""].filter(Boolean);
     const d = S.inbox.docs.find((x) => x.doc_id === j0.doc_id);
     $("#ovTitle").textContent = t("progTitle");
     $("#ovSub").textContent = t("progLeave");
     $("#ovBtns").innerHTML = "";
     $("#periodCard").innerHTML = `<div class="progress">${d ? `<img src="img/${esc(d.image)}" alt="">` : `<div class="thumbph">${icon("scan", 20)}</div>`}
       <div class="grow"><div class="prog-main">${esc(main)}</div><div class="muted">${esc(bits.join(" · "))}</div>
-      <div class="pbar"><span style="width:${j0.n ? (100 * j0.i) / j0.n : 2}%"></span></div></div></div>`;
+      <div class="pbar"><span style="width:${gn ? (100 * gi) / gn : 2}%"></span></div></div></div>`;
     return;
   }
   const intr = S.interrupted[0];
@@ -772,7 +776,9 @@ function renderChecks() {
   const st = stepState(), ex = lastExport();
   const li = (ok, ic, a, b, bad) => `<li class="${ok ? "ok" : "no"}${bad ? " bad" : ""}"><span class="ci">${icon(ic, 17)}</span><span><b>${esc(a)}</b>${esc(b)}</span></li>`;
   const sk = S.inbox.skipped?.length;
-  const read = st.running ? li(false, "clock", t("chkRun", { i: S.job.i || 0, n: S.job.n || st.n }), t("chkReadSub"))
+  const read = st.running ? (S.job.status === "agent"
+      ? li(false, "clock", t("chkAgent", { i: S.job.agent_i || 0, n: S.job.agent_n || 0 }), t("chkReadSub"))
+      : li(false, "clock", t("chkRun", { i: S.job.i || 0, n: S.job.n || st.n }), t("chkReadSub")))
     : !st.s1 ? li(false, "clock", t("emptyTitle"), "")
     : !S.run ? li(false, "clock", t("chkNone"), t("chkReadSub"))
     : newDocs() ? li(false, "clock", t("chkNew", { n: newDocs() }), t("chkReadSub"))

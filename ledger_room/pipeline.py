@@ -426,7 +426,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
           platform_invoices: set[str] | dict[str, set[str]] | None = None,
           platform_void: set[str] | dict[str, set[str]] | None = None, platform: str | None = None,
           reuse: set[str] | None = None, resumed_from: str | None = None, on_read_error: str = "raise",
-          agent=None, agent_replay: bool = False) -> dict:
+          agent=None, agent_replay: bool = False, agent_progress=None) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
     read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
@@ -529,7 +529,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         agent_recs = agent_mod.process([d for d in docs if d["doc_id"] not in failed], reads,
                                        {r.doc_id: r for r in rdocs}, excs, clients, agent,
                                        cache_dir=OUT / "cache" / "agent", use_cache=cache or agent is None,
-                                       rules_kw=rule_kw)
+                                       rules_kw=rule_kw, progress=agent_progress)
         excs0, reads0 = excs, reads
         if any(v["status"] == "verified" for v in agent_recs.values()):
             for _ in range(3):

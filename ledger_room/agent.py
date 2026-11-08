@@ -514,11 +514,13 @@ def process(docs: list[dict], reads: dict, rdocs: dict, excs: list, clients: dic
     rules_kw = rules_kw or {}
     by_id = {d["doc_id"]: d for d in docs}
     held_ids = sorted({e.doc_id for e in held(excs) if e.doc_id in rdocs})
+    todo = [i for i in held_ids if all_held or fixable_fields(held(excs, i))]
     out = {}
-    for n, doc_id in enumerate(held_ids):
+    for n, doc_id in enumerate(todo):
+        # progress(done, total, doc_id, None) before each document it looks at, and (total, total, None, None) at the end
+        if progress:
+            progress(n, len(todo), doc_id, None)
         ex = held(excs, doc_id)
-        if not all_held and not fixable_fields(ex):
-            continue
         d, r = by_id[doc_id], reads[doc_id]
         img_sha = r.get("sha256") or hashlib.sha256(Path(d["path"]).read_bytes()).hexdigest()
         stored = None
@@ -584,8 +586,8 @@ def process(docs: list[dict], reads: dict, rdocs: dict, excs: list, clients: dic
             "machine_prov": {k: (r.get("provenance") or {}).get(k) for k in v["accepted"]},
             "still_held_for": [f"{e.rule_id}:{','.join(e.evidence_fields)}" for e in ex2],
         }
-        if progress:
-            progress(n + 1, len(held_ids), doc_id, out[doc_id])
+    if progress and todo:
+        progress(len(todo), len(todo), None, None)
     return out
 
 
