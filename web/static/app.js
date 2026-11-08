@@ -589,6 +589,7 @@ function renderOverview() {
     $("#ovTitle").textContent = t("progTitle");
     $("#ovSub").textContent = t("progLeave");
     $("#ovBtns").innerHTML = "";
+    $("#periodCard").hidden = false;     // a period's first check has no strip yet, and the card starts hidden
     $("#periodCard").innerHTML = `<div class="progress">${d ? `<img src="img/${esc(d.image)}" alt="">` : `<div class="thumbph">${icon("scan", 20)}</div>`}
       <div class="grow"><div class="prog-main">${esc(main)}</div><div class="muted">${esc(bits.join(" · "))}</div>
       <div class="pbar"><span style="width:${gn ? (100 * gi) / gn : 2}%"></span></div></div></div>`;
