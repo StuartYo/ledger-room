@@ -313,3 +313,16 @@ def test_a_person_can_reject_the_agent_fix_and_take_that_back(web):  # noqa: F81
 
 
 from tests.test_web_review import web  # noqa: E402,F401  (fixture)
+
+
+def test_history_and_platform_count_as_independent_sources():
+    # never reached on the synthetic sets (no firm history, no platform download there): checked here directly
+    read = read_of(triplicate(seller_ubn=None, invoice_no="AB12345678"), {**GOOD, "seller_ubn": "missing",
+                   "invoice_no": "model-only"}, [ocr_line(1, "統一發票")])
+    got = check({"seller_ubn": "04595257"}, read, {"history_seller_ubn": ["04595257"]})
+    assert got["fields"]["seller_ubn"]["accepted"] and got["fields"]["seller_ubn"]["evidence"] == ["history"]
+    got = check({"invoice_no": "AB12345678"}, read, {"platform_hits": [{"invoice_no": "AB12345678"}]})
+    assert got["fields"]["invoice_no"]["accepted"] and "platform" in got["fields"]["invoice_no"]["evidence"]
+    # a seller UBN the history does not know, with no other source, still goes to a person
+    got = check({"seller_ubn": "04595257"}, read, {"history_seller_ubn": ["12345675"]})
+    assert not got["fields"]["seller_ubn"]["accepted"]
