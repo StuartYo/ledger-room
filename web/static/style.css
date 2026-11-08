@@ -273,3 +273,5 @@ dialog::backdrop { background: rgba(10, 14, 25, .55); }
   .offline { margin: 0 16px 8px; }
 }
 .confirmbox a { color: var(--accent); }
+
+.noimg { padding: 48px 24px; text-align: center; line-height: 1.7; }

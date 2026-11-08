@@ -521,13 +521,18 @@ function renderDocs() {
 
 // ---------- voucher viewer: big image, the issues, the four decisions, next / previous ----------
 function openDoc(docId, mode) {
-  const d = docById(docId) || S.inbox.docs.find((x) => x.doc_id === docId);
+  // an e-invoice from the platform download has no photo: it opens with its reasons and the decision buttons only
+  const it0 = items().find((x) => x.doc_id === docId);
+  const d = docById(docId) || S.inbox.docs.find((x) => x.doc_id === docId) || (it0 && { doc_id: docId, client_id: it0.client_id, platform: true });
   if (!d) return;
   const list = mode === "todo" ? todo() : mode === "done" ? done() : null;
   S.view = { docId, mode, ids: list ? list.map((it) => it.doc_id) : [docId] };
   $("#viewTitle").textContent = `${clientName(d.client_id)} · ${docId}`;
   const img = $("#viewImg");
-  img.src = `img/${d.image}`;
+  $("#imgBox").hidden = !!d.platform;
+  $("#viewNoImg").hidden = !d.platform;
+  $("#viewNoImg").textContent = d.platform ? t("einvNoPhoto") : "";
+  if (d.platform) img.removeAttribute("src"); else img.src = `img/${d.image}`;
   const it = items().find((x) => x.doc_id === docId);
   const exs = it ? it.exs : [];
   const want = new Set(exs.flatMap((e) => (e.evidence || []).map((v) => v.field)));
@@ -563,7 +568,7 @@ function openDoc(docId, mode) {
     if (key === "doc_type" && v) v = DOC_TYPE[S.lang]?.[v] || v;
     const pv = p[key] ? `<span class="prov ${GOOD.has(p[key]) ? "good" : "weak"}" title="${esc(t("provTip", { p: p[key] }))}">${GOOD.has(p[key]) ? t("good") : t("weak")}</span>` : "";
     return `<tr><td>${t("f_" + key)}</td><td>${esc(v ?? "")} ${pv}</td></tr>`;
-  }).join("") : `<tr><td class="muted">${t("notRead")}</td></tr>`;
+  }).join("") : `<tr><td class="muted">${t(d.platform ? "einvFields" : "notRead")}</td></tr>`;
   const k = S.view.ids.indexOf(docId);
   $("#viewPos").textContent = S.view.ids.length > 1 ? `${k + 1} / ${S.view.ids.length}` : "";
   $("#viewPrev").disabled = k <= 0; $("#viewNext").disabled = k < 0 || k >= S.view.ids.length - 1;
