@@ -79,7 +79,8 @@ UNCONFIRMED = {"model-only", "unconfirmed"}
 # Strict reading (docs/strict_draft.md, fixed 2026-11-07 before the real_tw2 run): a value that goes into the filing
 # file is accepted without a person only when two independent sources agree (OCR text, a model reading, a check digit).
 STRICT = os.environ.get("LEDGER_STRICT_READ") == "1"
-STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)"}
+STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)",
+                    "person"}   # "person": typed in by a reviewer from the paper (corrections.py)
 UBN_ONE_READING = {"ocr-role", "ocr", "snapped"}   # one OCR reading: the check digit is the second source
 
 

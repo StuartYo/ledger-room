@@ -36,7 +36,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # allow `python web/server.py`
 
-from ledger_room import export, keys, pipeline, privacy  # noqa: E402
+from ledger_room import corrections, export, keys, pipeline, privacy  # noqa: E402
 from ledger_room.pipeline import DATA, OUT, AuditLog  # noqa: E402
 from web import users as userdb  # noqa: E402
 
@@ -67,6 +67,8 @@ REVIEW_LOGS: dict[str, AuditLog] = {}  # run id -> its review log (decisions on 
 REVIEW_LOCK = threading.Lock()
 RUNNING = {"queued", "loading model", "reading"}
 UI_INBOXES = ROOT / "web" / "inboxes.json"
+BOX_CACHE: dict[str, dict] = {}       # run id -> runs/<run>/field_boxes.json (tight field boxes, drawing only)
+BOX_LOCK = threading.Lock()
 
 
 _HW: dict[str, str | None] = {}
@@ -311,6 +313,31 @@ def review_state(run: str) -> tuple[dict[str, dict], list[dict]]:
     return dec, exports
 
 
+def corrections_of(run: str) -> dict[str, dict[str, dict]]:
+    """Field corrections made by reviewers on this run (corrections.py), from its review log."""
+    return corrections.read_state(OUT / "runs" / run / "review.jsonl")
+
+
+_EFF: dict[str, tuple] = {}   # run -> ((review log size, mtime, result summary), corrected result)
+
+
+def effective_result(result: dict, run: str) -> dict:
+    """result.json with the reviewers' field corrections applied and the rules checked again (corrections.apply).
+    The last answer per run is kept until the review log changes (a check of the rules takes a few tenths of a second)."""
+    lp = OUT / "runs" / run / "review.jsonl"
+    try:
+        st = lp.stat()
+        sig = (st.st_size, st.st_mtime_ns, json.dumps(result.get("summary"), sort_keys=True, default=str)[:2000])
+    except OSError:
+        return result
+    hit = _EFF.get(run)
+    if hit and hit[0] == sig:
+        return hit[1]
+    out = corrections.apply(result, corrections_of(run))
+    _EFF[run] = (sig, out)
+    return out
+
+
 class H(BaseHTTPRequestHandler):
     timeout = 30        # a client that stops sending cannot hold a thread forever
 
@@ -444,7 +471,7 @@ class H(BaseHTTPRequestHandler):
         for pre in ("/static/", "/img/", "/out/"):
             if path.startswith(pre) and not safe_subpath(path[len(pre):]):
                 return self._json({"error": "not found"}, 404)
-        if path in ("/api/result", "/api/export", "/api/audit-log", "/api/review", "/api/export-summary") \
+        if path in ("/api/result", "/api/export", "/api/audit-log", "/api/review", "/api/export-summary", "/api/boxes") \
                 and not valid_run(q.get("run", "")):
             return self._json({"error": "bad run"}, 400)
         if path in ("/", "/index.html"):
@@ -493,15 +520,14 @@ class H(BaseHTTPRequestHandler):
             p = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
             if p is None:
                 return self._json({"error": "not found"}, 404)
-            if clear:
-                return self._file(p, OUT / "runs")
-            return self._json(privacy.mask_result(json.loads(p.read_text(encoding="utf-8"))))
+            res = effective_result(json.loads(p.read_text(encoding="utf-8")), run)
+            return self._json(res if clear else privacy.mask_result(res))
         if path == "/api/review":
             run = q.get("run", "")
             rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
             if rp is None:
                 return self._json({"error": "not found"}, 404)
-            result = json.loads(rp.read_text(encoding="utf-8"))
+            result = effective_result(json.loads(rp.read_text(encoding="utf-8")), run)
             dec, exports = review_state(run)
             try:
                 status = {r["doc_id"]: r["status"] for r in export.rows(result)}
@@ -512,19 +538,31 @@ class H(BaseHTTPRequestHandler):
                 dec = {k: privacy.mask_entries([v], names)[0] for k, v in dec.items()}
             lp = OUT / "runs" / run / "review.jsonl"
             v = AuditLog.verify_detail(lp, keys.audit_key(create=False), head=True) if lp.exists() else None
-            return self._json({"decisions": dec, "exports": exports, "status": status,
+            return self._json({"decisions": dec, "exports": exports, "status": status, "corrections": corrections_of(run),
                                "blocking": sorted(export.BLOCKING),
                                "log_ok": None if v is None else bool(v["chain_ok"] and v["mac_ok"] is not False
                                                                       and v.get("tail_ok") is not False)})
+        if path == "/api/boxes":
+            return self._boxes(q.get("run", ""), q.get("doc", ""))
         if path == "/api/export-summary":
             run = q.get("run", "")
             rdir = OUT / "runs" / run
             rp = self._inside(rdir / "result.json", OUT / "runs")
             if rp is None:
                 return self._json({"error": "not found"}, 404)
+            corr = corrections_of(run)
+            oplog("export_summary_csv", user=s["user"], run_id=run, ip=self._ip())
+            if corr:    # corrected amounts change the totals: built from the corrected result, not the stored file
+                tmp = rdir / f"export_summary.{threading.get_ident()}.tmp"
+                export.write_summary_csv(corrections.apply(json.loads(rp.read_text(encoding="utf-8")), corr), tmp)
+                b = tmp.read_bytes()
+                tmp.unlink(missing_ok=True)
+                self._headers("text/csv; charset=utf-8", len(b), 200,
+                              {"Content-Disposition": attachment(f"ledger_room_{run}_401_summary.csv")})
+                self.wfile.write(b)
+                return
             if not (rdir / "export_summary.csv").exists():
                 export.write_summary_csv(json.loads(rp.read_text(encoding="utf-8")), rdir / "export_summary.csv")
-            oplog("export_summary_csv", user=s["user"], run_id=run, ip=self._ip())
             return self._file(rdir / "export_summary.csv", OUT / "runs", download=f"ledger_room_{run}_401_summary.csv")
         if path == "/api/jobs":
             st = q.get("set", "")
@@ -541,6 +579,7 @@ class H(BaseHTTPRequestHandler):
             rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
             result = json.loads(rp.read_text(encoding="utf-8")) if rp is not None else {}
             if "docs" in result and "clients" in result:
+                result = effective_result(result, run)     # the reviewers' field corrections, rules checked again
                 # the reviewers' decisions (review.jsonl) applied; the export itself goes into that log too
                 dec, _ = review_state(run)
                 review = {k: {"decision": v["decision"], "user": v["user"], "note": v.get("note") or ""}
@@ -549,7 +588,8 @@ class H(BaseHTTPRequestHandler):
                 counts: dict[str, int] = {}
                 for r in export.rows(result, review):
                     counts[r["status"]] = counts.get(r["status"], 0) + 1
-                review_log(run).add("export", user=s["user"], counts=counts, reviewed=len(review), masked=not clear)
+                review_log(run).add("export", user=s["user"], counts=counts, reviewed=len(review), masked=not clear,
+                                    corrected_fields=result.get("summary", {}).get("n_corrected_fields", 0))
                 if not clear:
                     text = privacy.mask_csv(text, privacy.personal_names(result))
                 b = text.encode("utf-8")
@@ -646,6 +686,78 @@ class H(BaseHTTPRequestHandler):
                           extra={"Set-Cookie": f"lr_session={tok}; HttpOnly; SameSite=Strict; Path=/; "
                                                f"Max-Age={SESSION_S}{secure}"})
 
+    def _boxes(self, run: str, doc: str):
+        """Field boxes around the value only, turned with the paper (ledger_room/tight_boxes.py), for one document.
+        Drawing only; kept in runs/<run>/field_boxes.json so each is worked out once."""
+        rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+        if rp is None:
+            return self._json({"error": "not found"}, 404)
+        res = effective_result(json.loads(rp.read_text(encoding="utf-8")), run)
+        d = next((x for x in res.get("docs", []) if x.get("doc_id") == doc), None)
+        img = DATA / d["image"] if d and d.get("image") else None
+        if img is None or img.suffix.lower() not in IMG_EXT or self._inside(img, DATA) is None \
+                or self._inside(img, OUT) is not None:
+            return self._json({"error": "not found"}, 404)
+        from ledger_room import tight_boxes
+        with BOX_LOCK:
+            data = BOX_CACHE.get(run)
+            if data is None:
+                data = BOX_CACHE[run] = tight_boxes.load_cache(OUT / "runs" / run)
+            cache = data["docs"].setdefault(doc, {})
+            n0 = len(cache)
+        try:
+            boxes = tight_boxes.for_doc(img, d, cache)
+        except Exception as e:      # drawing only: the page keeps the reader's boxes
+            return self._json({"boxes": {}, "error": f"{type(e).__name__}"})
+        if len(cache) != n0:
+            with BOX_LOCK:
+                tight_boxes.save_cache(OUT / "runs" / run, data)
+        return self._json({"boxes": boxes, "image_size": d.get("image_size")})
+
+    def _correct(self, body: dict, s: dict):
+        """A reviewer corrects one field the reader got wrong: {run, doc_id, field, value, note?} or {..., revert: true}.
+        Logged in the run's review log (hash chain + HMAC, like the decisions) and the operation log; the machine
+        reading stays in result.json. Answers with the corrected document and its exceptions after the rules ran again."""
+        run, doc, field = str(body.get("run", "")), str(body.get("doc_id", ""))[:200], str(body.get("field", ""))
+        note = str(body.get("note", "")).strip()[:300]
+        if not valid_run(run):
+            return self._json({"error": "bad run"}, 400)
+        rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+        if rp is None:
+            return self._json({"error": "unknown run"}, 400)
+        result = json.loads(rp.read_text(encoding="utf-8"))
+        d0 = next((d for d in result.get("docs", []) if d.get("doc_id") == doc), None)
+        if d0 is None or not isinstance(d0.get("fields"), dict):
+            return self._json({"error": "unknown document"}, 400)
+        if field not in corrections.EDITABLE:
+            return self._json({"error": "this field cannot be corrected", "code": "field"}, 400)
+        old = d0["fields"].get(field)
+        try:
+            new = old if body.get("revert") is True else corrections.normalize(field, body.get("value"))
+        except corrections.Invalid as e:
+            return self._json({"error": str(e), "code": e.code}, 400)
+        with REVIEW_LOCK:       # one correction at a time per server: "previous" must be the value shown before it
+            cur = corrections_of(run).get(doc, {}).get(field)
+            previous = cur["new"] if cur else old
+            changed = new != previous
+        if changed:
+            review_log(run).add("correct", doc_id=doc, field=field, old=old, new=new, previous=previous, note=note,
+                                user=s["user"], role=s["role"])
+            oplog("correct", user=s["user"], run_id=run, doc_id=doc, field=field, old=previous, new=new, ip=self._ip())
+        eff = effective_result(result, run)
+        d = next(x for x in eff["docs"] if x["doc_id"] == doc)
+        exs = [e for e in eff["exceptions"] if e.get("doc_id") == doc]
+        try:
+            status = next((r["status"] for r in export.rows(eff) if r["doc_id"] == doc), None)
+        except (KeyError, TypeError, ValueError):
+            status = None
+        out = {"ok": True, "changed": changed, "doc_id": doc, "field": field, "value": d["fields"].get(field),
+               "machine": old, "corrections": d.get("corrections") or {}, "exceptions": exs, "status": status}
+        if not self._unmasked(s, run):
+            names = privacy.personal_names(result)
+            out["exceptions"] = privacy.mask_entries(exs, names)
+        return self._json(out)
+
     def _drain(self) -> None:
         """Read and drop a refused request's body (closing with unread data makes Windows reset the connection
         before the client sees the error)."""
@@ -717,6 +829,8 @@ class H(BaseHTTPRequestHandler):
             review_log(run).add("review", doc_id=doc, decision=decision, note=note, user=s["user"], role=s["role"])
             oplog("review", user=s["user"], run_id=run, doc_id=doc, decision=decision, ip=self._ip())
             return self._json({"ok": True, "doc_id": doc, "decision": decision, "user": s["user"]})
+        if path == "/api/correct":
+            return self._correct(body, s)
         if path == "/api/run":
             st = str(body.get("set", "main"))[:64]
             resume = str(body.get("resume") or "")

@@ -188,6 +188,8 @@ def rows(result: dict, review: dict[str, dict] | None = None) -> list[dict]:
                                       [i.get("desc") or "" for i in f.get("items") or []])
         if fa and code:
             notes.append("may be a fixed asset: confirm deduction code 2 (or 4 if non-deductible)")
+        for k, fix in (d.get("corrections") or {}).items():    # corrections.py: a reviewer typed the value from the paper
+            notes.append(f"{k} corrected by {fix.get('user') or 'reviewer'}: read {fix.get('old')}, paper {fix.get('new')}")
         out.append({
             "client_id": d["client_id"], "client_ubn": c["ubn"], "doc_id": d["doc_id"], "status": status,
             "status_label": STATUS_LABEL[status],
