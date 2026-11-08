@@ -218,8 +218,8 @@ class H(BaseHTTPRequestHandler):
             return True
         port = CFG["port"]
         host = (self.headers.get("Host") or "").strip().lower()
-        if CFG.get("proxy_origin") and host == urlparse(CFG["proxy_origin"]).netloc.lower():
-            return True     # --proxy-origin: an authenticating reverse proxy on this machine (e.g. JupyterLab's)
+        if host and host in CFG.get("proxy_hosts", ()):
+            return True     # --proxy-origin / --proxy-host: an authenticating reverse proxy on this machine
         return host in {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
 
     def _same_origin(self) -> bool:
@@ -519,6 +519,8 @@ def main():
     ap.add_argument("--proxy-origin", metavar="URL",
                     help="local mode only: also accept requests forwarded by an authenticating reverse proxy on this "
                          "machine whose browser origin is URL (e.g. JupyterLab's /proxy/8780/ on a remote host)")
+    ap.add_argument("--proxy-host", metavar="HOST:PORT",
+                    help="with --proxy-origin: the Host header that proxy sends, when it is not the origin's host")
     ap.add_argument("--not-strict", action="store_true",
                     help="accept a value on one source (development only); the app checks strictly by default")
     ap.add_argument("--behind-tls-proxy", action="store_true",
@@ -537,6 +539,9 @@ def main():
         if u.scheme != "https" or not u.netloc or u.path not in ("", "/") or not is_loopback(a.host):
             sys.exit("--proxy-origin needs an https://host origin, and the server must listen on 127.0.0.1")
         CFG["proxy_origin"] = f"https://{u.netloc}"
+        CFG["proxy_hosts"] = {u.netloc.lower()} | ({a.proxy_host.strip().lower()} if a.proxy_host else set())
+    elif a.proxy_host:
+        sys.exit("--proxy-host goes with --proxy-origin")
     CFG["tls"] = bool(a.cert)
     CFG["secure"] = bool(a.cert) or a.behind_tls_proxy
     if CFG["local"] and not is_loopback(a.host):

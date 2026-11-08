@@ -263,7 +263,9 @@ def test_proxy_origin_admits_only_that_host_and_origin(app, monkeypatch):
     proxy = "cloud-1.example.com"
     assert req(port, "GET", "/api/status", host=proxy)[0] == 403
     monkeypatch.setitem(server.CFG, "proxy_origin", f"https://{proxy}")
+    monkeypatch.setitem(server.CFG, "proxy_hosts", {proxy, "192.168.12.2:8888"})
     assert req(port, "GET", "/api/status", host=proxy)[0] == 200
+    assert req(port, "GET", "/api/status", host="192.168.12.2:8888")[0] == 200
     assert req(port, "GET", "/api/status", host="evil.example.com")[0] == 403
     ok = {"Origin": f"https://{proxy}", "Sec-Fetch-Site": "same-origin"}
     bad = {"Origin": "https://evil.example.com", "Sec-Fetch-Site": "cross-site"}
