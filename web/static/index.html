@@ -4,84 +4,139 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ledger Room</title>
+<link rel="icon" type="image/png" sizes="16x16" href="static/brand/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="static/brand/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="static/brand/ledger-room.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="static/brand/apple-touch-icon.png">
 <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="4" width="22" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 11h12M10 16h12M10 21h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="23" cy="22" r="5" fill="var(--stamp)"/><path d="M21 22l1.5 1.5L25 21" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-    <div>
-      <h1>Ledger Room</h1>
-      <p class="tag" data-i18n="tag"></p>
-    </div>
-  </div>
-  <div class="pills">
-    <span class="pill ok" data-i18n-title="localTip">
-      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="local"></span></span>
-    <span class="pill" id="modelPill"></span>
-    <span class="pill" id="userPill" hidden></span>
-    <span class="pill" id="maskPill" data-i18n-title="maskTip"></span>
-    <button class="pill linkbtn" id="unmaskBtn" hidden data-i18n-title="unmaskTip"></button>
-    <button class="pill linkbtn" id="langBtn"></button>
-    <button class="pill linkbtn" id="logoutBtn" hidden data-i18n="logout"></button>
-  </div>
-</header>
+<div class="app">
+  <nav class="rail" aria-label="Ledger Room">
+    <img class="mark" src="static/brand/ledger-room.svg" alt="Ledger Room" width="32" height="32">
+    <button class="rb" data-nav="queue" data-ic="inbox" data-i18n-title="navQueue" data-i18n-aria="navQueue"></button>
+    <button class="rb" data-nav="documents" data-ic="files" data-i18n-title="navDocs" data-i18n-aria="navDocs"></button>
+    <button class="rb" id="navExport" data-ic="download" data-i18n-title="navExport" data-i18n-aria="navExport"></button>
+    <button class="rb" data-nav="log" data-ic="history" data-i18n-title="navLog" data-i18n-aria="navLog"></button>
+    <div class="sp"></div>
+    <button class="rb" id="navSettings" data-ic="settings" data-i18n-title="navSettings" data-i18n-aria="navSettings" aria-haspopup="true"></button>
+  </nav>
 
-<div class="offline" id="offline" role="status" hidden>
-  <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.7 11.1A11 11 0 0119 12.5M5 12.5a11 11 0 015.2-2.9M10.7 5.1A16 16 0 0122.6 9M1.4 9a16 16 0 014.3-2.8M8.5 16a5 5 0 017 0M12 20h.01"/></svg>
-  <span data-i18n="offline"></span>
+  <div class="main">
+    <header class="top">
+      <label class="crumb" data-i18n-title="inbox"><select id="inbox" data-i18n-aria="inbox"></select><span class="chev" data-ic="chevronDown"></span></label>
+      <span class="tag" id="synthTag" data-i18n="sample" data-i18n-title="synth" hidden></span>
+      <div class="sp"></div>
+      <button class="status" id="statusBtn" aria-haspopup="true"><span class="dot"></span><span id="statusText"></span></button>
+      <label class="search"><span data-ic="search"></span><input id="search" type="search" autocomplete="off" data-i18n-ph="search" data-i18n-aria="search"><kbd>/</kbd></label>
+      <button class="ghostbtn" id="langBtn"></button>
+      <button class="avatar" id="userBtn" aria-haspopup="true"></button>
+    </header>
+
+    <div class="offline" id="offline" role="status" hidden><span data-ic="wifiOff"></span><span data-i18n="offline"></span></div>
+
+    <div class="canvas">
+      <!-- overview: title, period strip, the queue, clients and the export checklist -->
+      <section class="screen" id="v-queue">
+        <div class="titlerow">
+          <div class="grow"><h1 id="ovTitle"></h1><p id="ovSub"></p></div>
+          <div class="btns" id="ovBtns"></div>
+        </div>
+        <div class="card period" id="periodCard"></div>
+        <div class="cols">
+          <div class="card queue">
+            <div class="tabs">
+              <button class="tab" data-qtab="todo"><span data-i18n="tabTodo"></span><span class="n" id="cntTodo"></span></button>
+              <button class="tab" data-qtab="done"><span data-i18n="tabDone"></span><span class="n" id="cntDone"></span></button>
+              <div class="sp"></div>
+              <div class="seg" role="group">
+                <button data-group="0" data-i18n="byPriority"></button>
+                <button data-group="1" data-i18n="byReason"></button>
+              </div>
+            </div>
+            <div class="tablewrap" id="qWrap"><table class="qt" id="qTable"></table></div>
+          </div>
+          <aside class="side">
+            <div class="card clientcard"><h2 data-i18n="clients"></h2><ul class="clist" id="clients"></ul></div>
+            <div class="card"><h2 data-i18n="chkHead"></h2><ul class="checks" id="checks"></ul><div class="expwrap" id="expWrap"></div></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- one voucher: queue, the image, the reason and the four decisions -->
+      <section class="screen" id="v-review">
+        <div class="rev">
+          <div class="card mini">
+            <div class="hd"><button class="iconbtn" id="revBack" data-ic="arrowLeft" data-i18n-title="back" data-i18n-aria="back"></button><b id="miniHead"></b><span id="miniLeft"></span></div>
+            <ul id="mini"></ul>
+          </div>
+          <div class="viewer">
+            <div class="vbar">
+              <button class="iconbtn" id="zOut" data-ic="zoomOut" data-i18n-title="zoomOut" data-i18n-aria="zoomOut"></button>
+              <span class="zoom" id="zLabel">100%</span>
+              <button class="iconbtn" id="zIn" data-ic="zoomIn" data-i18n-title="zoomIn" data-i18n-aria="zoomIn"></button>
+              <button class="iconbtn" id="zFit" data-ic="maximize" data-i18n-title="fit" data-i18n-aria="fit"></button>
+              <a class="iconbtn" id="zOrig" target="_blank" rel="noopener" data-ic="external" data-i18n-title="openOriginal" data-i18n-aria="openOriginal"></a>
+              <div class="sp"></div>
+              <button class="toggle" id="boxToggle"></button>
+              <span class="fn mono" id="viewFile"></span>
+            </div>
+            <div class="stagewrap" id="stage">
+              <div class="paper" id="paper"><img id="viewImg" alt=""></div>
+              <div class="einvcard" id="viewNoImg" hidden></div>
+            </div>
+          </div>
+          <div class="card panel" id="panel">
+            <div class="ph">
+              <div class="row1"><h2 id="viewTitle"></h2><span class="tag" id="viewCid"></span>
+                <div class="nav"><button class="iconbtn" id="viewPrev" data-ic="chevronLeft" data-i18n-title="kMove" aria-label="Previous"></button><span id="viewPos"></span><button class="iconbtn" id="viewNext" data-ic="chevronRight" data-i18n-title="kMove" aria-label="Next"></button></div></div>
+              <div class="meta" id="viewMeta"></div>
+            </div>
+            <div class="why" id="viewEx"></div>
+            <div class="decidebox" id="viewDecide"></div>
+            <div class="read">
+              <div class="lbl"><span id="readHead"></span><button class="linkbtn" id="fieldToggle"></button></div>
+              <table class="fields" id="viewFields"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="v-documents">
+        <div class="titlerow"><div class="grow"><h1 data-i18n="docsTitle"></h1><p id="docsSub"></p></div></div>
+        <div class="card docscard"><div id="docGrid" class="docgrid"></div></div>
+      </section>
+
+      <section class="screen" id="v-log">
+        <div class="titlerow"><div class="grow"><h1 data-i18n="logTitle"></h1></div></div>
+        <div class="logcols">
+          <div class="card logcard">
+            <h2><span data-i18n="auditHead"></span> <small data-i18n="auditSub"></small></h2>
+            <div id="logHead"></div>
+            <div class="tablewrap"><table class="log" id="logTable"></table></div>
+          </div>
+          <div class="card logcard">
+            <h2><span data-i18n="opHead"></span> <small data-i18n="opSub"></small></h2>
+            <div id="opHead"></div>
+            <div class="tablewrap"><table class="log" id="opTable"></table></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="keybar" id="keybar"></footer>
+  </div>
 </div>
 
-<div class="banner" id="synthBanner" role="note" hidden>
-  <svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
-  <span data-i18n="synth"></span>
-</div>
-
-<ol class="steps" id="steps" aria-label="steps"></ol>
-
-<main class="layout">
-  <aside class="side">
-    <label class="lbl" for="inbox" data-i18n="inbox"></label>
-    <select id="inbox"></select>
-    <div class="lbl" data-i18n="clients"></div>
-    <ul id="clients" class="clients"></ul>
-  </aside>
-
-  <section class="center">
-    <div class="stage card" id="stage"></div>
-
-    <nav class="tabs">
-      <button class="tab active" data-tab="todo"><span data-i18n="tabTodo"></span> <b class="count hot" id="cntTodo"></b></button>
-      <button class="tab" data-tab="done"><span data-i18n="tabDone"></span> <b class="count" id="cntDone"></b></button>
-      <button class="tab" data-tab="documents"><span data-i18n="tabDocs"></span></button>
-      <button class="tab" data-tab="log"><span data-i18n="tabLog"></span></button>
-    </nav>
-
-    <div id="tab-todo" class="tabpane">
-      <div class="chips" id="ruleChips"></div>
-      <p class="kbd muted small" data-i18n="kbd"></p>
-      <div id="todoList" class="exlist"></div>
-    </div>
-    <div id="tab-done" class="tabpane" hidden>
-      <div id="doneList" class="exlist"></div>
-    </div>
-    <div id="tab-documents" class="tabpane" hidden>
-      <div id="docGrid" class="docgrid"></div>
-    </div>
-    <div id="tab-log" class="tabpane" hidden>
-      <div id="logHead"></div>
-      <div class="tablewrap"><table class="log" id="logTable"></table></div>
-      <h3 class="ophead"><span data-i18n="opHead"></span> <small class="muted" data-i18n="opSub"></small></h3>
-      <div id="opHead"></div>
-      <div class="tablewrap"><table class="log" id="opTable"></table></div>
-    </div>
-  </section>
-</main>
+<div class="pop" id="statusPop" hidden></div>
+<div class="pop" id="userPop" hidden></div>
+<div class="pop" id="setPop" hidden></div>
 
 <dialog id="login">
   <form class="loginbox" id="loginForm">
+    <img src="static/brand/ledger-room.svg" alt="" width="40" height="40">
     <h3 data-i18n="loginTitle"></h3>
-    <p class="muted small" data-i18n="loginSub"></p>
+    <p class="muted" data-i18n="loginSub"></p>
     <label class="lbl" for="lgUser" data-i18n="user"></label><input id="lgUser" autocomplete="username" required>
     <label class="lbl" for="lgPass" data-i18n="password"></label><input id="lgPass" type="password" autocomplete="current-password" required>
     <p id="lgErr" class="err" hidden></p>
@@ -89,38 +144,18 @@
   </form>
 </dialog>
 
-<dialog id="confirm" class="small-dlg">
+<dialog id="confirm">
   <form method="dialog" class="confirmbox">
     <h3 id="cfTitle"></h3>
     <div id="cfBody"></div>
     <div class="btns end">
-      <button class="btn" value="cancel" data-i18n="cancel"></button>
+      <button class="btn ghost" value="cancel" id="cfCancel" data-i18n="cancel"></button>
       <button class="btn primary" value="ok" id="cfOk"></button>
     </div>
   </form>
 </dialog>
 
-<dialog id="viewer">
-  <div class="viewer">
-    <div class="viewer-img"><div class="imgbox" id="imgBox"><img id="viewImg" alt="voucher"></div><p class="noimg muted" id="viewNoImg" hidden></p></div>
-    <div class="viewer-side">
-      <div class="viewer-head"><h3 id="viewTitle"></h3><button class="x" id="closeViewer" aria-label="Close">&times;</button></div>
-      <div id="viewEx"></div>
-      <div id="viewDecide"></div>
-      <h4 data-i18n="viewRead"></h4>
-      <table class="fields" id="viewFields"></table>
-      <div class="viewer-nav">
-        <button class="btn" id="viewPrev" data-i18n="prev"></button>
-        <span class="muted small" id="viewPos"></span>
-        <button class="btn" id="viewNext" data-i18n="next"></button>
-      </div>
-    </div>
-  </div>
-</dialog>
-
-<div class="toast" id="toast" role="alert" hidden></div>
-
-<footer class="foot" data-i18n="foot"></footer>
+<div class="toast" id="toast" role="status" hidden></div>
 <script src="static/i18n.js"></script>
 <script src="static/app.js"></script>
 </body>
