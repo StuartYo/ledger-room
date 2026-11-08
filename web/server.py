@@ -36,6 +36,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # allow `python web/server.py`
 
+from ledger_room import agent as agentlib  # noqa: E402
 from ledger_room import corrections, export, keys, pipeline, privacy  # noqa: E402
 from ledger_room.pipeline import DATA, OUT, AuditLog  # noqa: E402
 from web import users as userdb  # noqa: E402
@@ -56,6 +57,8 @@ RUN_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 OPLOG: AuditLog | None = None
 _reader = None
 _reader_lock = threading.Lock()
+_agent = None                         # the review agent (27B with tools, ledger_room/agent.py), loaded with the reader
+_agent_err: str | None = None
 PUBLIC = {"/", "/index.html", "/favicon.ico", "/api/login", "/api/me", "/api/logout"}
 ADMIN_ONLY = {"/api/audit-log", "/api/oplog"}
 UNMASK: dict[tuple, float] = {}      # (user, session token, run) -> expiry of an unmask grant
@@ -65,6 +68,7 @@ ACTIVE: dict[str, str] = {}           # inbox -> id of the check running on it (
 RUN_LOCK = threading.Lock()
 REVIEW_LOGS: dict[str, AuditLog] = {}  # run id -> its review log (decisions on held vouchers, exports)
 REVIEW_LOCK = threading.Lock()
+OVERRIDE_LOCK = threading.Lock()
 RUNNING = {"queued", "loading model", "reading"}
 UI_INBOXES = ROOT / "web" / "inboxes.json"
 BOX_CACHE: dict[str, dict] = {}       # run id -> runs/<run>/field_boxes.json (tight field boxes, drawing only)
@@ -96,6 +100,32 @@ def get_reader():
             from ledger_room.reader import Reader
             _reader = Reader()
     return _reader
+
+
+def get_agent():
+    """The agent model, loaded on the first live check when this machine has one (agent.availability()); None when
+    it has none or it failed to load (the check then runs without it and says so)."""
+    global _agent, _agent_err
+    with _reader_lock:
+        if _agent is None and _agent_err is None and agentlib.availability()["available"]:
+            try:
+                _agent = agentlib.Agent()
+            except Exception as e:      # e.g. not enough card memory: the check goes on without the agent
+                _agent_err = f"{type(e).__name__}: {e}"[:300]
+    return _agent
+
+
+def agent_status() -> dict:
+    """For /api/status: is the agent on this machine, loaded, where, and how much card memory this process holds."""
+    av = agentlib.availability()
+    out = {"available": av["available"] and _agent_err is None, "loaded": _agent is not None,
+           "model": _agent.model_id if _agent is not None else av["model"],
+           "device": _agent.device if _agent is not None else av["device"],
+           "reason": "load_failed" if _agent_err else av["reason"], "error": _agent_err}
+    if _agent is not None or _reader is not None:
+        out["memory_gb"] = agentlib.card_memory_gb() or None
+        out["load_s"] = getattr(_agent, "load_s", None)
+    return out
 
 
 def oplog(event: str, **kw) -> None:
@@ -211,12 +241,14 @@ def run_job(job_id: str, set_name: str, live: bool, user: str, reuse: set[str] |
     job = JOBS[job_id]
     secs: list[float] = []
     try:
-        reader = None
+        reader = agent = None
         if live:
             job["status"] = "loading model"
             save_job(job)
             reader = get_reader()
             job["model"], job["device"] = reader.model_id, reader.device
+            agent = get_agent()
+            job["agent"] = {"model": agent.model_id, "device": agent.device} if agent is not None else None
         job["status"] = "reading"
         save_job(job)
 
@@ -235,7 +267,10 @@ def run_job(job_id: str, set_name: str, live: bool, user: str, reuse: set[str] |
         from ledger_room.registry import load_default
         res = pipeline.audit(set_name, reader, cache=not live, progress=prog, registry=load_default(), operator=user,
                              platform="auto", run_id=job["run_id"], reuse=reuse, resumed_from=resumed_from,
-                             on_read_error="hold")
+                             on_read_error="hold", agent=agent,
+                             # a replay (no model loaded) shows the agent runs stored for these documents, checked again
+                             # by code; a live check without an agent model has no agent step, and says so
+                             agent_replay=not live)
         job.update(status="done", summary=res["summary"], carried=carry_over_decisions(set_name, job["run_id"], res))
         save_job(job)
         oplog("run_done", user=user, run_id=job["run_id"], n_exceptions=res["summary"]["n_exceptions"])
@@ -313,6 +348,27 @@ def review_state(run: str) -> tuple[dict[str, dict], list[dict]]:
     return dec, exports
 
 
+def review_entries(run: str) -> list[dict]:
+    p = OUT / "runs" / run / "review.jsonl"
+    out = []
+    for line in AuditLog.lines(p) if p.exists() else []:
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            continue
+    return out
+
+
+def overrides_of(run: str) -> dict[str, dict]:
+    """Documents whose agent fixes a person rejected on this run (ledger_room/agent.py overrides_state)."""
+    return agentlib.overrides_state(review_entries(run))
+
+
+def base_result(result: dict, run: str) -> dict:
+    """result.json with the agent fixes a person rejected taken out again (before any field correction)."""
+    return agentlib.apply_overrides(result, overrides_of(run))
+
+
 def corrections_of(run: str) -> dict[str, dict[str, dict]]:
     """Field corrections made by reviewers on this run (corrections.py), from its review log."""
     return corrections.read_state(OUT / "runs" / run / "review.jsonl")
@@ -333,7 +389,7 @@ def effective_result(result: dict, run: str) -> dict:
     hit = _EFF.get(run)
     if hit and hit[0] == sig:
         return hit[1]
-    out = corrections.apply(result, corrections_of(run))
+    out = corrections.apply(base_result(result, run), corrections_of(run))
     _EFF[run] = (sig, out)
     return out
 
@@ -539,6 +595,7 @@ class H(BaseHTTPRequestHandler):
             lp = OUT / "runs" / run / "review.jsonl"
             v = AuditLog.verify_detail(lp, keys.audit_key(create=False), head=True) if lp.exists() else None
             return self._json({"decisions": dec, "exports": exports, "status": status, "corrections": corrections_of(run),
+                               "agent_overrides": overrides_of(run),
                                "blocking": sorted(export.BLOCKING),
                                "log_ok": None if v is None else bool(v["chain_ok"] and v["mac_ok"] is not False
                                                                       and v.get("tail_ok") is not False)})
@@ -552,9 +609,9 @@ class H(BaseHTTPRequestHandler):
                 return self._json({"error": "not found"}, 404)
             corr = corrections_of(run)
             oplog("export_summary_csv", user=s["user"], run_id=run, ip=self._ip())
-            if corr:    # corrected amounts change the totals: built from the corrected result, not the stored file
+            if corr or overrides_of(run):    # corrected amounts change the totals: built from the corrected result
                 tmp = rdir / f"export_summary.{threading.get_ident()}.tmp"
-                export.write_summary_csv(corrections.apply(json.loads(rp.read_text(encoding="utf-8")), corr), tmp)
+                export.write_summary_csv(effective_result(json.loads(rp.read_text(encoding="utf-8")), run), tmp)
                 b = tmp.read_bytes()
                 tmp.unlink(missing_ok=True)
                 self._headers("text/csv; charset=utf-8", len(b), 200,
@@ -646,7 +703,8 @@ class H(BaseHTTPRequestHandler):
                                "model": _reader.model_id if _reader else None,
                                "device": _reader.device if _reader else None,
                                "hardware": hardware_name(),
-                               "strict": pipeline.STRICT})
+                               "strict": pipeline.STRICT,
+                               "agent": agent_status()})
         return self._json({"error": "not found"}, 404)
 
     def _login(self, b: dict):
@@ -725,7 +783,8 @@ class H(BaseHTTPRequestHandler):
         rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
         if rp is None:
             return self._json({"error": "unknown run"}, 400)
-        result = json.loads(rp.read_text(encoding="utf-8"))
+        stored = json.loads(rp.read_text(encoding="utf-8"))
+        result = base_result(stored, run)
         d0 = next((d for d in result.get("docs", []) if d.get("doc_id") == doc), None)
         if d0 is None or not isinstance(d0.get("fields"), dict):
             return self._json({"error": "unknown document"}, 400)
@@ -740,11 +799,17 @@ class H(BaseHTTPRequestHandler):
             cur = corrections_of(run).get(doc, {}).get(field)
             previous = cur["new"] if cur else old
             changed = new != previous
+        ag = d0.get("agent") or {}
+        over_agent = (field in (ag.get("accepted") or {}) and ag.get("status") == "verified"
+                      and not ag.get("overridden"))
         if changed:
+            # a person changing a value the agent put in overrides the agent: the entry says so
             review_log(run).add("correct", doc_id=doc, field=field, old=old, new=new, previous=previous, note=note,
-                                user=s["user"], role=s["role"])
+                                user=s["user"], role=s["role"],
+                                **({"over_agent": True, "machine": (ag.get("machine") or {}).get(field)}
+                                   if over_agent else {}))
             oplog("correct", user=s["user"], run_id=run, doc_id=doc, field=field, old=previous, new=new, ip=self._ip())
-        eff = effective_result(result, run)
+        eff = effective_result(stored, run)
         d = next(x for x in eff["docs"] if x["doc_id"] == doc)
         exs = [e for e in eff["exceptions"] if e.get("doc_id") == doc]
         try:
@@ -757,6 +822,38 @@ class H(BaseHTTPRequestHandler):
             names = privacy.personal_names(result)
             out["exceptions"] = privacy.mask_entries(exs, names)
         return self._json(out)
+
+    def _agent_override(self, body: dict, s: dict):
+        """A person does not accept the agent's fixes on one document ({run, doc_id, action: "reject", note?}), or
+        takes that back ("restore"). Logged in the run's review log (hash chain + HMAC) and the operation log. A rejected
+        document is back to its first reading and its original reasons: it waits for a person again."""
+        run, doc = str(body.get("run", "")), str(body.get("doc_id", ""))[:200]
+        action, note = str(body.get("action", "")), str(body.get("note", "")).strip()[:300]
+        if not valid_run(run):
+            return self._json({"error": "bad run"}, 400)
+        rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+        if rp is None:
+            return self._json({"error": "unknown run"}, 400)
+        if action not in ("reject", "restore"):
+            return self._json({"error": "action must be reject or restore"}, 400)
+        stored = json.loads(rp.read_text(encoding="utf-8"))
+        d0 = next((d for d in stored.get("docs", []) if d.get("doc_id") == doc), None)
+        if d0 is None or (d0.get("agent") or {}).get("status") != "verified":
+            return self._json({"error": "no agent fix on this document", "code": "no_agent"}, 400)
+        with OVERRIDE_LOCK:     # one at a time: "changed" must compare with the state just before this entry
+            now = doc in overrides_of(run)
+            changed = now != (action == "reject")
+            if changed:
+                review_log(run).add("agent_override", doc_id=doc, action=action, note=note, user=s["user"],
+                                    role=s["role"], accepted=d0["agent"].get("accepted"),
+                                    machine=d0["agent"].get("machine"))
+        if changed:
+            oplog("agent_override", user=s["user"], run_id=run, doc_id=doc, action=action, ip=self._ip())
+        eff = effective_result(stored, run)
+        exs = [e for e in eff["exceptions"] if e.get("doc_id") == doc]
+        if not self._unmasked(s, run):
+            exs = privacy.mask_entries(exs, privacy.personal_names(stored))
+        return self._json({"ok": True, "changed": changed, "doc_id": doc, "action": action, "exceptions": exs})
 
     def _drain(self) -> None:
         """Read and drop a refused request's body (closing with unread data makes Windows reset the connection
@@ -831,6 +928,8 @@ class H(BaseHTTPRequestHandler):
             return self._json({"ok": True, "doc_id": doc, "decision": decision, "user": s["user"]})
         if path == "/api/correct":
             return self._correct(body, s)
+        if path == "/api/agent-override":
+            return self._agent_override(body, s)
         if path == "/api/run":
             st = str(body.get("set", "main"))[:64]
             resume = str(body.get("resume") or "")

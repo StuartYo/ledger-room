@@ -80,7 +80,8 @@ UNCONFIRMED = {"model-only", "unconfirmed"}
 # file is accepted without a person only when two independent sources agree (OCR text, a model reading, a check digit).
 STRICT = os.environ.get("LEDGER_STRICT_READ") == "1"
 STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)",
-                    "person"}   # "person": typed in by a reviewer from the paper (corrections.py)
+                    "person",           # typed in by a reviewer from the paper (corrections.py)
+                    "agent-verified"}   # proposed by the agent and checked by code against a non-model source (agent.py)
 UBN_ONE_READING = {"ocr-role", "ocr", "snapped"}   # one OCR reading: the check digit is the second source
 
 
@@ -424,7 +425,8 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
           registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None,
           platform_invoices: set[str] | dict[str, set[str]] | None = None,
           platform_void: set[str] | dict[str, set[str]] | None = None, platform: str | None = None,
-          reuse: set[str] | None = None, resumed_from: str | None = None, on_read_error: str = "raise") -> dict:
+          reuse: set[str] | None = None, resumed_from: str | None = None, on_read_error: str = "raise",
+          agent=None, agent_replay: bool = False) -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
     read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
@@ -432,7 +434,10 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     platform_void: numbers the platform marks 作廢, same shapes; a photographed voucher with one is held.
     platform="auto": load both from data/platform/<client UBN>/ for each client's own period (the web app does this;
     the evaluation does not, so its scores are unchanged). Explicit platform_invoices / platform_void win.
-    reuse / resumed_from: resuming an interrupted check (the web app): the documents it had read come from the cache."""
+    reuse / resumed_from: resuming an interrupted check (the web app): the documents it had read come from the cache.
+    agent: an agent.Agent (the 27B with tools) that looks at the held documents; code checks what it proposes and a
+    document whose reasons all go away is "agent-verified" (agent.py). agent_replay: without a loaded agent, use the
+    agent runs stored for these documents (cache) and check them again. Neither: no agent step, and the result says so."""
     clients, docs = load_inbox(set_name)
     platform_records = None
     if platform == "auto":
@@ -467,30 +472,35 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"),
                 **({"tier": r["tier"]} if "tier" in r else {}),
                 **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}))
-    rdocs = [to_rule_doc(d, reads[d["doc_id"]]["fields"], reads[d["doc_id"]]["provenance"], reads[d["doc_id"]].get("ocr_lines"),
-                         reads[d["doc_id"]].get("raw"))
-             for d in docs if d["doc_id"] not in failed]
-    excs = rules.run_rules(rdocs, clients, registry=registry, platform_invoices=platform_invoices,
-                           platform_void=platform_void, platform_records=platform_records)
-    rdoc_by_id = {r.doc_id: r for r in rdocs}
-    for d in docs:   # tiered mode: the second reader's process died before re-reading this document
-        crash = (reads[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
-        if crash:
-            excs.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
-                                         "The second reader stopped before it could re-read this document "
-                                         f"({crash}); check it by eye.", ["total"], confidence="low"))
-        f = failed.get(d["doc_id"])
-        if f:
-            excs.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
-                                         f"This document was not read ({f.get('reason')}: {f.get('detail')}); "
-                                         "check it by eye.", [], confidence="low"))
+    rule_kw = dict(registry=registry, platform_invoices=platform_invoices, platform_void=platform_void,
+                   platform_records=platform_records)
+
+    def rule_pass(rd: dict) -> tuple[list, list]:
+        rdocs_ = [to_rule_doc(d, rd[d["doc_id"]]["fields"], rd[d["doc_id"]]["provenance"],
+                              rd[d["doc_id"]].get("ocr_lines"), rd[d["doc_id"]].get("raw"))
+                  for d in docs if d["doc_id"] not in failed]
+        excs_ = rules.run_rules(rdocs_, clients, **rule_kw)
+        for d in docs:   # tiered mode: the second reader's process died before re-reading this document
+            crash = (rd[d["doc_id"]].get("tier") or {}).get("second_reader_crashed")
+            if crash:
+                excs_.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
+                                              "The second reader stopped before it could re-read this document "
+                                              f"({crash}); check it by eye.", ["total"], confidence="low"))
+            f = failed.get(d["doc_id"])
+            if f:
+                excs_.append(rules.Exception_(d["doc_id"], d["client_id"], "READ_REVIEW", "review",
+                                              f"This document was not read ({f.get('reason')}: {f.get('detail')}); "
+                                              "check it by eye.", [], confidence="low"))
+        return rdocs_, excs_
+
+    rdocs, excs = rule_pass(reads)
     by_id = {d["doc_id"]: d for d in docs}
-    out_ex = []
-    for k, e in enumerate(excs):
+
+    def ex_dict(e, rd: dict) -> dict:
         ed = e.to_dict()
         if e.rule_id == "READ_REVIEW" and e.doc_id in failed:
             ed["reason"] = failed[e.doc_id].get("reason")
-        r = reads[e.doc_id]
+        r = rd[e.doc_id]
         fields = EVIDENCE.get(e.rule_id) or e.evidence_fields
         ev = []
         for f in fields:
@@ -507,9 +517,61 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         ed["evidence"] = ev
         ed["image"] = f"{set_name}/clients/{e.doc_id}"
         ed["image_size"] = r.get("image_size")
+        return ed
+
+    # the agent: the 27B with tools looks at the held documents, code checks every value it proposes (agent.py)
+    agent_recs: dict[str, dict] = {}
+    agent_info = {"ran": agent is not None, "replay": agent is None and agent_replay,
+                  "model": getattr(agent, "model_id", None), "device": getattr(agent, "device", None)}
+    if agent is not None or agent_replay:
+        from . import agent as agent_mod
+        t_ag = time.time()
+        agent_recs = agent_mod.process([d for d in docs if d["doc_id"] not in failed], reads,
+                                       {r.doc_id: r for r in rdocs}, excs, clients, agent,
+                                       cache_dir=OUT / "cache" / "agent", use_cache=cache or agent is None,
+                                       rules_kw=rule_kw)
+        excs0, reads0 = excs, reads
+        if any(v["status"] == "verified" for v in agent_recs.values()):
+            for _ in range(3):
+                ok = {k: v for k, v in agent_recs.items() if v["status"] == "verified"}
+                fixed = dict(reads0)
+                for k, v in ok.items():
+                    r = dict(reads0[k])
+                    r["fields"] = {**r["fields"], **v["accepted"]}
+                    r["provenance"] = {**r["provenance"], **{f: agent_mod.PROVENANCE for f in v["accepted"]}}
+                    fixed[k] = r
+                rdocs, excs = rule_pass(fixed)
+                reads = fixed
+                # judged one at a time; with all the fixes in, a cleared document must still be clear (a duplicate)
+                again = {e.doc_id for e in agent_mod.held(excs) if e.doc_id in ok}
+                if not again:
+                    break
+                for k in again:
+                    agent_recs[k]["status"] = "held"
+                    agent_recs[k]["still_held_for"] = [f"{e.rule_id}:{','.join(e.evidence_fields)}"
+                                                       for e in agent_mod.held(excs, k)] + ["after-other-fixes"]
+        for k, v in agent_recs.items():
+            # the reasons it was held for, as a person would have seen them (kept when the agent clears it)
+            v["held_exceptions"] = [ex_dict(e, reads0) for e in excs0
+                                    if e.doc_id == k and e.severity in agent_mod.HELD_SEVERITY]
+            if v["status"] != "verified":
+                v["accepted_not_applied"] = v["accepted"]     # checked, but the document still goes to a person
+                v["accepted"] = {}
+        agent_info.update(seconds=round(time.time() - t_ag, 2), tried=len(agent_recs),
+                          verified=sum(v["status"] == "verified" for v in agent_recs.values()),
+                          replayed=sum(bool(v.get("replayed")) for v in agent_recs.values()),
+                          models=sorted({v.get("model") for v in agent_recs.values() if v.get("model")}))
+    out_ex = []
+    for e in excs:
+        ed = ex_dict(e, reads)
         out_ex.append(ed)
         log.add("exception", doc_id=e.doc_id, rule_id=e.rule_id, severity=e.severity,
                 citations=[c["url"] for c in ed["citations"] if c["url"]])
+    if agent_recs:
+        from . import agent as agent_mod
+        for k, v in sorted(agent_recs.items()):
+            log.add("agent_check", **agent_mod.log_entry(k, v))
+    rdoc_by_id = {r.doc_id: r for r in rdocs}
     elapsed = round(time.time() - t0, 2)
     per_doc_read = [reads[d["doc_id"]]["timing"].get("total_s") for d in docs]
     per_doc_read = [x for x in per_doc_read if x is not None]
@@ -522,6 +584,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
         "elapsed_s": elapsed,
         "mean_read_s": round(sum(per_doc_read) / len(per_doc_read), 2) if per_doc_read else None,
         "unreadable_fields": sum(1 for d in docs for v in reads[d["doc_id"]]["provenance"].values() if v in UNCONFIRMED),
+        "agent": agent_info,
     }
     log.add("run_end", **{k: v for k, v in summary.items() if k != "run_id"})
     result = {
@@ -537,6 +600,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                   "tax_voucher_kind": rdoc_by_id[d["doc_id"]].tax_voucher_kind if d["doc_id"] in rdoc_by_id else None,
                   "small_business_receipt": rdoc_by_id[d["doc_id"]].small_business_receipt if d["doc_id"] in rdoc_by_id else False,
                   **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}),
+                  **({"agent": agent_recs[d["doc_id"]]} if d["doc_id"] in agent_recs else {}),
                   **({"tier": reads[d["doc_id"]]["tier"]} if "tier" in reads[d["doc_id"]] else {})} for d in docs],
         "exceptions": out_ex,
         "rules": rules.RULES,

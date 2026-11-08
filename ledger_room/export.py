@@ -188,6 +188,11 @@ def rows(result: dict, review: dict[str, dict] | None = None) -> list[dict]:
                                       [i.get("desc") or "" for i in f.get("items") or []])
         if fa and code:
             notes.append("may be a fixed asset: confirm deduction code 2 (or 4 if non-deductible)")
+        ag = d.get("agent") or {}
+        if ag.get("status") == "verified" and not ag.get("overridden"):    # agent.py: proposed by the agent, code-checked
+            for k, v in (ag.get("accepted") or {}).items():
+                ev = "+".join(((ag.get("checks") or {}).get(k) or {}).get("evidence") or [])
+                notes.append(f"{k} agent-verified ({ev}): read {(ag.get('machine') or {}).get(k)}, agent {v}")
         for k, fix in (d.get("corrections") or {}).items():    # corrections.py: a reviewer typed the value from the paper
             notes.append(f"{k} corrected by {fix.get('user') or 'reviewer'}: read {fix.get('old')}, paper {fix.get('new')}")
         out.append({
