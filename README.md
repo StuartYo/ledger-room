@@ -448,7 +448,9 @@ Measured on the Arc Pro B70 (GPU.1, `eval/results_agent_b70.json`, two runs, ide
 The agent made 35 proposals; 5 were wrong and code refused all 5. A held document takes 8.0 s on average, 18.0 s at
 most. In the web app's strict mode on the demo inboxes the agent cleared 2 of 7 held documents (heldout2), 0 of 2
 (heldout) and 8 of 12 (main); every one was an invoice number confirmed by the zoom OCR, nothing changed. On blind3 it
-cleared 10 of 20, two of them by filling in a total from net + tax.
+cleared 10 of 20, two of them by filling in a total from net + tax. On the recording inbox (Sample firm D, 50
+vouchers, organizers' host, 11-09) it looked at 10 held documents in about two and a half minutes and cleared 3; while
+it works, the check page shows "The agent is on the held vouchers: i of n".
 
 What these numbers do not show:
 
