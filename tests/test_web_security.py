@@ -277,5 +277,5 @@ def test_front_end_uses_relative_urls_so_it_works_under_a_proxy_path():
     root = pathlib.Path(server.__file__).parent / "static"
     for f in ("app.js", "index.html"):
         t = (root / f).read_text(encoding="utf-8")
-        for bad in ('"/api/', "`/api/", '"/img/', "`/img/", '"/static/'):
+        for bad in ('"/api/', "`/api/", '"/img/', "`/img/", '"/static/', '"/out/', "`/out/"):
             assert bad not in t, (f, bad)

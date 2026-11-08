@@ -208,7 +208,7 @@ function renderExceptions() {
   if (!list.length) { $("#exList").innerHTML = `<div class="card empty">No exceptions for this selection.</div>`; return; }
   $("#exList").innerHTML = list.map((e, i) => {
     const plat = e.source === "e-invoice";
-    const crops = (e.evidence || []).map((v) => `<img src="/out/${esc(v.crop)}" alt="${esc(v.field)}" title="${esc(v.field)}: ${esc(v.value)} (${esc(v.provenance || "")})">`).join("");
+    const crops = (e.evidence || []).map((v) => `<img src="out/${esc(v.crop)}" alt="${esc(v.field)}" title="${esc(v.field)}: ${esc(v.value)} (${esc(v.provenance || "")})">`).join("");
     const prov = (e.evidence || []).map((v) => `${esc(v.field)}: <span class="prov ${GOOD.has(v.provenance) ? "good" : "weak"}">${esc(v.provenance || "n/a")}</span>`).join(" ");
     const cites = e.citations.map((c) => c.url
       ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${ICON_LINK}${esc(c.label)}</a>`
