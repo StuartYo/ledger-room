@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>Ledger Room (small)</title>
 <rect x="1" y="1" width="62" height="62" rx="13" fill="#16181d" stroke="#3a3e48" stroke-width="2"/>
-<path transform="rotate(10 42 24)" d="M31 8h15l7 7v26l-5.5-4-5.5 4-5.5-4-5.5 4z" fill="none" stroke="#f2f2f3" stroke-width="5" stroke-linejoin="round"/>
-<path d="M9 12h19l9 9v34l-7-5-7 5-7-5-7 5z" fill="#f2f2f3" stroke="#16181d" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>
-<path d="M28 12v9h9z" fill="#9ea3ad"/>
-<rect x="14" y="28" width="15" height="5" fill="#16181d"/>
-<circle cx="46" cy="47" r="12.5" fill="#1d5fbf" stroke="#16181d" stroke-width="3.5"/>
-<path d="M40 47.2l4.2 4.2 7.3-8.1" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M24 7h20l9 9v28l-7-5-7 5-7-5-8 5z" fill="#7a808c"/>
+<path d="M9 15h19l9 9v33l-7-5-7 5-7-5-7 5z" fill="#f2f2f3" stroke="#16181d" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M28 15v9h9z" fill="#9ea3ad"/>
+<rect x="14" y="31" width="15" height="5" fill="#16181d"/>
+<circle cx="46" cy="48" r="12.5" fill="#1d5fbf" stroke="#16181d" stroke-width="3.5"/>
+<path d="M40 48.2l4.2 4.2 7.3-8.1" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
