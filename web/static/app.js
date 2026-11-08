@@ -17,6 +17,11 @@ const S = {
 };
 const DECISIONS = ["confirm", "nondeductible", "exclude", "defer"];
 const GOOD = new Set(["ocr-confirmed", "ocr-confirmed (second reader)", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword"]);
+// a field a READ_REVIEW reason sends to a person is never labelled "two sources agree", whatever its provenance:
+// otherwise the reason says "read from one source only" and the table under it says the opposite
+const heldFields = (exs) => new Set((exs || []).filter((e) => e.rule_id === "READ_REVIEW")
+  .flatMap((e) => [...(e.evidence_fields || []), ...(e.evidence || []).map((v) => v.field)]));
+const provOk = (field, prov, held) => GOOD.has(prov) && !held.has(field);
 const ICON_LINK = '<svg viewBox="0 0 24 24"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>';
 
 // ---------- language ----------
@@ -448,12 +453,12 @@ function decisionButtons(it) {
 function itemCard(it, i, mode) {
   const crops = it.exs.flatMap((e) => e.evidence || []).filter((v, k, a) => a.findIndex((x) => x.crop === v.crop) === k)
     .slice(0, 3).map((v) => `<img src="out/${esc(v.crop)}" alt="${esc(v.field)}" title="${esc(t("f_" + v.field))}: ${esc(v.value)}">`).join("");
-  const img = it.exs.find((e) => e.image)?.image;
+  const img = it.exs.find((e) => e.image)?.image, held = heldFields(it.exs);
   const exHtml = it.exs.map((e) => {
     const cites = (e.citations || []).filter((c) => c.url || S.lang !== "zh" || /[一-鿿]/.test(c.label)).map((c) => c.url
       ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${ICON_LINK}${esc(citeLabel(c))}</a>`
       : `<span>${esc(citeLabel(c))}</span>`).join("");
-    const prov = (e.evidence || []).map((v) => `${esc(t("f_" + v.field))}: <span class="prov ${GOOD.has(v.provenance) ? "good" : "weak"}" title="${esc(t("provTip", { p: v.provenance || "n/a" }))}">${GOOD.has(v.provenance) ? t("good") : t("weak")}</span>`).join(" ");
+    const prov = (e.evidence || []).map((v) => { const ok = provOk(v.field, v.provenance, held); return `${esc(t("f_" + v.field))}: <span class="prov ${ok ? "good" : "weak"}" title="${esc(t("provTip", { p: v.provenance || "n/a" }))}">${ok ? t("good") : t("weak")}</span>`; }).join(" ");
     const rel = e.related_docs?.length ? `<div class="rel">${t("sameVoucher")} ${e.related_docs.map((r) => {
       const d = docById(r); return d ? `<img src="img/${esc(d.image)}" data-open="${esc(r)}" title="${esc(r)}"><span class="mono">${esc(r)}</span>` : esc(r);
     }).join(" ")}</div>` : "";
@@ -567,13 +572,14 @@ function openDoc(docId, mode) {
     : decisionButtons(it) + `<p class="sugline">${it.suggest ? t("suggest", { d: t("d_" + it.suggest) }) : t("suggestPaper")}</p>`) : "";
   $$("#viewDecide .dbtn").forEach((b) => (b.onclick = () => decideInViewer(b.dataset.d)));
   $$("#viewDecide [data-undo]").forEach((b) => (b.onclick = () => { decide(docId, "undo"); openDoc(docId, mode === "done" ? "todo" : mode); }));
-  const f = d.fields || {}, p = d.provenance || {};
-  const keys = ["doc_type", "invoice_no", "date", "invoice_period", "seller_name", "seller_ubn", "buyer_name", "buyer_ubn", "items", "net", "tax", "total", "note", "category"];
+  const f = d.fields || {}, p = d.provenance || {}, held = heldFields(exs);
+  const keys =["doc_type", "invoice_no", "date", "invoice_period", "seller_name", "seller_ubn", "buyer_name", "buyer_ubn", "items", "net", "tax", "total", "note", "category"];
   $("#viewFields").innerHTML = d.fields ? keys.map((key) => {
     let v = f[key];
     if (key === "items") v = (v || []).map((i) => `${i.desc} x${i.qty ?? "?"} = ${i.amount ?? "?"}`).join("; ");
     if (key === "doc_type" && v) v = DOC_TYPE[S.lang]?.[v] || v;
-    const pv = p[key] ? `<span class="prov ${GOOD.has(p[key]) ? "good" : "weak"}" title="${esc(t("provTip", { p: p[key] }))}">${GOOD.has(p[key]) ? t("good") : t("weak")}</span>` : "";
+    const ok = provOk(key, p[key], held);
+    const pv = p[key] ? `<span class="prov ${ok ? "good" : "weak"}" title="${esc(t("provTip", { p: p[key] }))}">${ok ? t("good") : t("weak")}</span>` : "";
     return `<tr><td>${t("f_" + key)}</td><td>${esc(v ?? "")} ${pv}</td></tr>`;
   }).join("") : `<tr><td class="muted">${t(d.platform ? "einvFields" : "notRead")}</td></tr>`;
   const k = S.view.ids.indexOf(docId);
