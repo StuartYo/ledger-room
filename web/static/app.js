@@ -27,7 +27,7 @@ function login() {
     $("#lgErr").hidden = true;
     $("#loginForm").onsubmit = async (ev) => {
       ev.preventDefault();
-      const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await fetch("api/login", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: $("#lgUser").value, password: $("#lgPass").value }) });
       const b = await r.json();
       if (!r.ok) { $("#lgErr").textContent = b.error || "Sign-in failed"; $("#lgErr").hidden = false; return; }
@@ -66,7 +66,7 @@ async function toggleUnmask() {
   if (S.unmasked === S.runId) { S.unmasked = null; return loadRun(S.runId); }
   const reason = window.prompt("Why do you need to see personal data for this run? (goes to the operation log)");
   if (!reason || reason.trim().length < 4) return;
-  const r = await fetch("/api/unmask", { method: "POST", headers: { "Content-Type": "application/json" },
+  const r = await fetch("api/unmask", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ run: S.runId, reason: reason.trim() }) });
   const b = await r.json();
   if (!r.ok) { window.alert(b.error || "Not allowed"); return; }
@@ -76,13 +76,13 @@ async function toggleUnmask() {
 }
 
 async function init() {
-  S.me = await (await fetch("/api/me")).json();
+  S.me = await (await fetch("api/me")).json();
   if (!S.me.user) await login();
   showUser();
-  $("#logoutBtn").onclick = async () => { await fetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); location.reload(); };
-  $("#exportBtn").onclick = () => { if (S.runId) location.href = `/api/export?run=${encodeURIComponent(S.runId)}${um()}`; };
+  $("#logoutBtn").onclick = async () => { await fetch("api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); location.reload(); };
+  $("#exportBtn").onclick = () => { if (S.runId) location.href = `api/export?run=${encodeURIComponent(S.runId)}${um()}`; };
   $("#unmaskBtn").onclick = toggleUnmask;
-  const boxes = await j("/api/inboxes");
+  const boxes = await j("api/inboxes");
   const sel = $("#inbox");
   sel.innerHTML = boxes.map((b) => `<option value="${esc(b.set)}">${esc(b.set)} (${b.n_docs} documents, ${b.n_clients} clients)</option>`).join("");
   sel.value = boxes.some((b) => b.set === "main") ? "main" : boxes[0]?.set;
@@ -98,7 +98,7 @@ async function init() {
 
 async function status() {
   try {
-    const s = await j("/api/status");
+    const s = await j("api/status");
     if (s.model_loaded) $("#modelPill").textContent = `Model: ${s.model} on OpenVINO (${s.device})${s.strict ? " · strict" : ""}`;
     else $("#modelPill").textContent = `Model loads on first check${s.strict ? " · strict" : ""}`;
   } catch (e) { /* ignore */ }
@@ -106,8 +106,8 @@ async function status() {
 
 async function loadInbox(set) {
   S.set = set; S.client = "ALL"; S.rules.clear(); S.run = null; S.runId = null;
-  S.inbox = await j(`/api/inbox?set=${encodeURIComponent(set)}`);
-  const runs = await j("/api/runs");
+  S.inbox = await j(`api/inbox?set=${encodeURIComponent(set)}`);
+  const runs = await j("api/runs");
   const mine = runs.filter((r) => r.startsWith(set + "-"));
   const pick = mine[0] || (runs.includes("eval-" + set) ? "eval-" + set : null);
   if (pick) await loadRun(pick); else renderAll();
@@ -115,7 +115,7 @@ async function loadInbox(set) {
 
 async function loadRun(runId) {
   S.runId = runId;
-  S.run = await j(`/api/result?run=${encodeURIComponent(runId)}${um()}`);
+  S.run = await j(`api/result?run=${encodeURIComponent(runId)}${um()}`);
   renderAll();
   showMask();
   if (S.tab === "log") renderLog();
@@ -214,11 +214,11 @@ function renderExceptions() {
       ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${ICON_LINK}${esc(c.label)}</a>`
       : `<span>${esc(c.label)}</span>`).join("");
     const rel = e.related_docs.length ? `<div class="rel">Same voucher: ${e.related_docs.map((r) => {
-      const d = docById(r); return d ? `<img src="/img/${esc(d.image)}" data-doc="${esc(r)}" title="${esc(r)}"><span class="mono">${esc(r)}</span>` : esc(r);
+      const d = docById(r); return d ? `<img src="img/${esc(d.image)}" data-doc="${esc(r)}" title="${esc(r)}"><span class="mono">${esc(r)}</span>` : esc(r);
     }).join(" ")}</div>` : "";
     return `<article class="card ex" style="animation-delay:${Math.min(i, 12) * 25}ms">
       <div class="ev">${plat ? `<div class="einv" title="Read from the MOF e-invoice platform download: no photo, no OCR">E-invoice<br><small>platform download</small></div>`
-        : `${crops}<img class="thumb" src="/img/${esc(e.image)}" data-doc="${esc(e.doc_id)}" alt="document">`}</div>
+        : `${crops}<img class="thumb" src="img/${esc(e.image)}" data-doc="${esc(e.doc_id)}" alt="document">`}</div>
       <div>
         <h3>${esc(e.title)} <span class="sev ${esc(e.severity)}">${esc(e.severity)}</span></h3>
         <div class="meta"><span class="mono">${esc(e.doc_id)}</span><span>${esc(clientName(e.client_id))}</span>${e.source ? `<span class="src">period check · ${plat ? "e-invoice" : "paper"}</span>` : ""}${e.confidence !== "high" ? `<span>confidence: ${esc(e.confidence)}</span>` : ""}</div>
@@ -238,7 +238,7 @@ function renderDocs() {
   $("#docGrid").innerHTML = docs.map((d) => {
     const ex = allExceptions().filter((e) => e.doc_id === d.doc_id).map((e) => RULE_SHORT[e.rule_id] || e.rule_id);
     return `<div class="card doc ${flagged.has(d.doc_id) ? "flag" : ""}" data-doc="${esc(d.doc_id)}">
-      <img src="/img/${esc(d.image)}" alt="" loading="lazy"><div class="dn">${esc(d.doc_id)}</div>
+      <img src="img/${esc(d.image)}" alt="" loading="lazy"><div class="dn">${esc(d.doc_id)}</div>
       <div class="ds ${ex.length ? "" : "muted"}">${ex.length ? esc(ex.join(", ")) : S.run ? "no exceptions" : ""}</div></div>`;
   }).join("");
   document.querySelectorAll("#docGrid .doc").forEach((el) => (el.onclick = () => openDoc(el.dataset.doc)));
@@ -249,7 +249,7 @@ function openDoc(docId) {
   if (!d) return;
   $("#viewTitle").textContent = docId;
   const img = $("#viewImg");
-  img.src = `/img/${d.image}`;
+  img.src = `img/${d.image}`;
   const exs = allExceptions().filter((e) => e.doc_id === docId);
   const want = new Set(exs.flatMap((e) => (e.evidence || []).map((v) => v.field)));
   const box = $("#imgBox");
@@ -298,7 +298,7 @@ async function renderLog() {
     $("#logHead").innerHTML = `<p class="muted">The audit log and the operation log are visible to admins only.</p>`;
     $("#logTable").innerHTML = ""; $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return;
   }
-  const L = await j(`/api/audit-log?run=${encodeURIComponent(S.runId)}${um()}`);
+  const L = await j(`api/audit-log?run=${encodeURIComponent(S.runId)}${um()}`);
   $("#logHead").innerHTML = verifyBox(L) + `<p class="muted small">Every read and every exception is logged with the document's SHA-256, the model and the device.
     Each entry carries the hash of the previous entry and an HMAC under the operator key, which is kept outside the data folder. That detects edits,
     insertions and deletions made by anyone without the key; it cannot stop someone who holds both the disk and the key. Supports Art. 19 of the
@@ -324,7 +324,7 @@ function verifyBox(L) {
 
 async function renderOplog() {
   let L;
-  try { L = await j("/api/oplog"); } catch (e) { $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return; }
+  try { L = await j("api/oplog"); } catch (e) { $("#opHead").innerHTML = ""; $("#opTable").innerHTML = ""; return; }
   $("#opHead").innerHTML = verifyBox(L);
   $("#opTable").innerHTML = `<tr><th>#</th><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>Hash</th></tr>` +
     L.entries.slice().reverse().slice(0, 200).map((e) => `<tr><td>${e.seq}</td><td>${esc((e.ts || "").slice(5, 19).replace("T", " "))}</td>
@@ -339,16 +339,16 @@ async function startRun(live) {
   $("#progText").textContent = live ? "Loading the model on this machine..." : "Replaying cached reads...";
   $("#progSub").textContent = "";
   try {
-    const job = await j("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ set: S.set, live }) });
+    const job = await j("api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ set: S.set, live }) });
     for (;;) {
       await new Promise((r) => setTimeout(r, 350));
-      const s = await j("/api/job/" + job.id);
+      const s = await j("api/job/" + job.id);
       if (s.n) {
         $("#barFill").style.width = (100 * s.i) / s.n + "%";
         $("#progText").textContent = `${s.i} / ${s.n}  ${s.doc_id || ""}`;
         $("#progSub").textContent = s.cached ? "cached read" : s.last_s ? `read in ${s.last_s} s on ${s.device || "local device"}` : s.status;
         const d = S.inbox.docs.find((x) => x.doc_id === s.doc_id);
-        if (d) $("#progThumb").src = `/img/${d.image}`;
+        if (d) $("#progThumb").src = `img/${d.image}`;
       } else {
         $("#progSub").textContent = s.status;
       }

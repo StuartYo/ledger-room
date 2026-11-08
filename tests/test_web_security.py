@@ -256,3 +256,24 @@ def test_server_verified_flag_includes_tail(app):
     p.write_text("".join(x + "\n" for x in AuditLog.lines(p)[:-1]), encoding="utf-8")
     b = json.loads(req(port, "GET", "/api/audit-log?run=r1")[1])
     assert b["verified"] is False and b["tail_ok"] is False and b["chain_ok"] is True
+
+
+def test_proxy_origin_admits_only_that_host_and_origin(app, monkeypatch):
+    port, _ = app
+    proxy = "cloud-1.example.com"
+    assert req(port, "GET", "/api/status", host=proxy)[0] == 403
+    monkeypatch.setitem(server.CFG, "proxy_origin", f"https://{proxy}")
+    assert req(port, "GET", "/api/status", host=proxy)[0] == 200
+    assert req(port, "GET", "/api/status", host="evil.example.com")[0] == 403
+    ok = {"Origin": f"https://{proxy}", "Sec-Fetch-Site": "same-origin"}
+    bad = {"Origin": "https://evil.example.com", "Sec-Fetch-Site": "cross-site"}
+    assert post(port, "/api/run", {"set": "nope"}, host=proxy, headers=bad)[0] == 403
+    assert post(port, "/api/run", {"set": "nope"}, host=proxy, headers=ok)[0] != 403
+
+
+def test_front_end_uses_relative_urls_so_it_works_under_a_proxy_path():
+    root = pathlib.Path(server.__file__).parent / "static"
+    for f in ("app.js", "index.html"):
+        t = (root / f).read_text(encoding="utf-8")
+        for bad in ('"/api/', "`/api/", '"/img/', "`/img/", '"/static/'):
+            assert bad not in t, (f, bad)

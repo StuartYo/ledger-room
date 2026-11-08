@@ -217,14 +217,16 @@ class H(BaseHTTPRequestHandler):
         if not CFG["local"]:
             return True
         port = CFG["port"]
-        return (self.headers.get("Host") or "").strip().lower() in {f"127.0.0.1:{port}", f"localhost:{port}",
-                                                                    f"[::1]:{port}"}
+        host = (self.headers.get("Host") or "").strip().lower()
+        if CFG.get("proxy_origin") and host == urlparse(CFG["proxy_origin"]).netloc.lower():
+            return True     # --proxy-origin: an authenticating reverse proxy on this machine (e.g. JupyterLab's)
+        return host in {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
 
     def _same_origin(self) -> bool:
         origin = self.headers.get("Origin")
         if origin is not None:
             scheme = "https" if CFG["tls"] or CFG["secure"] else "http"
-            if origin != f"{scheme}://{self.headers.get('Host') or ''}":
+            if origin != f"{scheme}://{self.headers.get('Host') or ''}" and origin != CFG.get("proxy_origin"):
                 return False
         site = self.headers.get("Sec-Fetch-Site")
         return site is None or site in ("same-origin", "none")
@@ -514,6 +516,9 @@ def main():
     ap.add_argument("--port", type=int, default=8780)
     ap.add_argument("--cert", help="TLS certificate (PEM); serve HTTPS")
     ap.add_argument("--key", help="TLS private key (PEM) for --cert")
+    ap.add_argument("--proxy-origin", metavar="URL",
+                    help="local mode only: also accept requests forwarded by an authenticating reverse proxy on this "
+                         "machine whose browser origin is URL (e.g. JupyterLab's /proxy/8780/ on a remote host)")
     ap.add_argument("--not-strict", action="store_true",
                     help="accept a value on one source (development only); the app checks strictly by default")
     ap.add_argument("--behind-tls-proxy", action="store_true",
@@ -527,6 +532,11 @@ def main():
     CFG["users"] = userdb.load()
     CFG["local"] = not CFG["users"]
     CFG["host"] = a.host
+    if a.proxy_origin:
+        u = urlparse(a.proxy_origin)
+        if u.scheme != "https" or not u.netloc or u.path not in ("", "/") or not is_loopback(a.host):
+            sys.exit("--proxy-origin needs an https://host origin, and the server must listen on 127.0.0.1")
+        CFG["proxy_origin"] = f"https://{u.netloc}"
     CFG["tls"] = bool(a.cert)
     CFG["secure"] = bool(a.cert) or a.behind_tls_proxy
     if CFG["local"] and not is_loopback(a.host):
