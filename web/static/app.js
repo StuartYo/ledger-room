@@ -17,10 +17,14 @@ const S = {
   page: ["queue", "documents", "log"].includes(store.get("page", "queue")) ? store.get("page", "queue") : "queue",
   screen: null, qtab: store.get("qtab", "todo") === "done" ? "done" : "todo", group: !!store.get("group", false),
   q: "", collapsed: new Set(), allFields: false, zoom: 1, whyOpen: new Set(), last: null, status: null,
+  // review screen: the left list folded to a strip (remembered; folded by default on narrow screens), tight field boxes
+  miniHide: store.get("miniHide", window.innerWidth < 1600), tb: {}, editing: null,
 };
 S.screen = S.page;
 const DECISIONS = ["confirm", "nondeductible", "exclude", "defer"];
-const GOOD = new Set(["ocr-confirmed", "ocr-confirmed (second reader)", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword"]);
+const GOOD = new Set(["ocr-confirmed", "ocr-confirmed (second reader)", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword", "person"]);
+// fields a person can correct on the review screen (ledger_room/corrections.py EDITABLE)
+const EDITABLE = ["invoice_no", "date", "seller_ubn", "buyer_ubn", "net", "tax", "total"];
 // a field a READ_REVIEW reason sends to a person is never labelled "two sources agree", whatever its provenance:
 // otherwise the reason says "read from one source only" and the table under it says the opposite
 const heldFields = (exs) => new Set((exs || []).filter((e) => e.rule_id === "READ_REVIEW")
@@ -28,11 +32,16 @@ const heldFields = (exs) => new Set((exs || []).filter((e) => e.rule_id === "REA
 const provOk = (field, prov, held) => GOOD.has(prov) && !held.has(field);
 const FIELD_KEYS = ["doc_type", "invoice_no", "date", "invoice_period", "seller_name", "seller_ubn", "buyer_name", "buyer_ubn", "items", "net", "tax", "total", "note", "category"];
 const FIELD_CORE = ["invoice_no", "date", "seller_name", "seller_ubn", "buyer_ubn", "items", "net", "tax", "total"];
+const AMOUNT = ["net", "tax", "total"];
+const fmtVal = (f, v) => (v == null || v === "" ? t("fEmpty") : AMOUNT.includes(f) ? nt(v) : String(v));
 
 // ---------- icons (Lucide, ISC licence; paths copied) ----------
 const ICONS = {
   inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
-  files: '<path d="M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M15 2v4a2 2 0 0 0 2 2h4"/><path d="M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8"/>',
+  grid: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+  panelLeft: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  userCheck: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
   settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
@@ -277,7 +286,9 @@ async function init() {
   $("#viewNext").onclick = () => stepView(1);
   $("#zIn").onclick = () => zoom(1.25); $("#zOut").onclick = () => zoom(0.8); $("#zFit").onclick = () => zoom(0);
   $("#boxToggle").onclick = toggleFields; $("#fieldToggle").onclick = toggleFields;
-  window.addEventListener("resize", () => { if (S.screen === "review") layoutPaper(); });
+  $("#miniToggle").onclick = toggleMini;
+  applyMini();
+  window.addEventListener("resize", () => { if (S.screen === "review") { layoutPaper(); redrawBoxes(); } });
   document.addEventListener("keydown", onKey);
   window.addEventListener("beforeunload", (e) => { if (S.outbox.length) { e.preventDefault(); e.returnValue = ""; } });
   window.addEventListener("online", flush);
@@ -364,7 +375,8 @@ function items() {
     it.status = st;
     it.must = st ? st === "HOLD" : it.exs.some((e) => blocking.has(e.rule_id) || e.severity === "hold");
     it.dec = S.review.decisions?.[it.doc_id] || null;
-    it.suggest = it.exs.map((e) => SUGGEST[e.rule_id]).find(Boolean) || null;
+    it.suggest = suggestFor(it.primary);              // always one of the four keys
+    it.paper = it.exs.some((e) => PAPER_FIRST.has(e.rule_id));
     const d = docById(it.doc_id), f = d?.fields || {};
     it.doc = d;
     it.inv = f.invoice_no || evValue(it.exs, "invoice_no") || null;
@@ -432,6 +444,11 @@ function undoLast() {
   const L = S.last;
   if (!L || L.run !== S.runId) return;
   S.last = null;
+  if (L.kind === "correct") {         // put the field back to the value shown before the correction
+    post("api/correct", { run: L.run, doc_id: L.doc, field: L.field, value: L.prev == null ? "" : String(L.prev) })
+      .then(() => loadRun(S.runId)).then(() => toast(t("toastUndone", { n: 1 }))).catch((e) => toast(e.message));
+    return;
+  }
   const at = Date.now();
   L.prev.forEach(({ id, d }) => { const o = { run: S.runId, doc_id: id, decision: d || "undo", at }; S.outbox.push(o); applyLocal(o); });
   store.set("outbox", S.outbox);
@@ -616,7 +633,7 @@ function renderPeriod() {
   $("#runPick") && ($("#runPick").onchange = (e) => { S.jobEnd = null; loadRun(e.target.value); });
 }
 
-function sugLabel(it) { return it.suggest ? t("d_" + it.suggest) : t("checkPaper"); }
+function sugLabel(it) { return t("d_" + it.suggest); }
 function renderQueue() {
   $$("[data-qtab]").forEach((b) => b.classList.toggle("on", b.dataset.qtab === S.qtab));
   $$("[data-group]").forEach((b) => b.classList.toggle("on", (b.dataset.group === "1") === S.group));
@@ -760,7 +777,7 @@ function openDoc(docId, mode, keep) {
     ids = mode === "todo" || mode === "done" ? list.map((it) => it.doc_id) : list && list.length ? list : [docId];
     if (!ids.includes(docId)) ids = [docId];
   }
-  if (S.view?.docId !== docId) { S.whyOpen = new Set(); S.zoom = 1; }
+  if (S.view?.docId !== docId) { S.whyOpen = new Set(); S.zoom = 1; S.editing = null; }
   S.view = { docId, mode, ids };
   S.screen = "review";
   closePops();
@@ -768,7 +785,7 @@ function openDoc(docId, mode, keep) {
 }
 function closeReview() {
   const v = S.view;
-  S.screen = S.page; S.view = null;
+  S.screen = S.page; S.view = null; S.editing = null;
   if (v?.mode && S.page === "queue") {
     const k = visibleRows().findIndex((it) => it.doc_id === v.docId);
     if (k >= 0) S.focus = k;
@@ -855,6 +872,7 @@ function renderReview() {
   };
   $("#viewEx").innerHTML = exs.length
     ? `<div class="lbl"><i class="sdot ${it.must ? "" : "w"}"></i>${esc(it.must ? t("whyMust") : t("whyLook"))}</div>` + exs.map(block).join("")
+      + (it.paper && !it.dec ? `<p class="paperhint">${icon("receipt", 14)}<span>${esc(t("paperHint"))}</span></p>` : "")
     : `<p class="muted">${esc(S.run ? t("viewNone") : t("viewNotRun"))}</p>`;
   // toggle events arrive after the fact: ignore one from a panel that was already redrawn or another voucher
   $$("#viewEx details").forEach((x) => x.addEventListener("toggle", () => {
@@ -864,14 +882,20 @@ function renderReview() {
   $$("#viewEx [data-open]").forEach((b) => (b.onclick = () => openDoc(b.dataset.open, v.mode, true)));
 
   // the four decisions
-  $("#viewDecide").innerHTML = !it ? "" : it.dec
+  // the four decisions, always in view at the bottom of the panel; the suggested key is outlined, never filled
+  const cleared = !it && d.corrections && Object.keys(d.corrections).length && !d.platform;
+  const nextId = v.ids.slice(k + 1).find((id) => map.has(id) && !map.get(id).dec);
+  $("#viewDecide").innerHTML = cleared
+    ? `<div class="decided"><span class="dl">${icon("check", 15)}${esc(t("recheckClear"))}</span>${nextId ? `<span class="sp"></span><button class="btn ghost sm" id="goNext">${esc(t("nextDoc"))}${kbd("J")}</button>` : ""}</div>`
+    : !it ? "" : it.dec
     ? `<div class="lbl">${esc(t("decideLbl"))}</div><div class="decided"><span class="dl">${icon("check", 15)}${esc(t("decidedAs", { d: t("d_" + it.dec.decision) }))}</span>
         <span class="muted">${esc(it.dec.pending ? t("saving") : t("decidedBy", { who: it.dec.user || "", when: ago(tsMs(it.dec.ts)) }))}</span><span class="sp"></span>
         <button class="btn ghost sm" id="undoOne">${icon("undo", 14)}<span>${esc(t("change"))}</span>${kbd("U")}</button></div>`
-    : `<div class="lbl"><span>${esc(t("decideLbl"))}</span>${it.suggest ? "" : `<span class="muted">${esc(t("sugPaper"))}</span>`}</div>
+    : `<div class="lbl"><span>${esc(t("decideLbl"))}</span><span class="muted acc">${kbd("Enter")}${esc(t("kAccept"))}</span></div>
        <div class="dgrid">${DECISIONS.map((x, n) => `<button class="dbtn ${it.suggest === x ? "sugg" : ""}" data-d="${x}" title="${esc(t("d_" + x + "_tip"))}"><kbd>${n + 1}</kbd>
-         <b>${esc(t("d_" + x))}${it.suggest === x ? `<span class="stag">${esc(t("suggested"))}</span>` : ""}</b><small>${esc(t("d_" + x + "_sub"))}</small></button>`).join("")}</div>`;
+         <b>${esc(t("d_" + x))}${it.suggest === x ? `<span class="stag" title="${esc(t("sugTip"))}">${esc(t("sugTag"))}</span>` : ""}</b><small>${esc(t("d_" + x + "_sub"))}</small></button>`).join("")}</div>`;
   $$("#viewDecide .dbtn").forEach((b) => (b.onclick = () => decideInViewer(b.dataset.d)));
+  $("#goNext") && ($("#goNext").onclick = () => stepView(1));
   $("#undoOne") && ($("#undoOne").onclick = () => decide([docId], "undo", t("toastOne", { c: shortName(clientName(d.client_id)), d: t("taken") })));
 
   // what was read: only the fields read once are labelled; the rest carry no label
@@ -879,18 +903,45 @@ function renderReview() {
   const p = d.provenance || {};
   const keys = S.allFields ? FIELD_KEYS : FIELD_CORE.concat(FIELD_KEYS.filter((x) => !FIELD_CORE.includes(x) && (held.has(x) || key.includes(x)) && f[x] != null));
   let agree = 0, counted = 0;
+  const corr = d.corrections || {};
   const rows = d.fields ? keys.map((x) => {
     let val = f[x];
     if (x === "items") val = (val || []).map((i) => [i.desc, i.qty != null ? `× ${i.qty}` : "", i.amount != null ? nt(i.amount) : ""].filter(Boolean).join(" ")).join(S.lang === "zh" ? "；" : "; ");
     else if (x === "doc_type" && val) val = DOC_TYPE[S.lang]?.[val] || val;
-    else if (["net", "tax", "total"].includes(x) && val != null) val = nt(val);
+    else if (AMOUNT.includes(x) && val != null) val = nt(val);
     const has = val != null && val !== "";
     const ok = provOk(x, p[x], held);
     if (has && p[x]) { counted++; if (ok) agree++; }
-    const flag = has && p[x] && !ok ? `<span class="flag" title="${esc(t("provTip", { p: p[x] }))}"><i></i>${esc(t("readOnce"))}</span>` : "";
-    return `<tr class="${key.includes(x) ? "key" : ""}"><td>${esc(t("f_" + x))}</td><td>${has ? esc(val) : '<span class="muted">—</span>'}${flag}</td></tr>`;
+    const c = corr[x];
+    const flag = c ? `<span class="ptag" title="${esc(t("fCorrectedTip", { who: c.user || "", old: fmtVal(x, c.old) }))}">${icon("userCheck", 12)}${esc(t("fCorrected"))}</span>`
+      : has && p[x] && !ok ? `<span class="flag" title="${esc(t("provTip", { p: p[x] }))}"><i></i>${esc(t("readOnce"))}</span>` : "";
+    const shown = has ? esc(val) : '<span class="muted">—</span>';
+    const was = !c ? "" : c.old == null || c.old === "" ? `<span class="was none">${esc(t("fWasNone"))}</span>`
+      : `<s class="was" title="${esc(t("fWas"))}">${esc(fmtVal(x, c.old))}</s>`;
+    if (S.editing?.doc === docId && S.editing.field === x) {
+      return `<tr class="editing ${key.includes(x) ? "key" : ""}"><td>${esc(t("f_" + x))}</td><td><form class="fedit" data-f="${x}" autocomplete="off">
+        <input class="mono" name="v" value="${esc(S.editing.value)}" aria-label="${esc(t("fInputAria", { f: t("f_" + x) }))}" spellcheck="false">
+        <button class="btn sm primary" type="submit">${esc(t("fSave"))}${kbd("Enter")}</button><button class="btn sm ghost" type="button" data-cancel>${esc(t("fCancel"))}${kbd("Esc")}</button>
+        <div class="ferr" role="alert">${esc(S.editing.err || "")}</div></form></td></tr>`;
+    }
+    const cell = EDITABLE.includes(x) && !d.platform
+      ? `${was}<button class="fv${c ? " fixed" : ""}" data-edit="${x}" title="${esc(t("fEditTip"))}"><span>${shown}</span>${icon("pencil", 12)}</button>${flag}${c ? `<button class="linkbtn rv" data-revert="${x}">${esc(t("fRevert"))}</button>` : ""}`
+      : `${was}${shown}${flag}`;
+    return `<tr class="${key.includes(x) ? "key" : ""}${c ? " corrected" : ""}"><td>${esc(t("f_" + x))}</td><td>${cell}</td></tr>`;
   }).join("") : `<tr><td class="muted">${esc(t(d.platform ? "einvFields" : "notRead"))}</td></tr>`;
   $("#viewFields").innerHTML = rows;
+  $("#editHint").textContent = d.fields && !d.platform ? t("editHint") : "";
+  $$("#viewFields [data-edit]").forEach((b) => (b.onclick = () => startEdit(b.dataset.edit)));
+  $$("#viewFields [data-revert]").forEach((b) => (b.onclick = () => saveField(b.dataset.revert, null, true)));
+  const fe = $("#viewFields form.fedit");
+  if (fe) {
+    const inp = $("input", fe);
+    fe.onsubmit = (ev) => { ev.preventDefault(); saveField(fe.dataset.f, inp.value); };
+    $("[data-cancel]", fe).onclick = cancelEdit;
+    inp.onkeydown = (ev) => { if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); cancelEdit(); } };
+    inp.oninput = () => { S.editing.value = inp.value; };
+    if (document.activeElement !== inp) { inp.focus(); inp.select(); }
+  }
   $("#readHead").textContent = t("readLbl") + (counted ? (S.lang === "zh" ? "・" : " · ") + t("readAgree", { a: agree, n: counted }) : "");
   $("#fieldToggle").textContent = S.allFields ? t("showKey") : t("showAll");
   $("#fieldToggle").hidden = !d.fields;
@@ -907,13 +958,15 @@ function renderReview() {
   $("#viewNoImg").hidden = !d.platform;
   $("#viewNoImg").innerHTML = d.platform ? `${icon("receipt", 28)}<b>${esc(t("einvTitle"))}</b><p>${esc(t("einvNoPhoto"))}</p>` : "";
   $("#zOrig").hidden = !!d.platform;
-  if (d.platform) { img.removeAttribute("src"); $$("#paper .hl").forEach((h) => h.remove()); return; }
+  if (d.platform) { img.removeAttribute("src"); clearBoxes(); return; }
   const src = `img/${d.image}`;
   $("#zOrig").href = src;
   img.alt = docId;
   const draw = () => { if (S.view?.docId !== docId) return; layoutPaper(); drawBoxes(d, exs, key); };
-  if (img.getAttribute("src") !== src) { $$("#paper .hl").forEach((h) => h.remove()); img.src = src; }
+  if (img.getAttribute("src") !== src) { clearBoxes(); img.src = src; }
   if (img.complete && img.naturalWidth) draw(); else img.onload = draw;
+  loadTight(docId).then(() => { if (S.view?.docId === docId && img.complete && img.naturalWidth) draw(); });
+  const nx = v.ids[k + 1]; if (nx) setTimeout(() => loadTight(nx), 300);     // the next voucher's boxes, ahead of time
 }
 // fit the voucher in the stage, times the zoom
 function layoutPaper() {
@@ -928,28 +981,179 @@ function layoutPaper() {
   stage.classList.toggle("zoomed", S.zoom > 1);
   $("#zLabel").textContent = Math.round(S.zoom * 100) + "%";
 }
+// ---- field boxes: around the value only, turned with the paper (server: ledger_room/tight_boxes.py) ----
+function loadTight(docId) {
+  const k = S.runId + "|" + docId + "|" + JSON.stringify(docById(docId)?.corrections || {});
+  if (S.tb[k]) return S.tb[k].p;
+  const ent = { p: null, boxes: null };
+  S.tb[k] = ent;
+  ent.p = j(`api/boxes?run=${encodeURIComponent(S.runId)}&doc=${encodeURIComponent(docId)}`)
+    .then((r) => { ent.boxes = r.boxes || {}; }).catch(() => { ent.boxes = null; ent.failed = true; });
+  return ent.p;
+}
+const tightOf = (docId) => S.tb[S.runId + "|" + docId + "|" + JSON.stringify(docById(docId)?.corrections || {})];
+function clearBoxes() { $$("#paper .hl, #paper .hlsvg, #paper .hlab").forEach((h) => h.remove()); }
+let _boxArgs = null;
+function redrawBoxes() { if (_boxArgs && S.view?.docId === _boxArgs[0].doc_id) drawBoxes(..._boxArgs); }
+// dark pixels of the voucher image, for placing labels where the paper is blank
+let _ink = null;
+function inkMap(img) {
+  if (_ink && _ink.src === img.currentSrc) return _ink;
+  const W = img.naturalWidth, H = img.naturalHeight, s = Math.min(1, 900 / Math.max(W, H));
+  const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(W * s)); c.height = Math.max(1, Math.round(H * s));
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  let data = null; try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (e) { data = null; }
+  _ink = { src: img.currentSrc, s, w: c.width, h: c.height, data };
+  return _ink;
+}
+function inkIn(m, x, y, w, h) {       // share of dark pixels in an image-pixel rectangle
+  if (!m.data) return 0;
+  const x0 = Math.max(0, Math.floor(x * m.s)), y0 = Math.max(0, Math.floor(y * m.s));
+  const x1 = Math.min(m.w, Math.ceil((x + w) * m.s)), y1 = Math.min(m.h, Math.ceil((y + h) * m.s));
+  let n = 0, dark = 0;
+  for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) {
+    const i = (yy * m.w + xx) * 4; n++;
+    if (m.data[i] * 0.299 + m.data[i + 1] * 0.587 + m.data[i + 2] * 0.114 < 150) dark++;
+  }
+  return n ? dark / n : 1;
+}
+const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
 function drawBoxes(d, exs, key) {
-  const paper = $("#paper");
-  paper.querySelectorAll(".hl").forEach((h) => h.remove());
+  _boxArgs = [d, exs, key];
+  const paper = $("#paper"), img = $("#viewImg");
+  clearBoxes();
   if (!d.image_size) return;
   const [W, H] = d.image_size;
-  const boxes = { ...(d.boxes || {}) };
-  exs.forEach((e) => (e.evidence || []).forEach((v) => { if (v.box && !boxes[v.field]) boxes[v.field] = v.box; }));
-  Object.entries(boxes).forEach(([f, b]) => {
-    const isKey = key.includes(f);
+  const tight = tightOf(d.doc_id);
+  if (tight && !tight.boxes && !tight.failed) return;          // still working them out: draw nothing rather than flicker
+  const T = tight?.boxes || null;
+  const raw = { ...(d.boxes || {}) };
+  exs.forEach((e) => (e.evidence || []).forEach((v) => { if (v.box && !raw[v.field]) raw[v.field] = v.box; }));
+  const corr = d.corrections || {};
+  const shapes = [];
+  const fields = new Set([...Object.keys(raw), ...Object.keys(T || {})]);
+  fields.forEach((f) => {
+    const isKey = key.includes(f) || !!corr[f];
     if (!isKey && !S.allFields) return;
-    const el = document.createElement("div");
-    el.className = "hl" + (isKey ? " key" : "");
-    el.style.left = (b[0] / W) * 100 + "%"; el.style.top = (b[1] / H) * 100 + "%";
-    el.style.width = ((b[2] - b[0]) / W) * 100 + "%"; el.style.height = ((b[3] - b[1]) / H) * 100 + "%";
-    el.innerHTML = `<em>${esc(t("f_" + f))}</em>`;
+    const tb = T?.[f];
+    if (tb?.none) return;                                          // corrected value not found on the page: no box
+    if (corr[f] && !tb?.moved && T) return;                        // the reader's box points at the misread value
+    const q = tb?.quad || (raw[f] && [[raw[f][0], raw[f][1]], [raw[f][2], raw[f][1]], [raw[f][2], raw[f][3]], [raw[f][0], raw[f][3]]]);
+    if (!q) return;
+    const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]);
+    shapes.push({ f, q, isKey, bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], fixed: !!corr[f] });
+  });
+  if (!shapes.length) return;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "hlsvg"); svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("preserveAspectRatio", "none");
+  shapes.forEach((sh) => {
+    const pg = document.createElementNS(svgNS, "polygon");
+    pg.setAttribute("points", sh.q.map((p) => p.join(",")).join(" "));
+    pg.setAttribute("class", sh.isKey ? "key" : "");
+    pg.setAttribute("vector-effect", "non-scaling-stroke");
+    svg.appendChild(pg);
+  });
+  paper.appendChild(svg);
+  // labels: only on the key fields (all fields: on hover), outside the box, where the paper is blank
+  const scale = paper.clientWidth / W || 1;
+  const m = img.complete && img.naturalWidth ? inkMap(img) : { data: null };
+  const placed = [];
+  const stage = $("#stage");
+  const gutterL = paper.offsetLeft - stage.scrollLeft, gutterR = stage.clientWidth - (paper.offsetLeft + paper.offsetWidth);
+  shapes.filter((sh) => sh.isKey).forEach((sh) => {
+    const el = document.createElement("span");
+    el.className = "hlab" + (sh.fixed ? " fixed" : "");
+    el.textContent = t("f_" + sh.f) + (sh.fixed ? t("boxMoved") : "");
     paper.appendChild(el);
+    const lw = (el.offsetWidth + 2) / scale, lh = (el.offsetHeight + 2) / scale, g = 5 / scale;
+    const [x0, y0, x1, y1] = sh.bb, cy = (y0 + y1) / 2;
+    const cands = [[x0, y0 - g - lh], [x1 + g, cy - lh / 2], [x1 - lw, y0 - g - lh], [x0, y1 + g], [x0 - g - lw, cy - lh / 2], [x1 - lw, y1 + g]];
+    let best = null;
+    cands.forEach(([x, y], i) => {
+      if (x < 0 || y < 0 || x + lw > W || y + lh > H) return;
+      const r = [x, y, x + lw, y + lh];
+      if (shapes.some((o) => hit(r, o.bb)) || placed.some((o) => hit(r, o))) return;
+      const ink = inkIn(m, x, y, lw, lh);
+      const score = ink + i * 0.004;                                // ties go to the earlier (above, then right)
+      if (!best || score < best.score) best = { x, y, ink, score, r };
+    });
+    let x, y, lead = null;
+    if (best && best.ink < 0.035) ({ x, y } = best);
+    else {
+      // no blank spot next to the box: put the label in the margin beside the paper, with a thin leader line
+      const left = (x0 + x1) / 2 < W / 2;
+      const room = (left ? gutterL : gutterR) - 8;
+      if (room * 1 >= el.offsetWidth) {
+        x = left ? -lw - 8 / scale : W + 8 / scale; y = Math.min(Math.max(0, cy - lh / 2), H - lh);
+        lead = left ? [x + lw, cy, x0, cy] : [x, cy, x1, cy];
+        el.classList.add("out");
+      } else if (best) ({ x, y } = best);
+      else { x = x0; y = Math.max(0, y0 - g - lh); }
+    }
+    el.style.left = (x / W) * 100 + "%"; el.style.top = (y / H) * 100 + "%";
+    placed.push([x, y, x + lw, y + lh]);
+    if (lead) {
+      const ln = document.createElementNS(svgNS, "line");
+      ln.setAttribute("x1", lead[0]); ln.setAttribute("y1", lead[1]); ln.setAttribute("x2", lead[2]); ln.setAttribute("y2", lead[3]);
+      ln.setAttribute("class", "lead"); ln.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(ln);
+    }
   });
 }
 function zoom(f) {
   S.zoom = f ? Math.max(0.5, Math.min(4, S.zoom * f)) : 1;
   layoutPaper();
+  redrawBoxes();
 }
+// ---- the list on the left of the review screen folds to a strip ([ key); remembered ----
+function applyMini() {
+  $("#rev").classList.toggle("folded", !!S.miniHide);
+  const b = $("#miniToggle");
+  b.title = t(S.miniHide ? "miniShow" : "miniHide") + " ( [ )";
+  b.setAttribute("aria-label", t(S.miniHide ? "miniShow" : "miniHide"));
+  b.setAttribute("aria-expanded", String(!S.miniHide));
+}
+function toggleMini() {
+  S.miniHide = !S.miniHide; store.set("miniHide", S.miniHide); applyMini();
+  if (S.screen === "review") requestAnimationFrame(() => { layoutPaper(); redrawBoxes(); });
+}
+
+// ---- correcting a field the reader got wrong (server: /api/correct, ledger_room/corrections.py) ----
+function startEdit(field) {
+  const { d } = viewDoc();
+  if (!d?.fields || d.platform || !EDITABLE.includes(field)) return;
+  const v = d.fields[field];
+  S.editing = { doc: d.doc_id, field, value: v == null ? "" : AMOUNT.includes(field) ? Number(v).toLocaleString("en-US") : String(v), err: "" };
+  renderReview();
+}
+function cancelEdit() {
+  const f = S.editing?.field;
+  S.editing = null; renderReview();
+  if (f) $(`#viewFields [data-edit="${f}"]`)?.focus();
+}
+async function saveField(field, value, revert) {
+  const { d } = viewDoc();
+  if (!d || !S.runId) return;
+  const before = d.fields[field];
+  let r;
+  try {
+    r = await post("api/correct", revert ? { run: S.runId, doc_id: d.doc_id, field, revert: true } : { run: S.runId, doc_id: d.doc_id, field, value });
+  } catch (e) {
+    const msg = e.body?.code ? t("fErr_" + e.body.code) : t("fErrNet");
+    if (S.editing) { S.editing.err = msg; renderReview(); } else toast(msg);
+    return;
+  }
+  S.editing = null;
+  if (!r.changed) { toast(t("fSame")); renderReview(); return; }
+  S.last = { run: S.runId, kind: "correct", doc: d.doc_id, field, prev: before };
+  await loadRun(S.runId);
+  const label = t("f_" + field);
+  toast(revert ? t("fReverted", { f: label, v: fmtVal(field, r.value) }) : t("fSaved", { f: label, v: fmtVal(field, r.value) }), undoLast);
+  $(`#viewFields [data-edit="${field}"]`)?.focus();
+}
+
 function toggleFields() { S.allFields = !S.allFields; renderReview(); }
 function decideInViewer(dec) {
   const v = S.view;
@@ -973,7 +1177,7 @@ function stepView(dir) {
 function renderKeybar() {
   const K = (k, l) => `<span>${kbd(k)}${esc(l)}</span>`;
   let left = "";
-  if (S.screen === "review") left = K("J K", t("kMove")) + K("1 2 3 4", t("kDecide")) + K("U", t("kChange")) + K("E", t("kReason")) + K("F", t("kFields")) + K("Esc", t("kBack"));
+  if (S.screen === "review") left = K("J K", t("kMove")) + K("1 2 3 4", t("kDecide")) + K("Enter", t("kAccept")) + K("C", t("kEdit")) + K("U", t("kChange")) + K("E", t("kReason")) + K("F", t("kFields")) + K("[", t("kList")) + K("Esc", t("kBack"));
   else if (S.screen === "queue") left = K("J K", t("kMove")) + K("Enter", t("kOpen")) + (S.qtab === "todo" ? K("1 2 3 4", t("kDecide")) + K("G", t("kGroup")) + (S.group ? K("Shift D", t("kDecideGroup")) : "") : K("U", t("kChange")));
   $("#keybar").innerHTML = left + K("Z", t("kUndo")) + K("/", t("kSearch"));
 }
@@ -983,6 +1187,7 @@ function onKey(e) {
   if (e.key === "Escape") {
     if (!$$(".pop").every((p) => p.hidden)) { closePops(); return; }
     if (e.target.id === "search") { e.target.value = ""; S.q = ""; e.target.blur(); renderAll(); return; }
+    if (S.editing && e.target.closest?.(".fedit")) { cancelEdit(); e.preventDefault(); return; }
     if (S.screen === "review" && !$("#confirm").open && !$("#login").open) { closeReview(); e.preventDefault(); }
     return;
   }
@@ -994,6 +1199,16 @@ function onKey(e) {
   if (k === "z") { undoLast(); e.preventDefault(); return; }
   if (S.screen === "review") {
     const id = S.view?.docId, dec = !!S.review.decisions[id];
+    if (k === "[") { toggleMini(); e.preventDefault(); return; }
+    if (k === "enter" && !dec && itemMap().get(id)) { decideInViewer(itemMap().get(id).suggest); e.preventDefault(); return; }
+    if (k === "c") {
+      // the field the paper check is about first: one read once, then the fields of a paper-first reason, then the framed ones
+      const { d: dd, exs: xx } = viewDoc();
+      const order = [...heldFields(xx), ...xx.filter((x) => PAPER_FIRST.has(x.rule_id)).flatMap((x) => x.evidence_fields || []), ...keyFields(xx, dd || {})];
+      const kf = order.find((x) => EDITABLE.includes(x)) || EDITABLE.find((x) => dd?.fields && x in dd.fields);
+      if (kf) startEdit(kf);
+      e.preventDefault(); return;
+    }
     if (k === "j" || k === "arrowright" || k === "arrowdown") stepView(1);
     else if (k === "k" || k === "arrowleft" || k === "arrowup") stepView(-1);
     else if (["1", "2", "3", "4"].includes(k) && !dec) decideInViewer(DECISIONS[+k - 1]);
@@ -1052,7 +1267,8 @@ async function renderOplog() {
   $("#opHead").innerHTML = verifyBox(L);
   $("#opTable").innerHTML = `<thead><tr><th>${t("lt_seq")}</th><th>${t("lt_time")}</th><th>${t("lt_event")}</th><th>${t("lt_user")}</th><th>${t("lt_detail")}</th><th>${t("lt_hash")}</th></tr></thead><tbody>` +
     L.entries.slice().reverse().slice(0, 200).map((e) => `<tr><td class="num">${e.seq}</td><td title="${esc(e.ts || "")}">${esc(ago(tsMs(e.ts)))}</td>
-      <td title="${esc(e.event)}">${esc(evName(e.event))}</td><td>${esc(e.user || "")}</td><td class="mono">${esc([e.decision ? (e.decision === "undo" ? t("taken") : t("d_" + e.decision)) : "", e.doc_id, e.run_id || e.inbox || e.host || e.path].filter(Boolean).join(" · "))}</td>
+      <td title="${esc(e.event)}">${esc(evName(e.event))}</td><td>${esc(e.user || "")}</td><td class="mono">${esc([e.decision ? (e.decision === "undo" ? t("taken") : t("d_" + e.decision)) : "",
+        e.event === "correct" ? `${t("f_" + e.field)} ${fmtVal(e.field, e.old)} → ${fmtVal(e.field, e.new)}` : "", e.doc_id, e.run_id || e.inbox || e.host || e.path].filter(Boolean).join(" · "))}</td>
       <td class="h mono" title="${esc(e.hash || "")}">${esc((e.hash || "").slice(0, 10))}</td></tr>`).join("") + "</tbody>";
 }
 

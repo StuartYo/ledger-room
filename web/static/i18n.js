@@ -62,7 +62,6 @@ const I18N = {
     noRunList: "還沒有檢查結果。先按「檢查這一期」。", noTodo: "沒有要決定的單據。", noDone: "還沒有決定過的單據。",
     noMatch: "沒有符合「{q}」的單據。",
     must: "必須決定", should: "建議看一下",
-    checkPaper: "先對照紙本",
     decidedBy: "{who}・{when}", saving: "儲存中…",
 
     // right column of the overview
@@ -100,9 +99,22 @@ const I18N = {
 
     // decisions: toasts, group decisions
     toastOne: "{c}：{d}", toastGroup: "{n} 張已決定為「{d}」", toastUndone: "已復原 {n} 張", undo: "復原", taken: "已收回決定",
-    sugPaper: "建議：先對照紙本",
+    paperHint: "先對照紙本：讀錯的欄位可以直接點來改，改完規則會重新檢查",
+    sugTag: "建議", sugTip: "依這個原因，記帳士通常會這樣決定；要不要照做由你決定",
+    recheckClear: "改過欄位、規則重新檢查後，這張沒有要決定的了，會照規則入帳。", nextDoc: "下一張",
+    // correcting a field read wrong
+    fEditTip: "讀錯了？點一下改（或按 C）", fSave: "儲存", fCancel: "取消", fRevert: "還原",
+    fCorrected: "人改過", fCorrectedTip: "{who} 對照紙本改的・原本讀到 {old}", fWas: "原本讀到", fWasNone: "原本沒讀到",
+    fSaved: "{f}改成 {v}・規則已重新檢查", fReverted: "{f}還原成讀到的 {v}", fSame: "跟原本一樣，沒有改",
+    fEmpty: "（空白）", fInputAria: "改 {f}",
+    fErr_amount: "金額要是整數，例如 4652 或 4,652", fErr_invoice_no: "發票號碼是 2 個英文字母加 8 個數字，例如 AB12345678",
+    fErr_ubn: "統一編號是 8 個數字", fErr_date: "日期寫成 2026-09-14 或 115/09/14", fErr_field: "這一欄不能在這裡改",
+    fErr_format: "格式不對", fErrNet: "沒有存進去（連不到這台電腦），請再試一次",
+    editHint: "底線的欄位讀錯可以改（點一下或按 C）。原本讀到的值會留著，改動寫進紀錄。",
+    boxMoved: "（人改過）",
+    miniHide: "收起清單", miniShow: "展開清單",
     ev_run_start: "開始檢查", ev_doc_read: "讀取單據", ev_exception: "抓到問題", ev_run_end: "檢查結束", ev_run_done: "檢查完成",
-    ev_run_failed: "檢查失敗", ev_review: "決定", ev_review_carried_over: "沿用上次決定", ev_export: "匯出", ev_export_media_csv: "匯出申報 CSV",
+    ev_run_failed: "檢查失敗", ev_review: "決定", ev_correct: "改欄位", ev_review_carried_over: "沿用上次決定", ev_export: "匯出", ev_export_media_csv: "匯出申報 CSV",
     ev_export_summary_csv: "匯出 401 合計", ev_view_result: "查看結果", ev_view_audit_log: "查看稽核紀錄", ev_view_oplog: "查看操作紀錄",
     ev_login: "登入", ev_login_failed: "登入失敗", ev_login_locked: "登入鎖定", ev_logout: "登出", ev_denied: "拒絕存取", ev_unmask: "顯示個資",
     ev_server_start: "程式啟動", ev_encryption_check: "加密檢查", ev_purge_start: "開始清除", ev_purge_file: "清除檔案", ev_purge_end: "清除完成",
@@ -113,6 +125,7 @@ const I18N = {
     // key bar
     kMove: "上下張", kDecide: "決定", kOpen: "打開", kGroup: "依原因分組", kDecideGroup: "整組決定", kSearch: "搜尋",
     kUndo: "復原", kBack: "回清單", kReason: "理由與法條", kFields: "全部欄位", kChange: "改決定",
+    kEdit: "改欄位", kAccept: "照建議決定", kList: "收起／展開清單",
 
     // all vouchers
     docsTitle: "全部單據", docsSub: "{n} 張・{m} 家客戶", st_READY: "可申報", st_HOLD: "暫緩", st_NOT_IN_FILE: "不入申報", noEx: "沒有問題",
@@ -200,7 +213,6 @@ const I18N = {
     noRunList: "No check yet. Check this period first.", noTodo: "Nothing to decide.", noDone: "Nothing decided yet.",
     noMatch: "No vouchers match “{q}”.",
     must: "Must decide", should: "Worth a look",
-    checkPaper: "Check the paper",
     decidedBy: "{who} · {when}", saving: "Saving…",
 
     chkHead: "Before you export",
@@ -234,9 +246,21 @@ const I18N = {
     f_tax: "Tax", f_total: "Total", f_note: "Note", f_category: "Category (model)",
 
     toastOne: "{c}: {d}", toastGroup: "{n} vouchers marked {d}", toastUndone: "Undone: {n} restored", undo: "Undo", taken: "decision taken back",
-    sugPaper: "Suggested: check the paper",
+    paperHint: "Check the paper: click a field that was read wrong to correct it; the rules run again",
+    sugTag: "Suggested", sugTip: "What a bookkeeper usually decides for this reason; the decision is yours",
+    recheckClear: "Field corrected and the rules ran again: nothing left to decide on this voucher; it is filed as the rules say.", nextDoc: "Next",
+    fEditTip: "Read wrong? Click to correct (or press C)", fSave: "Save", fCancel: "Cancel", fRevert: "Restore",
+    fCorrected: "Corrected", fCorrectedTip: "Corrected from the paper by {who} · read {old}", fWas: "Read", fWasNone: "not read",
+    fSaved: "{f} changed to {v} · rules checked again", fReverted: "{f} restored to the reading {v}", fSame: "Same as before: nothing changed",
+    fEmpty: "(blank)", fInputAria: "Correct {f}",
+    fErr_amount: "An amount is a whole number, e.g. 4652 or 4,652", fErr_invoice_no: "An invoice number is 2 letters and 8 digits, e.g. AB12345678",
+    fErr_ubn: "A tax ID is 8 digits", fErr_date: "Write the date as 2026-09-14 or 115/09/14", fErr_field: "This field cannot be corrected here",
+    fErr_format: "Not a valid value", fErrNet: "Not saved (no connection to this computer); try again",
+    editHint: "Underlined fields can be corrected (click or press C). What was read is kept and the change is logged.",
+    boxMoved: " (corrected)",
+    miniHide: "Hide the list", miniShow: "Show the list",
     ev_run_start: "check started", ev_doc_read: "voucher read", ev_exception: "issue found", ev_run_end: "check ended", ev_run_done: "check done",
-    ev_run_failed: "check failed", ev_review: "decision", ev_review_carried_over: "decision carried over", ev_export: "export", ev_export_media_csv: "filing CSV exported",
+    ev_run_failed: "check failed", ev_review: "decision", ev_correct: "field corrected", ev_review_carried_over: "decision carried over", ev_export: "export", ev_export_media_csv: "filing CSV exported",
     ev_export_summary_csv: "401 total exported", ev_view_result: "result viewed", ev_view_audit_log: "audit log viewed", ev_view_oplog: "operation log viewed",
     ev_login: "signed in", ev_login_failed: "sign-in failed", ev_login_locked: "sign-in locked", ev_logout: "signed out", ev_denied: "access denied", ev_unmask: "personal data shown",
     ev_server_start: "app started", ev_encryption_check: "encryption check", ev_purge_start: "purge started", ev_purge_file: "file purged", ev_purge_end: "purge done",
@@ -246,6 +270,7 @@ const I18N = {
 
     kMove: "move", kDecide: "decide", kOpen: "open", kGroup: "group by reason", kDecideGroup: "decide group", kSearch: "search",
     kUndo: "undo", kBack: "back", kReason: "reason and law", kFields: "all fields", kChange: "change",
+    kEdit: "correct a field", kAccept: "take the suggestion", kList: "hide / show list",
 
     docsTitle: "All vouchers", docsSub: "{n} vouchers · {m} clients", st_READY: "Ready", st_HOLD: "Held", st_NOT_IN_FILE: "Not a filing line", noEx: "no issues",
 
@@ -351,8 +376,22 @@ const RULES_TEXT = {
 };
 
 // What a reviewer would usually do with a voucher held for this rule (a suggestion; the person decides)
-const SUGGEST = { DUP_CROSS_MONTH: "exclude", DUP_CROSS_CLIENT: "exclude", DUP_PRIOR_FILING: "exclude", VOID_ON_PLATFORM: "exclude",
-  PLATFORM_RECORD_CONFLICT: null, S19_NONDEDUCTIBLE: "nondeductible" };
+// Always one of the four decision keys. Rules that first need the paper (PAPER_FIRST) still suggest the key a person
+// presses once the paper agrees (after correcting any field read wrong); "check the paper" is said as a hint instead.
+const SUGGEST = {
+  DUP_CROSS_MONTH: "exclude", DUP_CROSS_CLIENT: "exclude", DUP_PRIOR_FILING: "exclude", VOID_ON_PLATFORM: "exclude",
+  NOT_A_VOUCHER: "exclude", SMALL_RECEIPT_CAP: "exclude", IN_PLATFORM: "exclude", UTILITY_BILL_PLATFORM: "exclude",
+  S19_NONDEDUCTIBLE: "nondeductible", BUYER_NOT_CLIENT: "nondeductible", RECEIPT_TAX_UNVERIFIED: "nondeductible",
+  READ_REVIEW: "confirm", AMOUNT_MISMATCH: "confirm", UBN_CHECKSUM: "confirm", BUYER_PRESUMED: "confirm",
+  UBN_NOT_REGISTERED: "confirm", OVER_LIMIT: "confirm", TRANSPORT_TICKET: "confirm", CUSTOMS_KEY_BY_HAND: "confirm",
+  FIXED_ASSET_HINT: "confirm", PLATFORM_AMOUNT_DIFF: "confirm", PLATFORM_RECORD_CONFLICT: "confirm",
+  PERIOD_MISMATCH: "confirm",
+};
+// a date after the filing period goes to the next one; an earlier date can still be claimed now (Art. 29)
+const suggestFor = (e) => (e.rule_id === "PERIOD_MISMATCH" && e.severity !== "warning" && !(e.evidence_fields || []).includes("invoice_period")
+  ? "defer" : SUGGEST[e.rule_id] || "confirm");
+const PAPER_FIRST = new Set(["READ_REVIEW", "AMOUNT_MISMATCH", "UBN_CHECKSUM", "BUYER_PRESUMED", "PLATFORM_AMOUNT_DIFF",
+  "PLATFORM_RECORD_CONFLICT", "CUSTOMS_KEY_BY_HAND"]);
 
 // Law names for citation links in Chinese (pcode on law.moj.gov.tw)
 const LAW_ZH = { G0340080: "營業稅法", G0340081: "營業稅法施行細則", G0340051: "營利事業所得稅查核準則", G0340003: "所得稅法" };

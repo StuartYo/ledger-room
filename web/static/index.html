@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ledger Room</title>
 <link rel="icon" type="image/png" sizes="16x16" href="static/brand/favicon-16.png">
+<link rel="icon" type="image/png" sizes="24x24" href="static/brand/ledger-room-24.png">
 <link rel="icon" type="image/png" sizes="32x32" href="static/brand/favicon-32.png">
 <link rel="icon" type="image/svg+xml" href="static/brand/ledger-room.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="static/brand/apple-touch-icon.png">
@@ -15,7 +16,7 @@
   <nav class="rail" aria-label="Ledger Room">
     <img class="mark" src="static/brand/ledger-room.svg" alt="Ledger Room" width="32" height="32">
     <button class="rb" data-nav="queue" data-ic="inbox" data-i18n-title="navQueue" data-i18n-aria="navQueue"></button>
-    <button class="rb" data-nav="documents" data-ic="files" data-i18n-title="navDocs" data-i18n-aria="navDocs"></button>
+    <button class="rb" data-nav="documents" data-ic="grid" data-i18n-title="navDocs" data-i18n-aria="navDocs"></button>
     <button class="rb" id="navExport" data-ic="download" data-i18n-title="navExport" data-i18n-aria="navExport"></button>
     <button class="rb" data-nav="log" data-ic="history" data-i18n-title="navLog" data-i18n-aria="navLog"></button>
     <div class="sp"></div>
@@ -65,9 +66,10 @@
 
       <!-- one voucher: queue, the image, the reason and the four decisions -->
       <section class="screen" id="v-review">
-        <div class="rev">
+        <div class="rev" id="rev">
           <div class="card mini">
-            <div class="hd"><button class="iconbtn" id="revBack" data-ic="arrowLeft" data-i18n-title="back" data-i18n-aria="back"></button><b id="miniHead"></b><span id="miniLeft"></span></div>
+            <div class="hd"><button class="iconbtn" id="revBack" data-ic="arrowLeft" data-i18n-title="back" data-i18n-aria="back"></button><b id="miniHead"></b><span id="miniLeft"></span>
+              <button class="iconbtn" id="miniToggle" data-ic="panelLeft" aria-controls="mini"></button></div>
             <ul id="mini"></ul>
           </div>
           <div class="viewer">
@@ -92,12 +94,15 @@
                 <div class="nav"><button class="iconbtn" id="viewPrev" data-ic="chevronLeft" data-i18n-title="kMove" aria-label="Previous"></button><span id="viewPos"></span><button class="iconbtn" id="viewNext" data-ic="chevronRight" data-i18n-title="kMove" aria-label="Next"></button></div></div>
               <div class="meta" id="viewMeta"></div>
             </div>
-            <div class="why" id="viewEx"></div>
-            <div class="decidebox" id="viewDecide"></div>
-            <div class="read">
-              <div class="lbl"><span id="readHead"></span><button class="linkbtn" id="fieldToggle"></button></div>
-              <table class="fields" id="viewFields"></table>
+            <div class="pscroll" id="pscroll">
+              <div class="why" id="viewEx"></div>
+              <div class="read">
+                <div class="lbl"><span id="readHead"></span><button class="linkbtn" id="fieldToggle"></button></div>
+                <table class="fields" id="viewFields"></table>
+                <p class="edithint" id="editHint"></p>
+              </div>
             </div>
+            <div class="decidebox" id="viewDecide"></div>
           </div>
         </div>
       </section>
