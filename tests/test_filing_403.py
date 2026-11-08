@@ -17,7 +17,8 @@ def _recs(*lines):
 
 TAXABLE = rec("35", "11510", "10000004", UBN, "AB00000001", 600000, "1", 30000)
 EXEMPT = rec("31", "11510", "10000009", UBN, "AB00000002", 400000, "3", 0)
-IN_GOODS = rec("25", "11510", UBN, "08807719", "CD11111111", 200000, "1", 10000, "1")
+# 50317242: a made-up seller UBN with a valid check digit, unregistered in the FIA registration API (checked 2026-11-09)
+IN_GOODS = rec("25", "11510", UBN, "50317242", "CD11111111", 200000, "1", 10000, "1")
 IN_FIXED = rec("25", "11510", UBN, "10000010", "CD22222222", 100000, "1", 5000, "2")
 IN_S19 = rec("21", "11510", UBN, "10000021", "CD33333333", 20000, "1", 1000, "3")
 
@@ -41,7 +42,7 @@ def test_fraction_of_a_percent_is_dropped():
     """Exempt 100,000 / (200,000 + 100,000) = 33.33 % -> 33. 51 = 3,000 x 67 % = 2,010."""
     rs = _recs(rec("35", "11510", "10000004", UBN, "AB00000001", 200000, "1", 10000),
                rec("31", "11510", "10000009", UBN, "AB00000002", 100000, "3", 0),
-               rec("25", "11510", UBN, "08807719", "CD11111111", 60000, "1", 3000, "1"))
+               rec("25", "11510", UBN, "50317242", "CD11111111", 60000, "1", 3000, "1"))
     b = filing.return_totals(rs, form="403")["boxes"]
     assert b[50] == 33 and b[51] == 2010
 
@@ -57,7 +58,7 @@ def test_negative_taxable_sales_count_as_zero():
     """①+③ < 0 counts as 0 (填寫說明(十三)): a period with only a taxable return and exempt sales -> 100 %."""
     rs = _recs(rec("33", "11510", "10000004", UBN, "AB00000001", 5000, "1", 250),
                rec("31", "11510", "10000009", UBN, "AB00000002", 50000, "3", 0),
-               rec("25", "11510", UBN, "08807719", "CD11111111", 2000, "1", 100, "1"))
+               rec("25", "11510", UBN, "50317242", "CD11111111", 2000, "1", 100, "1"))
     b = filing.return_totals(rs, form="403")["boxes"]
     assert b[21] == -5000 and b[50] == 100 and b[51] == 0
 

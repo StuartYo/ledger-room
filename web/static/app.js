@@ -560,6 +560,12 @@ function stepState() {
   return { s1, s2, s3, s4, p, n, running };
 }
 function runUser() { return S.run?.operator || S.jobEnd?.user || ""; }
+// who ran the check (the signed-in account; kept in the audit log), labelled so it does not read like a stray word;
+// a single local user without accounts is "local" and says nothing
+function runByText() {
+  const u = runUser();
+  return u && !(S.me?.local && u === "local") ? esc(t("metaRunBy", { u })) : "";
+}
 
 function btn(id, label, cls = "", extra = "", ic = "", k = "") {
   return `<button class="btn ${cls}" id="${id}" ${extra}>${ic ? icon(ic, 15) : ""}<span>${label}</span>${k ? kbd(k) : ""}</button>`;
@@ -642,7 +648,8 @@ function renderPeriod() {
   const ids = new Set(S.inbox.docs.map((d) => d.doc_id).concat(its.map((it) => it.doc_id)));
   const must = its.filter((it) => it.must && !it.dec).length, look = its.filter((it) => !it.must && !it.dec).length;
   const im = itemMap();
-  const ag = [...ids].filter((id) => !im.has(id) && agentOk(docById(id))).length;
+  // agent_counts.js: the strip's agent part and the line under it count the same documents
+  const sp = agentSplit(S.run.docs, im), ag = sp.cleared;
   const dec = its.filter((it) => it.dec).length, ready = ids.size - its.length - ag;
   const parts = [["m", must], ["w", look], ["d", dec], ["a", ag], ["", ready]];
   const cells = ids.size <= 240
@@ -657,7 +664,7 @@ function renderPeriod() {
   const per = s.mean_read_s ? Math.round(s.mean_read_s * 10) / 10 : null;
   const timed = !isNaN(runTime(S.runId)), dot = S.lang === "zh" ? "・" : " · ";
   const last = [timed ? (per ? t("metaLast", { when, s: per }) : t("metaLastNoS", { when })) : per ? t("progPer", { s: per }) : "",
-    replay ? t("howCache") : "", esc(runUser())].filter(Boolean).join(dot);
+    replay ? t("howCache") : "", runByText()].filter(Boolean).join(dot);
   const hist = S.runs.length > 1 ? `<select id="runPick" class="runpick" aria-label="${esc(t("history"))}" title="${esc(t("history"))}">${S.runs.slice(0, 12).map((r) =>
     `<option value="${esc(r)}" ${r === S.runId ? "selected" : ""}>${esc(runLabel(r))}${r.endsWith("-live") ? "" : " · " + esc(t("howCache"))}</option>`).join("")}</select>` : "";
   const pc = S.run.period_check;
@@ -669,11 +676,10 @@ function renderPeriod() {
   }
   // the agent step of this check: ran here, replayed from stored runs, or not on this machine (never pretends it ran)
   const A = s.agent || {}, off = S.status?.agent && !S.status.agent.available;
-  const aline = A.ran ? (A.tried ? t("metaAgent", { m: A.model || "", n: A.tried, v: A.verified }) : t("metaAgentNone"))
-    : A.replay && A.tried ? t("metaAgentReplay", { n: A.tried, v: A.verified }) + (off ? dot + t("agentOff") : "")
-    : off ? t("agentOff") : "";
+  const atext = agentMetaText(A, sp, t);
+  const aline = atext ? atext + (!A.ran && off ? dot + t("agentOff") : "") : off ? t("agentOff") : "";
   $("#periodCard").innerHTML = `<div class="strip">${cells}<div class="legend">${legend}</div></div>
-    <div class="periodmeta"><div>${t("metaRead")}</div><div>${last}</div>${aline ? `<div class="agline">${icon("bot", 13)}<span>${esc(aline)}</span></div>` : ""}${pline ? `<div>${esc(pline)}</div>` : ""}${hist ? `<div>${hist}</div>` : ""}</div>`;
+    <div class="periodmeta"><div>${t("metaRead")}</div><div>${last}</div>${aline ? `<div class="agline">${icon("bot", 13)}<span>${aline.split("\n").map(esc).join("<br>")}</span></div>` : ""}${pline ? `<div>${esc(pline)}</div>` : ""}${hist ? `<div>${hist}</div>` : ""}</div>`;
   $("#runPick") && ($("#runPick").onchange = (e) => { S.jobEnd = null; loadRun(e.target.value); });
 }
 

@@ -3,6 +3,7 @@
   "inboxes": {
     "heldout": {"zh": "範例事務所 A・115 年 9–10 月", "en": "Sample firm A · Sep–Oct 2026"},
     "heldout2": {"zh": "範例事務所 B・115 年 9–10 月", "en": "Sample firm B · Sep–Oct 2026"},
-    "main": {"zh": "範例事務所 C・115 年 9–10 月", "en": "Sample firm C · Sep–Oct 2026"}
+    "main": {"zh": "範例事務所 C・115 年 9–10 月", "en": "Sample firm C · Sep–Oct 2026"},
+    "demo": {"zh": "範例事務所 D・115 年 9–10 月", "en": "Sample firm D · Sep–Oct 2026"}
   }
 }

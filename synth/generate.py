@@ -9,6 +9,11 @@ Usage:
   python -m synth.generate --set main     --seed 20261014 --family A
   python -m synth.generate --set heldout  --seed 777013   --family B
   python -m synth.generate --set heldout2 --seed 50311207 --family C
+  python -m synth.generate --set demo     --seed 20261109 --family E --check-ubn
+
+--check-ubn looks every UBN up in the FIA business-registration API before it is printed and keeps only numbers the
+API has no record of (data/<set>/ubn_check.json). The demo inbox (Sample firm D, for screen recordings, not an
+evaluation set) is always written that way; the frozen sets above were drawn before the option existed.
 
 Family C (heldout2) is a register-style layout family added on 2026-11-02 to test total reading: the total sits next
 to cash paid, change, card or stored-value balance, deposits and long order numbers, and the total label varies
@@ -25,11 +30,13 @@ ground-truth fields before anything is written (the "oracle" self-check).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import hashlib
 import json
 import math
 import random
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -190,6 +197,8 @@ class Planner:
         self.used_files: set[str] = set()
         self.docs: list[dict] = []
         self.seller_ubn: dict[str, str] = {}
+        self.sellers = SELLERS          # the demo inbox adds a few sellers of its own (DEMO_SELLERS)
+        self.ubn_gate = None            # --check-ubn: a callable that says whether a drawn UBN may be used (RegistryGate)
 
     # -- ids
     def ubn(self, kind: str = "both") -> str:
@@ -208,7 +217,10 @@ class Planner:
             else:
                 ok = [c for c in cands if not ubnlib.is_valid_new(c)]
             if ok:
-                return self.rng.choice(ok)
+                c = self.rng.choice(ok)
+                if self.ubn_gate is not None and not self.ubn_gate(c):
+                    continue        # registered to a real business (or the lookup failed): draw another
+                return c
 
     def bad_variant(self, good: str) -> str:
         """Typo-style corruption of a valid UBN: change one digit so the 2023 rule fails."""
@@ -216,7 +228,7 @@ class Planner:
             i = self.rng.randrange(8)
             d = str((int(good[i]) + self.rng.randrange(1, 10)) % 10)
             cand = good[:i] + d + good[i + 1:]
-            if not ubnlib.is_valid_new(cand):
+            if not ubnlib.is_valid_new(cand) and (self.ubn_gate is None or self.ubn_gate(cand)):
                 return cand
 
     def invoice_no(self) -> str:
@@ -241,7 +253,7 @@ class Planner:
     def make(self, client: dict, seller_key: str, *, doc_type: str | None = None, d: date | None = None,
              items: list[tuple[str, int, int]] | None = None, item_filter=None, b2b: bool | None = None,
              month: str | None = None, note: str | None = None, issues=(), max_total: int | None = None) -> dict:
-        name, types, kind, pool = SELLERS[seller_key]
+        name, types, kind, pool = self.sellers[seller_key]
         doc_type = doc_type or self.rng.choice(types)
         d = d or self.rand_date()
         if items is None:
@@ -317,8 +329,9 @@ class Planner:
         return doc
 
 
-def build_plan(set_name: str, seed: int, family: str) -> tuple[list[dict], list[dict]]:
+def build_plan(set_name: str, seed: int, family: str, ubn_gate=None) -> tuple[list[dict], list[dict]]:
     P = Planner(seed, family, set_name)
+    P.ubn_gate = ubn_gate
     rng = P.rng
     base = {"A": CLIENTS_A, "B": CLIENTS_B, "C": CLIENTS_C}[family]
     clients = []
@@ -1022,6 +1035,8 @@ def photo_effect(img: Image.Image, seed: int, family: str) -> Image.Image:
 
 
 def render(doc: dict, family: str) -> Image.Image:
+    if family == "E":
+        return render_demo(doc)
     rng = random.Random(doc["photo_seed"] ^ 0x5EED)
     fn = {"e_invoice": render_e_invoice, "triplicate_invoice": render_triplicate, "receipt": render_receipt}
     if family == "C":
@@ -1149,6 +1164,408 @@ def build_control(seed: int) -> tuple[list[dict], list[dict], list[dict]]:
     return clients, before, after
 
 
+# ------------------------------------------------------------------ UBN lookup (--check-ubn)
+
+FIA_REGISTRATION_API = "https://eip.fia.gov.tw/OAI/api/businessRegistration/"
+# a number the API must report as registered, asked once before a set is drawn: if it comes back "not found", the API
+# (or its address) has changed and an empty reply proves nothing, so generation stops
+REGISTERED_CONTROL = "22099131"
+
+
+class RegistryGate:
+    """--check-ubn: every UBN a set prints (sellers, buyers / clients, and the mistyped ones) is looked up in the MOF
+    Fiscal Information Agency business-registration API before it is used. Only a number the API has no record of
+    (an empty reply, "查無資料") is kept; a number registered to a real business, or one the API could not answer for,
+    is never printed: the planner draws another. One query at a time, `sleep_s` apart.
+
+    allow: records from an earlier ubn_check.json; a number found unregistered there is reused without a new query
+    (offline regeneration). Numbers the API knew are not written anywhere, only counted."""
+
+    def __init__(self, allow: dict | None = None, sleep_s: float = 0.3, fetch=None, tries: int = 3):
+        self.allow = {k: v for k, v in (allow or {}).items() if v.get("result") == "not_found"}
+        self.sleep_s, self.tries = sleep_s, tries
+        self.fetch = fetch or self._fetch
+        self.records: dict[str, dict] = {}
+        self.rejected_registered = 0
+        self.rejected_error = 0
+        self.queries = 0
+        self.control: dict | None = None
+
+    @staticmethod
+    def _fetch(ubn: str) -> tuple[int | None, str]:
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(FIA_REGISTRATION_API + ubn, headers={"User-Agent": "ledger-room-synth"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return r.status, r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:      # the API answers "no record" with an empty body (HTTP 404)
+            return e.code, e.read().decode("utf-8", "replace")
+
+    def lookup(self, ubn: str) -> tuple[str, int | None]:
+        """("not_found" | "registered" | "error", HTTP status)."""
+        status = None
+        for attempt in range(self.tries):
+            if self.queries:
+                time.sleep(self.sleep_s)
+            self.queries += 1
+            try:
+                status, body = self.fetch(ubn)
+            except OSError:
+                status, body = None, None
+            if status in (200, 404) and body is not None:
+                b = body.strip()
+                if not b:
+                    return "not_found", status
+                try:
+                    j = json.loads(b)
+                except ValueError:
+                    j = None
+                if isinstance(j, dict) and j.get("ban") == ubn:
+                    return "registered", status
+            if self.sleep_s:
+                time.sleep(1.0 + attempt)        # anything else is not an answer: try again, then give up on it
+        return "error", status
+
+    def check_api(self) -> None:
+        res, status = self.lookup(REGISTERED_CONTROL)
+        self.control = {"ubn": REGISTERED_CONTROL, "expected": "registered", "result": res, "http_status": status,
+                        "checked_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+        if res != "registered":
+            raise SystemExit(f"registration API check failed: {REGISTERED_CONTROL} came back {res!r} (HTTP {status}); "
+                             "not generating, an empty reply would prove nothing")
+
+    def __call__(self, ubn: str) -> bool:
+        if ubn in self.records:
+            return True
+        if ubn in self.allow:
+            self.records[ubn] = dict(self.allow[ubn], ubn=ubn, reused_from_earlier_check=True)
+            return True
+        res, status = self.lookup(ubn)
+        if res == "not_found":
+            self.records[ubn] = {"ubn": ubn, "checked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                                 "result": "not_found", "http_status": status}
+            return True
+        if res == "registered":
+            self.rejected_registered += 1
+        else:
+            self.rejected_error += 1
+        return False
+
+    def report(self, used: dict[str, list[str]]) -> dict:
+        """used: {ubn: [where it is printed]} for every UBN in the set. Every one must have a not_found record."""
+        missing = sorted(u for u in used if u not in self.records)
+        if missing:
+            raise SystemExit(f"UBNs printed without a registration check: {missing}")
+        return {
+            "synthetic": True,
+            "api": FIA_REGISTRATION_API + "<UBN>",
+            "rule": "a UBN is printed only when the API has no record of it (empty reply, 查無資料); "
+                    f"checked one at a time, {self.sleep_s} s apart",
+            "api_control": self.control,
+            "n_ubns": len(used),
+            "all_not_found": all(self.records[u]["result"] == "not_found" for u in used),
+            "rejected_registered": self.rejected_registered,
+            "rejected_no_answer": self.rejected_error,
+            "queries": self.queries,
+            "ubns": [dict(self.records[u], printed_as=sorted(set(used[u]))) for u in sorted(used)],
+        }
+
+
+def ubns_in_set(clients: list[dict], docs: list[dict]) -> dict[str, list[str]]:
+    """Every UBN printed in a set (and every client UBN), with where it appears."""
+    used: dict[str, list[str]] = {}
+    for c in clients:
+        used.setdefault(c["ubn"], []).append(f"client {c['id']}")
+    for d in docs:
+        for k in ("seller_ubn", "buyer_ubn"):
+            if d.get(k):
+                bad = "" if ubnlib.is_valid_new(d[k]) else " (check digit fails, planted)"
+                used.setdefault(d[k], []).append(k.split("_")[0] + bad)
+    return used
+
+
+# ------------------------------------------------------------------ demo inbox (Sample firm D, for screen recordings)
+#
+# python -m synth.generate --set demo --seed 20261109 --family E --check-ubn
+#
+# Not an evaluation set: it was put together after the reader and the agent were built, to show on screen what the
+# app does. Five clients, Sep-Oct 2026, every layout the app reads: triplicate (三聯式), two-part cash-register (二聯式
+# 收銀機) with the buyer's UBN, e-invoice proof (電子發票證明聯, families B and C), A4 e-invoice printout, receipts, and
+# blind3's handwritten triplicate with per-digit amount boxes (the layout where the agent filled in a total from
+# net + tax on blind3). The planted issues are the six evaluated types plus one routing case (printed amounts that
+# do not add up). Every UBN is checked against the FIA registration API (RegistryGate).
+
+CLIENTS_D = [
+    ("D01", "雲杉木作家具有限公司", "furniture workshop", "臺北市文山區範例路 33 號"),
+    ("D02", "潮間帶海產貿易有限公司", "seafood trading", "高雄市旗津區示範街 12 號"),
+    ("D03", "長堤單車租賃有限公司", "bicycle rental", "臺東縣臺東市樣品路 8 號"),
+    ("D04", "梧桐室內植栽有限公司", "indoor plants", "新竹市東區虛擬街 61 號"),
+    ("D05", "北風冷氣空調工程有限公司", "air-conditioning contractor", "臺中市南屯區假想路 210 號"),
+]
+DEMO_SELLERS = {
+    **SELLERS,
+    "hardware2": ("鐵匠五金工具行", ["two_part_register"], "materials",
+                  [("六角板手組", (280, 460), [1, 2]), ("電鑽鑽頭 10入", (190, 320), [1, 2]),
+                   ("防滑工作手套", (45, 80), [5, 10])]),
+    "garden": ("綠意園藝資材行", ["two_part_register"], "materials",
+               [("培養土 50公升", (220, 320), [2, 4]), ("陶瓷盆器 8吋", (160, 260), [3, 6]),
+                ("有機肥 5公斤", (180, 260), [1, 2])]),
+    "water": ("清泉桶裝水服務社", ["two_part_register"], "office",
+              [("桶裝水 20公升", (90, 130), [4, 6, 10]), ("飲水機濾心", (450, 650), [1])]),
+}
+DEMO_LAYOUT_TYPE = {"B": None, "C": None, "two_part": "two_part_register", "a4_einvoice": "e_invoice",
+                    "hand_triplicate": "triplicate_invoice"}
+
+
+def _half_up(x: float) -> int:
+    return int(math.floor(x + 0.5))
+
+
+def _demo_amounts(doc: dict) -> None:
+    """Amounts as each layout prints them: triplicate and A4 e-invoice list pre-tax items (tax 5%, rounded half up);
+    a two-part register invoice with the buyer's UBN prints a tax-inclusive total split into net + tax."""
+    gross = sum(i["amount"] for i in doc["items"])
+    lay = doc["layout"]
+    if doc["doc_type"] == "triplicate_invoice" or lay == "a4_einvoice":
+        doc["net"], doc["tax"] = gross, _half_up(gross * 0.05)
+        doc["total"] = gross + doc["tax"]
+    elif lay == "two_part":
+        doc["total"] = gross
+        doc["net"] = _half_up(gross / 1.05) if doc["buyer_ubn"] else None
+        doc["tax"] = gross - doc["net"] if doc["buyer_ubn"] else None
+
+
+def build_demo(seed: int, gate) -> tuple[list[dict], list[dict]]:
+    P = Planner(seed, "E", "demo")
+    P.sellers = DEMO_SELLERS
+    P.ubn_gate = gate
+    clients = []
+    pol = [(2000, 1000, 3500, 40000), (2500, 1200, 3200, 50000), (1500, 800, 3000, 30000),
+           (1800, 900, 3200, 35000), (2200, 1000, 3600, 45000)]
+    for i, (cid, name, industry, addr) in enumerate(CLIENTS_D):
+        kind = "new_only" if i == 2 else ("seven" if i == 3 else "both")
+        m, t, l, a = pol[i]
+        clients.append({"id": cid, "name": name, "industry": industry, "address": addr, "ubn": P.ubn(kind),
+                        "period": list(PERIOD), "policy": {"meal": m, "taxi": t, "lodging": l, "any": a}})
+    trap = {"stationery", "garden", "hotel", "cafe"}           # pass the 2023 rule only (old mod-10 software fails)
+    seven = {"computer", "water"}
+    for k in DEMO_SELLERS:
+        P.seller_ubn[k] = P.ubn("new_only" if k in trap else "seven" if k in seven else "both")
+    cs = {c["id"]: c for c in clients}
+
+    def no_home(s):
+        return "家用" not in s
+
+    def mk(cid, key, layout, *, role, d=None, month=None, doc_type=None, b2b=None, cap=None, items=None,
+           issues=(), note=None, routing=(), opts=None):
+        c = cs[cid]
+        dt = DEMO_LAYOUT_TYPE[layout] or doc_type
+        if layout in ("a4_einvoice", "two_part", "hand_triplicate") or dt == "triplicate_invoice":
+            b2b = True if b2b is None else b2b
+        if cap is None:
+            kind = P.sellers[key][2]
+            cap = int(c["policy"][kind] * 0.8) if kind in ("meal", "taxi", "lodging") else int(c["policy"]["any"] * 0.6)
+        doc = P.make(c, key, doc_type=dt, d=d, month=month, b2b=b2b, items=items, item_filter=no_home,
+                     max_total=cap, issues=issues, note=note)
+        doc["layout"] = layout
+        doc["demo_role"] = role
+        doc["expect_routing"] = sorted(routing)
+        doc["opts"] = dict(opts or {})
+        doc["photo_kind"] = "scan" if layout == "a4_einvoice" else "desk"
+        if layout == "two_part":
+            doc["buyer_name"], doc["buyer_addr"] = None, None   # a register invoice prints the buyer's UBN only
+            doc["invoice_period"] = period_of(date.fromisoformat(doc["date"]))
+        if layout in ("a4_einvoice", "hand_triplicate"):
+            doc["buyer_name"], doc["buyer_addr"] = c["name"], c["address"]
+        _demo_amounts(doc)
+        return doc
+
+    def sep():
+        return P.rand_date("2026-09-01", "2026-09-26")
+
+    def octo():
+        return P.rand_date("2026-10-01", "2026-10-30")
+
+    HT = ("handwritten triplicate, amounts in per-digit boxes (blind3 layout): the reader often misses the total; the "
+          "agent can fill it in from net + tax, and code accepts it only when the other two were read")
+    TP = "two-part cash-register invoice (二聯式收銀機) with the buyer's UBN: format code 22, deductible"
+    EC = ("register-style e-invoice proof (family C), cash paid and change next to the total; in strict mode an invoice "
+          "number read by one source only is held, and the agent can confirm it with a zoomed OCR")
+    claim = ["stationery", "computer", "building", "print", "software"]
+
+    # ---- clean vouchers: every client gets each main layout
+    for i, cid in enumerate(cs):
+        mk(cid, claim[i], "hand_triplicate", d=sep() if i % 2 else octo(), role=HT)
+        mk(cid, ["hardware2", "garden", "water", "garden", "hardware2"][i], "two_part", d=octo() if i % 2 else sep(),
+           role=TP)
+        mk(cid, claim[(i + 2) % 5], "B", doc_type="triplicate_invoice", d=sep(), role="printed triplicate, clean")
+        mk(cid, ["courier", "software", "stationery", "courier", "computer"][i], "C", doc_type="e_invoice", b2b=True,
+           d=octo(), role=EC)
+        mk(cid, ["noodle", "cafe", "taxi", "noodle", "cafe"][i], "B",
+           doc_type="e_invoice" if i % 2 else "receipt", b2b=False, d=sep() if i % 2 else octo(),
+           role="small expense without the buyer's UBN (an expense voucher, no input tax)",
+           routing=["BUYER_NOT_CLIENT"] if i % 2 else ())
+    for cid in ("D01", "D03"):
+        mk(cid, "building" if cid == "D01" else "computer", "hand_triplicate", d=octo(), role=HT)
+    for cid in ("D02", "D05"):
+        mk(cid, "software" if cid == "D02" else "hotel", "a4_einvoice", d=sep(),
+           role="A4 e-invoice printout (blind3 layout); on blind3 the agent filled in a total of this layout from "
+                "net + tax")
+    for cid in ("D02", "D04"):
+        mk(cid, "cafe" if cid == "D02" else "noodle", "C", doc_type="e_invoice", b2b=False, d=sep(), role=EC,
+           routing=["BUYER_NOT_CLIENT"])
+    mk("D03", "seafood", "C", doc_type="receipt", d=octo(), role="register-style receipt (family C)")
+    mk("D05", "courier", "C", doc_type="e_invoice", b2b=True, d=sep(), role=EC)
+
+    # ---- UBN_CHECKSUM: two mistyped seller UBNs and one mistyped buyer UBN
+    doc = mk("D01", "stationery", "B", doc_type="e_invoice", b2b=True, d=sep(), issues=["UBN_CHECKSUM"],
+             role="seller UBN fails the check digit (one digit mistyped)")
+    doc["seller_ubn"] = P.bad_variant(doc["seller_ubn"])
+    doc = mk("D03", "hardware2", "two_part", d=octo(), issues=["UBN_CHECKSUM"],
+             role="seller UBN fails the check digit on a two-part register invoice")
+    doc["seller_ubn"] = P.bad_variant(doc["seller_ubn"])
+    doc = mk("D04", "computer", "B", doc_type="triplicate_invoice", d=octo(), issues=["UBN_CHECKSUM"],
+             routing=["BUYER_NOT_CLIENT"], role="buyer UBN (the client's) mistyped on the triplicate")
+    doc["buyer_ubn"] = P.bad_variant(doc["buyer_ubn"])
+
+    # ---- the same voucher handed in twice
+    src = mk("D05", "print", "B", doc_type="triplicate_invoice", d=date(2026, 9, 11), role="original of a duplicate")
+    P.duplicate(src, month="2026-10", issues=["DUP_CROSS_MONTH"])
+    P.docs[-1]["demo_role"] = "September triplicate handed in again in October (photographed again)"
+    src = mk("D02", "water", "two_part", d=date(2026, 9, 18), role="original of a duplicate")
+    P.duplicate(src, month="2026-10", issues=["DUP_CROSS_MONTH"])
+    P.docs[-1]["demo_role"] = "September two-part invoice handed in again in October"
+    src = mk("D03", "cafe", "B", doc_type="receipt", d=date(2026, 10, 7), issues=["DUP_CROSS_CLIENT"],
+             role="one receipt in two clients' folders")
+    P.duplicate(src, client=cs["D01"], issues=["DUP_CROSS_CLIENT"])
+    P.docs[-1]["demo_role"] = "the same receipt in another client's folder"
+
+    # ---- date not in this period
+    mk("D02", "stationery", "C", doc_type="e_invoice", b2b=True, d=date(2026, 8, 27), month="2026-09",
+       issues=["PERIOD_MISMATCH"], role="dated in the previous period: may still be claimed now (Art. 29)")
+    mk("D04", "print", "B", doc_type="triplicate_invoice", d=date(2026, 11, 4), month="2026-10",
+       issues=["PERIOD_MISMATCH"], role="dated after the period: goes to the next one")
+    doc = mk("D05", "courier", "B", doc_type="e_invoice", b2b=True, d=date(2026, 10, 12), issues=["PERIOD_MISMATCH"],
+             role="e-invoice header says Jul-Aug but the date is in October")
+    doc["invoice_period"] = "2026-07/2026-08"
+
+    # ---- Art. 19 (not deductible) and over the client's limit
+    mk("D01", "gift", "B", doc_type="triplicate_invoice", note="送客戶", issues=["S19_NONDEDUCTIBLE"], d=octo(),
+       role="gift boxes for customers (Art. 19)")
+    mk("D03", "wine", "B", doc_type="e_invoice", b2b=True, issues=["S19_NONDEDUCTIBLE"], d=sep(),
+       role="wine (entertainment, Art. 19)")
+    c = cs["D02"]
+    mk("D02", "seafood", "B", doc_type="receipt", items=[("海鮮合菜 6人份", 1, c["policy"]["meal"] + 880),
+                                                         ("炒青菜", 1, 220)], cap=10 ** 9, d=octo(),
+       issues=["OVER_LIMIT"], role="meal over the client's limit")
+    c = cs["D05"]
+    q = math.ceil(c["policy"]["any"] / 1.05 / 6990) + 1
+    mk("D05", "computer", "hand_triplicate", items=[("27吋螢幕", q, 6990)], cap=10 ** 9, d=octo(),
+       issues=["OVER_LIMIT"], role=HT + "; over the client's single-purchase limit, so even when the agent clears "
+                                        "the reading a person still decides")
+
+    # ---- printed amounts that do not add up (a routing rule, not one of the six evaluated types)
+    doc = mk("D04", "building", "B", doc_type="triplicate_invoice", d=sep(), routing=["AMOUNT_MISMATCH"],
+             role="the tax printed on the paper is not 5% of the net (the seller's slip): held; an amount the agent "
+                  "proposes cannot pass code, since net + tax = total with 5% tax does not hold for the printed numbers")
+    doc["tax"] = doc["tax"] - 9
+    doc["total"] = doc["net"] + doc["tax"]
+
+    # a doubled prefix such as "XX" reads like a blanked-out number on screen: give those another one (own random
+    # stream, so nothing else in the plan moves; a duplicate keeps its original's number)
+    fix, remap = random.Random(seed ^ 0xD3), {}
+    for doc in P.docs:
+        no = doc["invoice_no"]
+        if no and no[0] == no[1]:
+            while no not in remap:
+                new = "".join(fix.sample("ABCDEFGHJKLMNPQRSTUVWXYZ", 2)) + no[2:]
+                if new not in P.used_numbers:
+                    P.used_numbers.add(new)
+                    remap[no] = new
+            doc["invoice_no"] = remap[no]
+    return clients, P.docs
+
+
+@contextlib.contextmanager
+def _demo_mark_on_blind3_layouts(B3):
+    """blind3's renderers write 'SYNTHETIC · blind3 · ...' on the strip they add; on the demo inbox the strip carries
+    the demo's own mark instead (blind3.py is frozen and not changed)."""
+    orig = B3.watermark
+
+    def mark(img):
+        s = "SYNTHETIC SAMPLE · 程式產生測試樣本"
+        f = B3.F("jh", 15)
+        W, H = img.size
+        out = Image.new("RGB", (W + 26, H), img.getpixel((W - 1, H - 1)))
+        out.paste(img, (0, 0))
+        w = int(B3.tw(ImageDraw.Draw(out), s, f)) + 8
+        tile = Image.new("RGBA", (w, 22), (0, 0, 0, 0))
+        ImageDraw.Draw(tile).text((4, 1), s, font=f, fill=(130, 130, 130, 255))
+        tile = tile.rotate(90, expand=True)
+        out.paste(tile, (W + 2, max(4, H - tile.height - 12)), tile)
+        return out
+    B3.watermark = mark
+    try:
+        yield
+    finally:
+        B3.watermark = orig
+
+
+def render_two_part(doc, rng):
+    """二聯式收銀機統一發票, the buyer's copy (收執聯), with the buyer's UBN when the client asked for it."""
+    W = 380
+    img = Image.new("RGB", (W, 1500), (250, 250, 246))
+    d = ImageDraw.Draw(img)
+    ink = (38, 38, 42)
+    x0 = 24
+    mid, small = font("sans", 18), font("sans", 16)
+    y = 18
+    centered(d, y, doc["seller_name"], font("sans_bold", 22), W, ink); y += 38
+    centered(d, y, "統一發票（收銀機）", font("sans_bold", 26), W, ink); y += 40
+    centered(d, y, "二聯式　第二聯：收執聯", font("sans", 17), W, ink); y += 30
+    centered(d, y, period_label(doc["invoice_period"]), font("sans_medium", 22), W, ink); y += 36
+    no = doc["invoice_no"]
+    centered(d, y, f"{no[:2]}-{no[2:]}", font("sans_bold", 30), W, ink); y += 48
+    d.text((x0, y), f"{doc['date'].replace('-', '/')}  {doc['time']}", font=mid, fill=ink); y += 28
+    d.text((x0, y), f"賣方統編：{doc['seller_ubn']}", font=mid, fill=ink); y += 28
+    if doc["buyer_ubn"]:
+        d.text((x0, y), f"買方統編：{doc['buyer_ubn']}", font=mid, fill=ink); y += 28
+    d.text((x0, y), f"機號 {rng.randrange(1, 9):02d}　收銀員 {rng.randrange(1, 30):03d}", font=small, fill=ink); y += 30
+    _dashes(d, y, x0, W, ink); y += 12
+    for it in doc["items"]:
+        d.text((x0, y), it["desc"], font=small, fill=ink)
+        _rr(d, y, f"{it['amount']:,}TX", small, W, x0, ink); y += 24
+        d.text((x0 + 18, y), f"{it['qty']} x {it['unit']:,}", font=small, fill=ink); y += 28
+    _dashes(d, y, x0, W, ink); y += 12
+    if doc["buyer_ubn"]:
+        for k, v in (("應稅銷售額", doc["net"]), ("稅額", doc["tax"])):
+            d.text((x0, y), k, font=mid, fill=ink)
+            _rr(d, y, f"{v:,}", mid, W, x0, ink); y += 28
+    d.text((x0, y), "總計", font=font("sans_bold", 21), fill=ink)
+    _rr(d, y, f"{doc['total']:,}", font("sans_bold", 21), W, x0, ink); y += 36
+    d.text((x0, y), "TX：應稅", font=small, fill=ink); y += 30
+    centered(d, y, doc["seller_addr"], font("sans", 14), W, (100, 100, 100)); y += 26
+    centered(d, y, "營業人蓋用統一發票專用章", font("sans", 14), W, (100, 100, 100)); y += 40
+    H = y + 40
+    img = img.crop((0, 0, W, H))
+    synthetic_mark(ImageDraw.Draw(img), W, H, font("sans", 13))
+    return img
+
+
+def render_demo(doc: dict) -> Image.Image:
+    lay = doc["layout"]
+    if lay in ("B", "C"):
+        return render(doc, lay)
+    rng = random.Random(doc["photo_seed"] ^ 0x5EED)
+    if lay == "two_part":
+        return photo_effect(render_two_part(doc, rng), doc["photo_seed"], "A")
+    from synth import blind3 as B3          # renderers only; blind3 itself stays frozen
+    with _demo_mark_on_blind3_layouts(B3):
+        img = B3.RENDER[lay](doc, rng)
+    return B3.photograph(img, doc)
+
+
 def write_set(set_name: str, seed: int, family: str, clients: list[dict], docs: list[dict], extra: dict | None = None):
     problems = oracle_check(clients, docs)
     if problems:
@@ -1178,6 +1595,8 @@ def write_set(set_name: str, seed: int, family: str, clients: list[dict], docs: 
             "mutant_of": d.get("mutant_of"),
             "truth": truth_fields(d),
             **({"printed_near_total": printed_near_total(d)} if family == "C" else {}),
+            **({"layout": d["layout"], "expect_routing": d.get("expect_routing", []),
+                "demo_role": d.get("demo_role")} if family == "E" else {}),
         })
     records.sort(key=lambda r: r["doc_id"])
     counts = {t: sum(t in r["issues"] for r in records) for t in rules.ISSUE_TYPES}
@@ -1200,16 +1619,53 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", required=True)
     ap.add_argument("--seed", type=int, required=True)
-    ap.add_argument("--family", choices=["A", "B", "C"], default="A")
+    ap.add_argument("--family", choices=["A", "B", "C", "E"], default="A",
+                    help="E: the demo inbox's mixed layouts (only with --set demo)")
+    ap.add_argument("--check-ubn", action="store_true",
+                    help="look every UBN up in the FIA registration API first (0.3 s apart) and use only numbers it has "
+                         "no record of; writes data/<set>/ubn_check.json")
+    ap.add_argument("--ubn-allowlist", type=Path,
+                    help="an earlier ubn_check.json: numbers it found unregistered are reused without a new query")
     args = ap.parse_args()
+    if args.set == "demo":
+        if args.family != "E" or not args.check_ubn:
+            raise SystemExit("the demo inbox is written with --family E --check-ubn (every UBN looked up first)")
+        allow = {}
+        src = args.ubn_allowlist
+        if src is not None:
+            allow = {r["ubn"]: r for r in json.loads(src.read_text(encoding="utf-8"))["ubns"]}
+        gate = RegistryGate(allow=allow)
+        gate.check_api()
+        clients, docs = build_demo(args.seed, gate)
+        check = gate.report(ubns_in_set(clients, docs))
+        write_set("demo", args.seed, "E", clients, docs, {
+            "purpose": "demo inbox for screen recordings (Sample firm D). Made after the reader and the agent were "
+                       "built: not an evaluation set and not part of any reported number. Every UBN was looked up in "
+                       "the FIA business-registration API and is unregistered (data/demo/ubn_check.json).",
+            "expect_routing_note": "expect_routing: routing rules the planted paper should trigger besides the six "
+                                   "evaluated issue types (AMOUNT_MISMATCH, BUYER_NOT_CLIENT)"})
+        (ROOT / "data" / "demo" / "ubn_check.json").write_text(json.dumps(check, ensure_ascii=False, indent=1),
+                                                               encoding="utf-8")
+        print(f"demo: {check['n_ubns']} UBNs, all unregistered: {check['all_not_found']}, "
+              f"{check['rejected_registered']} registered numbers skipped, {check['queries']} queries")
+        return
+    if args.check_ubn and args.set in ("main", "heldout", "heldout2"):
+        raise SystemExit(f"{args.set} is frozen: drawing other UBNs would change its images and answers")
     if args.set == "control":
         clients, before, after = build_control(args.seed)
         note = {"purpose": "positive control (generated after reader development started; not an accuracy test set)"}
         write_set("control_before", args.seed, "A", clients, before, note)
         write_set("control_after", args.seed, "A", clients, after, note)
         return
-    clients, docs = build_plan(args.set, args.seed, args.family)
+    gate = None
+    if args.check_ubn:
+        gate = RegistryGate()
+        gate.check_api()
+    clients, docs = build_plan(args.set, args.seed, args.family, gate)
     write_set(args.set, args.seed, args.family, clients, docs)
+    if gate is not None:
+        (ROOT / "data" / args.set / "ubn_check.json").write_text(
+            json.dumps(gate.report(ubns_in_set(clients, docs)), ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

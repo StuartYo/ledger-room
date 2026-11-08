@@ -593,7 +593,11 @@ disabled is still on the Stage II list.
    4. **Export the filing data**: enabled once every held voucher is decided; a summary shows how many lines go into the
       filing, then the review CSV downloads with the decisions applied.
    The app reads strictly by default (a filing value needs two agreeing sources); `--not-strict` turns that off for
-   development. Only the inboxes in `web/inboxes.json` are listed (`--all-inboxes` lists every folder). To share it on
+   development. Only the inboxes in `web/inboxes.json` are listed (`--all-inboxes` lists every folder). "Sample firm
+   D" (`data/demo`, 50 vouchers) is a demo inbox for screen recordings, made after the reader and the agent were built
+   and not part of any reported number; every UBN on it was looked up in the FIA business-registration API and is
+   unregistered (`data/demo/ubn_check.json`, `python -m synth.generate --set demo --seed 20261109 --family E
+   --check-ubn`). To share it on
    the office LAN, first add accounts (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with
    `--host 0.0.0.0 --cert cert.pem --key key.pem` (HTTPS); the documents still stay on this machine.
 

@@ -1,0 +1,240 @@
+{
+ "synthetic": true,
+ "api": "https://eip.fia.gov.tw/OAI/api/businessRegistration/<UBN>",
+ "rule": "a UBN is printed only when the API has no record of it (empty reply, 查無資料); checked one at a time, 0.3 s apart",
+ "api_control": {
+  "ubn": "22099131",
+  "expected": "registered",
+  "result": "registered",
+  "http_status": 200,
+  "checked_at": "2026-11-09T01:35:30+08:00"
+ },
+ "n_ubns": 24,
+ "all_not_found": true,
+ "rejected_registered": 3,
+ "rejected_no_answer": 0,
+ "queries": 31,
+ "ubns": [
+  {
+   "ubn": "14566076",
+   "checked_at": "2026-11-09T01:35:35+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "16000343",
+   "checked_at": "2026-11-09T01:35:32+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer",
+    "client D05"
+   ]
+  },
+  {
+   "ubn": "22319080",
+   "checked_at": "2026-11-09T01:35:36+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "23158359",
+   "checked_at": "2026-11-09T01:35:31+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer",
+    "client D03"
+   ]
+  },
+  {
+   "ubn": "26665895",
+   "checked_at": "2026-11-09T01:35:36+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "27085868",
+   "checked_at": "2026-11-09T01:35:34+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "30814973",
+   "checked_at": "2026-11-09T01:35:30+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer",
+    "client D01"
+   ]
+  },
+  {
+   "ubn": "31004115",
+   "checked_at": "2026-11-09T01:35:36+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "36497279",
+   "checked_at": "2026-11-09T01:35:35+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "41110459",
+   "checked_at": "2026-11-09T01:35:42+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller (check digit fails, planted)"
+   ]
+  },
+  {
+   "ubn": "41120459",
+   "checked_at": "2026-11-09T01:35:40+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "53094738",
+   "checked_at": "2026-11-09T01:35:37+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "55771494",
+   "checked_at": "2026-11-09T01:35:38+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "62303470",
+   "checked_at": "2026-11-09T01:35:32+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer",
+    "client D04"
+   ]
+  },
+  {
+   "ubn": "62393470",
+   "checked_at": "2026-11-09T01:35:42+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer (check digit fails, planted)"
+   ]
+  },
+  {
+   "ubn": "62538770",
+   "checked_at": "2026-11-09T01:35:33+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "71092992",
+   "checked_at": "2026-11-09T01:35:34+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "80200595",
+   "checked_at": "2026-11-09T01:35:37+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "82176499",
+   "checked_at": "2026-11-09T01:35:31+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "buyer",
+    "client D02"
+   ]
+  },
+  {
+   "ubn": "82731423",
+   "checked_at": "2026-11-09T01:35:33+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "82731425",
+   "checked_at": "2026-11-09T01:35:41+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller (check digit fails, planted)"
+   ]
+  },
+  {
+   "ubn": "86038079",
+   "checked_at": "2026-11-09T01:35:41+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "91995889",
+   "checked_at": "2026-11-09T01:35:40+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  },
+  {
+   "ubn": "92659706",
+   "checked_at": "2026-11-09T01:35:38+08:00",
+   "result": "not_found",
+   "http_status": 404,
+   "printed_as": [
+    "seller"
+   ]
+  }
+ ]
+}
