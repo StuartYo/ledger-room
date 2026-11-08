@@ -56,7 +56,7 @@ RUN_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 OPLOG: AuditLog | None = None
 _reader = None
 _reader_lock = threading.Lock()
-PUBLIC = {"/", "/index.html", "/api/login", "/api/me", "/api/logout"}
+PUBLIC = {"/", "/index.html", "/favicon.ico", "/api/login", "/api/me", "/api/logout"}
 ADMIN_ONLY = {"/api/audit-log", "/api/oplog"}
 UNMASK: dict[tuple, float] = {}      # (user, session token, run) -> expiry of an unmask grant
 UNMASK_S = 600
@@ -67,6 +67,24 @@ REVIEW_LOGS: dict[str, AuditLog] = {}  # run id -> its review log (decisions on 
 REVIEW_LOCK = threading.Lock()
 RUNNING = {"queued", "loading model", "reading"}
 UI_INBOXES = ROOT / "web" / "inboxes.json"
+
+
+_HW: dict[str, str | None] = {}
+
+
+def hardware_name() -> str | None:
+    """The name of the device the loaded model runs on (OpenVINO FULL_DEVICE_NAME, e.g. an Arc Pro B70); None
+    before the model is loaded or when the device does not say. Asked once per device."""
+    dev = getattr(_reader, "device", None) if _reader is not None else None
+    if not dev or ":" in dev or dev.upper().startswith(("AUTO", "MULTI", "HETERO")):
+        return None
+    if dev not in _HW:
+        try:
+            import openvino as ov
+            _HW[dev] = str(ov.Core().get_property(dev, "FULL_DEVICE_NAME")) or None
+        except Exception:
+            _HW[dev] = None
+    return _HW[dev]
 
 
 def get_reader():
@@ -431,6 +449,8 @@ class H(BaseHTTPRequestHandler):
             return self._json({"error": "bad run"}, 400)
         if path in ("/", "/index.html"):
             return self._file(STATIC / "index.html", STATIC)
+        if path == "/favicon.ico":      # browsers ask for it at the root whatever the page links
+            return self._file(STATIC / "brand" / "ledger-room.ico", STATIC)
         if path.startswith("/static/"):
             return self._file(STATIC / path[len("/static/"):], STATIC)
         if path == "/api/me":
@@ -585,6 +605,7 @@ class H(BaseHTTPRequestHandler):
             return self._json({"model_loaded": _reader is not None,
                                "model": _reader.model_id if _reader else None,
                                "device": _reader.device if _reader else None,
+                               "hardware": hardware_name(),
                                "strict": pipeline.STRICT})
         return self._json({"error": "not found"}, 404)
 
