@@ -1,0 +1,5 @@
+# MOF media files and filing pairs end lines with CRLF; keep the bytes as they are on every OS
+tests/fixtures/platform/golden/*.TXT -text
+tests/fixtures/platform/golden/*.TET_U -text
+tests/fixtures/platform/mof_checked/*.TXT -text
+tests/fixtures/platform/mof_checked/*.TET_U -text

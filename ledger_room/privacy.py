@@ -27,6 +27,7 @@ import getpass
 import hashlib
 import io
 import json
+import ntpath
 import os
 import platform
 import re
@@ -647,7 +648,8 @@ def volume_encryption(path: Path | str, *, run=_run, system: str | None = None) 
     except OSError:
         pass
     if system == "Windows":
-        drive = os.path.splitdrive(str(p))[0]
+        # ntpath, not os.path: the check is also unit-tested on Linux hosts, where os.path has no drive letters
+        drive = ntpath.splitdrive(str(p) if platform.system() == "Windows" else str(path))[0]
         if not re.fullmatch(r"[A-Za-z]:", drive or ""):
             return {"status": "unknown", "volume": drive or str(p), "method": "none",
                     "detail": "network share or unusual path: check encryption on the server that holds it"}
