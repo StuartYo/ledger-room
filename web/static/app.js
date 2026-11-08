@@ -531,6 +531,9 @@ function openDoc(docId, mode) {
   S.view = { docId, mode, ids: list ? list.map((it) => it.doc_id) : [docId] };
   $("#viewTitle").textContent = `${clientName(d.client_id)} · ${docId}`;
   const img = $("#viewImg");
+  // drop the previous voucher's load handler first: left in place, it fires when this image loads and draws that
+  // voucher's field boxes on top of this one
+  img.onload = null;
   $("#imgBox").hidden = !!d.platform;
   $("#viewNoImg").hidden = !d.platform;
   $("#viewNoImg").textContent = d.platform ? t("einvNoPhoto") : "";
@@ -541,6 +544,8 @@ function openDoc(docId, mode) {
   const box = $("#imgBox");
   box.querySelectorAll(".hl").forEach((h) => h.remove());
   const draw = () => {
+    if (S.view?.docId !== docId) return;
+    box.querySelectorAll(".hl").forEach((h) => h.remove());
     if (!d.boxes || !d.image_size) return;
     const [W, H] = d.image_size;
     Object.entries(d.boxes).forEach(([f, b]) => {
@@ -553,7 +558,7 @@ function openDoc(docId, mode) {
       box.appendChild(el);
     });
   };
-  img.complete ? draw() : (img.onload = draw);
+  if (img.complete && img.naturalWidth) draw(); else img.onload = draw;
   $("#viewEx").innerHTML = exs.length
     ? exs.map((e) => `<div class="vex"><b>${esc(ruleTitle(e))}</b><br>${esc(ruleWhy(e))}</div>`).join("")
     : `<p class="muted">${S.run ? t("viewNone") : t("viewNotRun")}</p>`;
