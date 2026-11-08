@@ -578,7 +578,7 @@ function renderOverview() {
   let head = "", sub = "", btns = "";
   if (S.job) {
     // after the reading, the agent takes the held vouchers: its own counter and bar, not "50 of 50" standing still
-    const ag = j0.status === "agent", gi = ag ? j0.agent_i || 0 : j0.i, gn = ag ? j0.agent_n || 0 : j0.n;
+    const j0 = S.job, ag = j0.status === "agent", gi = ag ? j0.agent_i || 0 : j0.i, gn = ag ? j0.agent_n || 0 : j0.n;
     const per = ag ? j0.agent_avg_s : j0.avg_s || j0.last_s, left = gn ? gn - gi : 0;
     const eta = per && left ? (left * per < 60 ? t("progEtaS") : t("progEta", { m: Math.ceil((left * per) / 60) })) : "";
     const main = j0.status === "loading model" ? t("loadingModel") : j0.status === "queued" ? t("queued")
