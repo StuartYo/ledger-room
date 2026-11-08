@@ -154,8 +154,9 @@ function renderStats() {
     tile(affected, "clients with exceptions") + tile(s?.mean_read_s != null ? s.mean_read_s + " s" : null, "read time per document") +
     periodLine();
   $("#batchSub").textContent = S.runId
-    ? `Showing run ${S.runId}. Reads every document in every client folder, then runs the rule engine across the whole firm.`
+    ? `Showing the latest check${S.runId.endsWith("-live") ? ", read with the model" : ""}. Reads every document in every client folder, then runs the rule engine across the whole firm.`
     : "Reads every document in every client folder, then runs the rule engine across the whole firm.";
+  $("#batchSub").title = S.runId ? `Run ${S.runId}` : "";
 }
 
 // One line for the whole period: e-invoices from the platform download plus the paper that was read.
