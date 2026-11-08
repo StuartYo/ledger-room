@@ -104,6 +104,9 @@ LEDGER_ZOOM_MIN_H=0 .venv/bin/python -m eval.repro_oor --mode pipeline --device 
                                       # 70 minutes, two cards, strip padded to 448 px (the default) -> eval/results_longrun_zoompad.json
 python3 eval/util_sampler.py 72 ~/util_longrun_zoompad.csv   # start beside the long run; then --summary -> results_longrun_zoompad_util.json
                                       # the run before the fix (results_longrun.json): same command with LEDGER_ZOOM_MIN_H=0
+LEDGER_DEVICE=GPU.1 .venv/bin/python -m eval.agent_eval
+                                      # the review agent: 9B + 27B on one card, held documents of the four sets, twice
+                                      # -> eval/results_agent_b70.json
 ```
 
 The key fields to compare: `results["Qwen3.5-9B-int4-ov"].ledger_room.micro.f1` and `.reading.fields_wrong`
@@ -412,6 +415,51 @@ regulation on account books and vouchers); Ledger Room does not replace paper. D
 the office scanner, a USB stick or the office LAN. LINE or e-mail is a transfer through a third party's servers: if a
 client insists on it, that is the client's choice, and the file is imported, then deleted
 ([docs/data_handling.md](docs/data_handling.md)).
+
+## Agent: a second look at held documents
+
+"AI checks, code verifies, a person signs." When the rules hold a document because a reading is not trusted (an
+invoice number read from one source only, amounts that do not add up, a buyer UBN that was presumed), a larger model
+(Qwen3.5-27B int4, temperature 0) takes a second look with tools: zoom (crop, enlarge, OCR the crop), calc, UBN check
+digit, the firm's history and the client's platform download. It proposes values with evidence. Code then checks every
+proposal again (rule v3 in `ledger_room/agent.py`): an amount counts only if net + tax = total and the other two
+numbers were confirmed on the first reading or printed on the page; an invoice number or UBN counts only if the code-run
+OCR of the crop reads the same string, or the page OCR has it and the first reader said the same. The model's own word
+counts for nothing. Then the rules run again: a document with nothing left to hold is marked `agent-verified` and does
+not wait for a person; anything else goes to a person exactly as before.
+
+On screen the overview gets a fourth part, "agent-checked, code-verified", and the four parts add up to the period.
+The review panel has a "How it was checked" line that opens into what the AI looked at, what code verified (with a tick
+or the refusal reason) and the outcome. A value the agent changed is shown like a value a person corrected (first
+reading struck through) and tagged "agent · code-verified". A person can reject the agent's result with one button: the
+document goes back to its first reading and its original reasons, and both the rejection and any restore are written to
+the audit log, as is every agent check. The 27B and the 9B reader fit on one B70 card (peak 22.4 GB VRAM plus 15.3 GB
+GTT). A machine without the 27B turns the agent off by itself and the status shows "agent not enabled on this machine";
+`LEDGER_AGENT=0` turns it off, `LEDGER_AGENT_DEVICE=GPU.1` moves it to another card.
+
+Measured on the Arc Pro B70 (GPU.1, `eval/results_agent_b70.json`, two runs, identical outcomes per document):
+
+| | held for a person | cleared by agent + code | cleared with a wrong key field |
+|---|---|---|---|
+| hard + blind3 | 30 | 10 | 0 |
+| blind3 alone | 12 | 6 | 0 |
+| plain code rule, no model (net + tax = total) | 30 | 9 | 2 |
+
+The agent made 35 proposals; 5 were wrong and code refused all 5. A held document takes 8.0 s on average, 18.0 s at
+most. In the web app's strict mode on the demo inboxes the agent cleared 2 of 7 held documents (heldout2), 0 of 2
+(heldout) and 8 of 12 (main); every one was an invoice number confirmed by the zoom OCR, nothing changed. On blind3 it
+cleared 10 of 20, two of them by filling in a total from net + tax.
+
+What these numbers do not show:
+
+- Verification rule v3 was written after looking at the hard set; blind3 was run after the rule was fixed and is the
+  only check on documents it was not tuned on (12 documents). The 0 wrong is small-sample.
+- 9 of the 10 cleared documents passed on arithmetic (net + tax = total). That is mostly code doing the work; the model's
+  part is choosing to call the calculation and finding the numbers. This is not "the AI read the picture and solved it".
+- The history and platform tools were never used on the synthetic sets (no firm history, no platform download there).
+  Only a unit test checks that code accepts them as sources (`tests/test_agent.py`).
+- The evaluation runs the rules as the experiment did (not strict, no platform, no register); the web app runs strict.
+- All synthetic data. No real client document has been through the agent.
 
 ## Access control and the audit log
 
