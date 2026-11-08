@@ -53,12 +53,22 @@ def git_rev() -> str:
         return "unknown"
 
 
+DOC_EXT = {".jpg", ".jpeg", ".png"}    # phone photos and scanner output; anything else is listed as skipped
+
+
+def skipped_files(set_name: str) -> list[str]:
+    """Files in a client month folder that are not read (wrong type), so a short count is never silent."""
+    base = DATA / set_name / "clients"
+    return sorted(str(q.relative_to(base)).replace("\\", "/") for q in base.glob("*/*/*")
+                  if q.is_file() and q.suffix.lower() not in DOC_EXT) if base.exists() else []
+
+
 def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
     base = DATA / set_name
     cfg = json.loads((base / "clients.json").read_text(encoding="utf-8"))
     clients = {c["id"]: c for c in cfg["clients"]}
     docs = []
-    for p in sorted((base / "clients").glob("*/*/*.jpg")):
+    for p in sorted(q for q in (base / "clients").glob("*/*/*") if q.suffix.lower() in DOC_EXT and q.is_file()):
         cid, month = p.parent.parent.name, p.parent.name
         docs.append({"doc_id": f"{cid}/{month}/{p.name}", "client_id": cid, "month": month, "path": p})
     return clients, docs
@@ -332,36 +342,70 @@ def cache_key(img_sha: str, model_id: str, raw: bool = False) -> str:
     return f"{img_sha[:24]}_{h}"
 
 
-def read_docs(docs: list[dict], reader=None, *, cache=True, progress=None, model_id: str | None = None) -> dict[str, dict]:
+def read_failed(reason: str, detail: str, sha: str | None = None) -> dict:
+    """The read record for a document that could not be read: no rules run on it; a person checks it (READ_REVIEW)."""
+    return {"read_failed": {"reason": reason, "detail": detail[:300]}, "fields": {}, "provenance": {}, "boxes": {},
+            "timing": {}, "image_size": None, "ocr_lines": [], "sha256": sha, "cached": False}
+
+
+def read_docs(docs: list[dict], reader=None, *, cache=True, progress=None, model_id: str | None = None,
+              reuse: set[str] | None = None, on_error: str = "raise") -> dict[str, dict]:
+    """reuse: doc ids whose cached read may be used even when cache is False (resuming an interrupted check: the
+    documents it had already read are not read again). on_error="hold" (the web app): with a reader loaded, one
+    document that cannot be read (a damaged image, a reader error) becomes read_failed() and the batch goes on;
+    the default "raise" lets a caller with its own retry (eval/bench_concurrency.py) see the error."""
     cdir = OUT / "cache"
     cdir.mkdir(parents=True, exist_ok=True)
     out = {}
     for i, d in enumerate(docs):
-        sha = sha256_file(d["path"])
+        try:
+            sha = sha256_file(d["path"])
+        except OSError as e:
+            if reader is None or on_error != "hold":
+                raise
+            res = read_failed("file_unreadable", f"{type(e).__name__}: {e}")
+            out[d["doc_id"]] = res
+            if progress:
+                progress(i + 1, len(docs), d["doc_id"], res)
+            continue
         mid = reader.model_id if reader else (model_id or "Qwen3.5-2B-int4-ov")
         cp = cdir / f"{cache_key(sha, mid)}.json"
         rp = cdir / f"{cache_key(sha, mid, raw=True)}.json"
-        if cache and cp.exists():
+        use_cache = cache or (reuse is not None and d["doc_id"] in reuse)
+        if use_cache and cp.exists():
             res = json.loads(cp.read_text(encoding="utf-8"))
             res["cached"] = True
         else:
             if reader is None:
                 raise RuntimeError(f"no cached read for {d['doc_id']} and no reader loaded")
-            raw = json.loads(rp.read_text(encoding="utf-8")) if (cache and rp.exists()) else None
-            raw_cached = raw is not None
-            if raw is None:
-                raw = reader.read_raw(d["path"])
-                rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
-            res = reader.read(d["path"], raw)
-            if raw.pop("_dirty", False):   # the reader asked a follow-up question (the total): keep its answer
-                rp.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
-            res["sha256"] = sha
-            res["cached"] = raw_cached
-            cp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+            try:
+                raw = json.loads(rp.read_text(encoding="utf-8")) if (use_cache and rp.exists()) else None
+                raw_cached = raw is not None
+                if raw is None:
+                    raw = reader.read_raw(d["path"])
+                    _write_atomic(rp, json.dumps(raw, ensure_ascii=False))
+                res = reader.read(d["path"], raw)
+                if raw.pop("_dirty", False):   # the reader asked a follow-up question (the total): keep its answer
+                    _write_atomic(rp, json.dumps(raw, ensure_ascii=False))
+            except Exception as e:     # one bad image must not stop the batch: a person looks at this one
+                if on_error != "hold":
+                    raise
+                res = read_failed("read_error", f"{type(e).__name__}: {e}", sha)
+            else:
+                res["sha256"] = sha
+                res["cached"] = raw_cached
+                _write_atomic(cp, json.dumps(res, ensure_ascii=False))
         out[d["doc_id"]] = res
         if progress:
             progress(i + 1, len(docs), d["doc_id"], res)
     return out
+
+
+def _write_atomic(p: Path, text: str) -> None:
+    """Write then rename, so a reader in another thread (or a crash) never sees half a cache file."""
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(p)
 
 
 def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[int] | None:
@@ -378,14 +422,16 @@ def crop_evidence(img_path: Path, box, out_path: Path, pad: int = 18) -> list[in
 def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, progress=None,
           registry=None, operator: str | None = None, model_id: str | None = None, read_fn=None,
           platform_invoices: set[str] | dict[str, set[str]] | None = None,
-          platform_void: set[str] | dict[str, set[str]] | None = None, platform: str | None = None) -> dict:
+          platform_void: set[str] | dict[str, set[str]] | None = None, platform: str | None = None,
+          reuse: set[str] | None = None, resumed_from: str | None = None, on_read_error: str = "raise") -> dict:
     """registry: optional business-registration lookup (registry.py); the evaluation never passes one.
     read_fn: replaces read_docs (same signature), e.g. tiered.TieredReader.read_docs for the two-card mode.
     platform_invoices: invoice numbers already in the e-invoice platform download for this period (one set, or
     {client_id: set}); a photographed voucher with one of them is left out of the file (rules.run_rules). Default none.
     platform_void: numbers the platform marks 作廢, same shapes; a photographed voucher with one is held.
     platform="auto": load both from data/platform/<client UBN>/ for each client's own period (the web app does this;
-    the evaluation does not, so its scores are unchanged). Explicit platform_invoices / platform_void win."""
+    the evaluation does not, so its scores are unchanged). Explicit platform_invoices / platform_void win.
+    reuse / resumed_from: resuming an interrupted check (the web app): the documents it had read come from the cache."""
     clients, docs = load_inbox(set_name)
     platform_records = None
     if platform == "auto":
@@ -403,15 +449,19 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
             host=_platform_mod.node(), code_rev=git_rev(), reader_version=READER_VERSION,
             model=reader.model_id if reader else f"cache ({model_id or 'Qwen3.5-2B-int4-ov'})", device=reader.device if reader else "cache",
             network="none: OCR and model run locally (OpenVINO); no outbound requests", basis=PII_RULE,
-            registry=registry.label if registry is not None else None)
+            registry=registry.label if registry is not None else None,
+            **({"resumed_from": resumed_from, "reused_reads": len(reuse or ())} if resumed_from else {}))
     t0 = time.time()
-    reads = (read_fn or read_docs)(docs, reader, cache=cache, progress=progress, model_id=model_id)
+    reads = (read_fn or read_docs)(docs, reader, cache=cache, progress=progress, model_id=model_id,
+                                   **({"reuse": reuse} if reuse else {}),
+                                   **({"on_error": on_read_error} if read_fn is None else {}))
     # a read_fn may mark a document it could not read at all ({"read_failed": {"reason", "detail"}}, e.g. the
     # reader process died on it twice): no rules run on it, it goes to a person as READ_REVIEW with that reason
     failed = {d["doc_id"]: reads[d["doc_id"]]["read_failed"] for d in docs if reads[d["doc_id"]].get("read_failed")}
     for d in docs:
         r = reads[d["doc_id"]]
-        log.add("doc_read", doc_id=d["doc_id"], sha256=r.get("sha256") or sha256_file(d["path"]),
+        log.add("doc_read", doc_id=d["doc_id"],
+                sha256=r.get("sha256") or (None if r.get("read_failed") else sha256_file(d["path"])),
                 model=r.get("model"), device=r.get("device"), cached=r.get("cached", False),
                 seconds=r["timing"].get("total_s"), provenance=r.get("provenance"),
                 **({"tier": r["tier"]} if "tier" in r else {}),
@@ -474,7 +524,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
     }
     log.add("run_end", **{k: v for k, v in summary.items() if k != "run_id"})
     result = {
-        "synthetic": True, "summary": summary,
+        "synthetic": True, "summary": summary, "operator": operator or getpass.getuser(),
         "clients": list(clients.values()),
         "docs": [{"doc_id": d["doc_id"], "client_id": d["client_id"], "month": d["month"],
                   "image": f"{set_name}/clients/{d['doc_id']}", "fields": reads[d["doc_id"]]["fields"],
@@ -485,6 +535,7 @@ def audit(set_name: str, reader=None, *, run_id: str | None = None, cache=True, 
                   # needs them (format code 22 / 28, the period's small-business receipt total)
                   "tax_voucher_kind": rdoc_by_id[d["doc_id"]].tax_voucher_kind if d["doc_id"] in rdoc_by_id else None,
                   "small_business_receipt": rdoc_by_id[d["doc_id"]].small_business_receipt if d["doc_id"] in rdoc_by_id else False,
+                  **({"read_failed": failed[d["doc_id"]]} if d["doc_id"] in failed else {}),
                   **({"tier": reads[d["doc_id"]]["tier"]} if "tier" in reads[d["doc_id"]] else {})} for d in docs],
         "exceptions": out_ex,
         "rules": rules.RULES,

@@ -1,0 +1,8 @@
+{
+  "_note": "Inboxes the web app lists, in this order, with the names people see. Evaluation and private inboxes are left out on purpose; start the server with --all-inboxes to list every folder under data/.",
+  "inboxes": {
+    "heldout": {"zh": "範例事務所 A・115 年 9–10 月", "en": "Sample firm A · Sep–Oct 2026"},
+    "heldout2": {"zh": "範例事務所 B・115 年 9–10 月", "en": "Sample firm B · Sep–Oct 2026"},
+    "main": {"zh": "範例事務所 C・115 年 9–10 月", "en": "Sample firm C · Sep–Oct 2026"}
+  }
+}

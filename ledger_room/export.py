@@ -72,7 +72,49 @@ def doc_voucher_kind(d: dict) -> str | None:
     return rules.other_voucher_kind(rules.fields_text(f), f.get("doc_type"))
 
 
-def rows(result: dict) -> list[dict]:
+REVIEW_COLUMNS = ["review_decision", "reviewed_by", "review_note"]
+# A reviewer's decision on one document (web app, review.jsonl), applied on top of what the rules decided:
+#   confirm        the paper was checked and the reading is right: a HOLD line becomes READY (deduction code unchanged)
+#   nondeductible  goes into the file with deduction code 3 (VAT Act Art. 19)
+#   exclude        left out of this filing (a duplicate, a voided invoice, not this client's)
+#   defer          left out of this period; claimed in a later one (Enforcement Rules Art. 29)
+DECISIONS = ("confirm", "nondeductible", "exclude", "defer")
+DECISION_NOTE = {"confirm": "reviewer checked the paper: confirmed",
+                 "nondeductible": "reviewer: input tax not deductible (code 3)",
+                 "exclude": "reviewer: left out of this filing",
+                 "defer": "reviewer: deferred to a later period (Enforcement Rules Art. 29)"}
+
+
+def apply_review(r: dict, dec: dict | None) -> dict:
+    """One rows() line with a reviewer's decision ({"decision", "user", "note"}) applied."""
+    if not dec or dec.get("decision") not in DECISIONS:
+        return r
+    k = dec["decision"]
+    r = dict(r)
+    if k == "confirm":
+        if r["status"] == "HOLD":
+            r["status"] = "READY" if r["format_code_格式代號"] else "NOT_IN_FILE"
+    elif k == "nondeductible":
+        if r["format_code_格式代號"]:
+            r["status"], r["deduction_code_扣抵代號"] = "READY", "4" if r["deduction_code_扣抵代號"] in ("2", "4") else "3"
+        else:
+            r["status"] = "NOT_IN_FILE"
+    else:
+        r["status"] = "NOT_IN_FILE"
+    r["status_label"] = STATUS_LABEL[r["status"]]
+    r["note"] = "; ".join(x for x in (DECISION_NOTE[k], r["note"]) if x)
+    r.update(review_decision=k, reviewed_by=dec.get("user") or "", review_note=dec.get("note") or "")
+    return r
+
+
+def rows(result: dict, review: dict[str, dict] | None = None) -> list[dict]:
+    """review: {doc_id: decision} from the web app's review log; None = the rules' own statuses only."""
+    if review is not None:
+        out = []
+        for r in rows(result):
+            dec = review.get(r["doc_id"])
+            out.append(apply_review(r, dec) if dec else {**r, **dict.fromkeys(REVIEW_COLUMNS, "")})
+        return out
     clients = {c["id"]: c for c in result["clients"]}
     ex_by_doc: dict[str, list[dict]] = {}
     for e in result["exceptions"]:
@@ -96,7 +138,11 @@ def rows(result: dict) -> list[dict]:
             if code is None and tax > 0 and buyer == c["ubn"]:
                 code, other_tax = "22", True    # a receipt that states tax and names the client: held (G6)
         notes = []
-        if "UTILITY_BILL_PLATFORM" in ids:
+        if d.get("read_failed"):
+            # not read at all (a damaged image, a reader error): a person keys it in from the paper
+            status, code, ded = "HOLD", "", ""
+            notes.append("not read: check the paper and key it in by hand")
+        elif "UTILITY_BILL_PLATFORM" in ids:
             # never an input line from paper: the utility's e-invoice comes in with the platform download
             status, code, ded, tax = "NOT_IN_FILE", "", "", 0
             notes.append("utility bill: input tax comes from the platform e-invoice; keep the bill as payment proof")
@@ -218,6 +264,16 @@ def write_csv(result: dict, path: Path) -> Path:
     return path
 
 
+def reviewed_csv_text(result: dict, review: dict[str, dict]) -> str:
+    """The same CSV with the reviewers' decisions applied and three review columns (web app export)."""
+    import io
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=COLUMNS + REVIEW_COLUMNS, lineterminator="\r\n")
+    w.writeheader()
+    w.writerows(safe_rows(rows(result, review)))
+    return "﻿" + buf.getvalue()
+
+
 def write_summary_csv(result: dict, path: Path) -> Path:
     """export_summary.csv: one line per client and period (period_summary)."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -317,8 +373,8 @@ def media_record(*, fmt: str, tax_reg_no: str, serial: int, date: str, buyer_ubn
     return rec
 
 
-def media_records(result: dict, tax_reg_no: dict[str, str], *, include_hold: bool = False
-                  ) -> tuple[dict[str, list[str]], list[dict]]:
+def media_records(result: dict, tax_reg_no: dict[str, str], *, include_hold: bool = False,
+                  review: dict[str, dict] | None = None) -> tuple[dict[str, list[str]], list[dict]]:
     """Input records per client UBN, from the same rows() as the CSV.
 
     Only READY lines go in (HOLD too when include_hold, for a dry look at the layout); NOT_IN_FILE never does.
@@ -328,7 +384,7 @@ def media_records(result: dict, tax_reg_no: dict[str, str], *, include_hold: boo
     docs = {d["doc_id"]: d for d in result["docs"]}
     out: dict[str, list[str]] = {}
     skipped: list[dict] = []
-    for r in rows(result):
+    for r in rows(result, review):
         if r["status"] == "NOT_IN_FILE" or (r["status"] == "HOLD" and not include_hold):
             continue
         cu = r["client_ubn"]

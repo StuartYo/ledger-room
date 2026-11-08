@@ -61,6 +61,12 @@ ADMIN_ONLY = {"/api/audit-log", "/api/oplog"}
 UNMASK: dict[tuple, float] = {}      # (user, session token, run) -> expiry of an unmask grant
 UNMASK_S = 600
 IMG_EXT = {".jpg", ".jpeg", ".png"}
+ACTIVE: dict[str, str] = {}           # inbox -> id of the check running on it (one at a time per inbox)
+RUN_LOCK = threading.Lock()
+REVIEW_LOGS: dict[str, AuditLog] = {}  # run id -> its review log (decisions on held vouchers, exports)
+REVIEW_LOCK = threading.Lock()
+RUNNING = {"queued", "loading model", "reading"}
+UI_INBOXES = ROOT / "web" / "inboxes.json"
 
 
 def get_reader():
@@ -109,40 +115,176 @@ def attachment(name: str) -> str:
     return 'attachment; filename="' + _hval(name).replace('"', "") + '"'
 
 
+def ui_inbox_names() -> dict[str, dict] | None:
+    """{set: {"zh", "en"}} from web/inboxes.json, in display order; None lists every inbox (--all-inboxes)."""
+    if CFG.get("all_inboxes"):
+        return None
+    try:
+        return json.loads(UI_INBOXES.read_text(encoding="utf-8"))["inboxes"]
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
 def inboxes() -> list[dict]:
+    names = ui_inbox_names()
     out = []
-    for p in sorted(DATA.iterdir()):
+    for p in sorted(DATA.iterdir()) if DATA.exists() else []:
         cj = p / "clients.json"
-        if p.name == "out" or not cj.exists():
+        if p.name == "out" or not cj.exists() or (names is not None and p.name not in names):
             continue
         cfg = json.loads(cj.read_text(encoding="utf-8"))
-        n = len(list((p / "clients").glob("*/*/*.jpg")))
-        out.append({"set": p.name, "n_docs": n, "n_clients": len(cfg["clients"]), "layout_family": cfg.get("layout_family")})
-    return out
+        _, docs = pipeline.load_inbox(p.name)
+        nm = (names or {}).get(p.name) or {"zh": p.name, "en": p.name}
+        out.append({"set": p.name, "n_docs": len(docs), "n_clients": len(cfg["clients"]),
+                    "layout_family": cfg.get("layout_family"), "synthetic": bool(cfg.get("synthetic")),
+                    "name": {"zh": nm.get("zh") or p.name, "en": nm.get("en") or p.name}})
+    order = list(names or {})
+    return sorted(out, key=lambda b: order.index(b["set"]) if b["set"] in order else len(order))
 
 
-def run_job(job_id: str, set_name: str, live: bool, user: str):
+def public_job(job: dict) -> dict:
+    return {k: v for k, v in job.items() if not k.startswith("_") and k != "trace"}
+
+
+def save_job(job: dict) -> None:
+    """runs/<run id>/job.json: where a check got to, written after every document, so a reload, a dropped connection
+    or a server restart can show it and resume it (the documents already read come from the cache)."""
+    rid = job.get("run_id")
+    if not rid:
+        return
+    p = OUT / "runs" / rid / "job.json"
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(f"job.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps(public_job(job) | {"done": job.get("_done", [])}, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(p)
+    except OSError:
+        pass     # progress on disk is a convenience; the check itself goes on
+
+
+def interrupted_runs(set_name: str) -> list[dict]:
+    """Checks on this inbox that stopped before the end (server stopped or crashed): job.json, no result.json."""
+    rd = OUT / "runs"
+    live_ids = {j.get("run_id") for j in JOBS.values() if j.get("status") in RUNNING}
+    out = []
+    for p in sorted(rd.glob(f"{set_name}-*/job.json"), reverse=True) if rd.exists() else []:
+        try:
+            j = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if (j.get("set") != set_name or j.get("status") not in RUNNING or j.get("run_id") in live_ids
+                or (p.parent / "result.json").exists()):
+            continue
+        out.append({k: j.get(k) for k in ("run_id", "i", "n", "user", "started", "live")}
+                   | {"n_done": len(j.get("done") or [])})
+    return out[:3]
+
+
+def run_job(job_id: str, set_name: str, live: bool, user: str, reuse: set[str] | None = None,
+            resumed_from: str | None = None):
     job = JOBS[job_id]
+    secs: list[float] = []
     try:
         reader = None
         if live:
             job["status"] = "loading model"
+            save_job(job)
             reader = get_reader()
             job["model"], job["device"] = reader.model_id, reader.device
         job["status"] = "reading"
+        save_job(job)
 
         def prog(i, n, doc_id, res):
-            job.update(i=i, n=n, doc_id=doc_id, last_s=res["timing"].get("total_s"), cached=res.get("cached", False))
+            t = res["timing"].get("total_s")
+            if t and not res.get("cached"):
+                secs.append(t)
+            job.update(i=i, n=n, doc_id=doc_id, last_s=t, cached=res.get("cached", False),
+                       avg_s=round(sum(secs[-10:]) / len(secs[-10:]), 2) if secs else None,
+                       n_failed=job.get("n_failed", 0) + bool(res.get("read_failed")))
+            job["_done"].append(doc_id)
+            save_job(job)
             if not live:
                 time.sleep(0.12)   # replay pacing so the progress is visible; reads come from cache
 
         from ledger_room.registry import load_default
         res = pipeline.audit(set_name, reader, cache=not live, progress=prog, registry=load_default(), operator=user,
-                             platform="auto", run_id=f"{set_name}-{time.strftime('%Y%m%d-%H%M%S')}-{'live' if live else 'replay'}")
-        job.update(status="done", run_id=res["summary"]["run_id"], summary=res["summary"])
-        oplog("run_done", user=user, run_id=res["summary"]["run_id"], n_exceptions=res["summary"]["n_exceptions"])
+                             platform="auto", run_id=job["run_id"], reuse=reuse, resumed_from=resumed_from,
+                             on_read_error="hold")
+        job.update(status="done", summary=res["summary"], carried=carry_over_decisions(set_name, job["run_id"], res))
+        save_job(job)
+        oplog("run_done", user=user, run_id=job["run_id"], n_exceptions=res["summary"]["n_exceptions"])
     except Exception as e:  # surface the error in the UI
         job.update(status="error", error=f"{e}", trace=traceback.format_exc()[-2000:])
+        save_job(job)
+        oplog("run_failed", user=user, run_id=job.get("run_id"), error=f"{type(e).__name__}: {e}"[:300])
+    finally:
+        with RUN_LOCK:
+            if ACTIVE.get(set_name) == job_id:
+                ACTIVE.pop(set_name, None)
+
+
+def review_log(run: str) -> AuditLog:
+    with REVIEW_LOCK:
+        lg = REVIEW_LOGS.get(run)
+        if lg is None:
+            lg = REVIEW_LOGS[run] = AuditLog(OUT / "runs" / run / "review.jsonl", append=True)
+        return lg
+
+
+def carry_over_decisions(set_name: str, run_id: str, result: dict) -> int:
+    """A new check of the same inbox keeps the reviewers' decisions from the last check that has any, for each voucher
+    whose issues are the same rules as before (a voucher with a new or a different issue is decided again). Each
+    carried decision is a new entry in this run's review log, naming the earlier run and who decided."""
+    rd = OUT / "runs"
+    prev = None
+    for p in sorted(rd.glob(f"{set_name}-*/review.jsonl"), reverse=True):
+        if p.parent.name != run_id and (p.parent / "result.json").exists() and review_state(p.parent.name)[0]:
+            prev = p.parent.name
+            break
+    if prev is None:
+        return 0
+    old_dec, _ = review_state(prev)
+    try:
+        old = json.loads((rd / prev / "result.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+
+    def rules_by_doc(r: dict) -> dict[str, frozenset]:
+        out: dict[str, set] = {}
+        for e in r.get("exceptions", []) + (r.get("period_check") or {}).get("exceptions", []):
+            out.setdefault(e.get("doc_id"), set()).add(e.get("rule_id"))
+        return {k: frozenset(v) for k, v in out.items()}
+
+    before, now = rules_by_doc(old), rules_by_doc(result)
+    n = 0
+    for doc, d in old_dec.items():
+        if doc in now and now[doc] == before.get(doc):
+            review_log(run_id).add("review", doc_id=doc, decision=d["decision"], note=d.get("note") or "",
+                                   user=d.get("user"), role="carried over", carried_from=prev, decided_at=d.get("ts"))
+            n += 1
+    if n:
+        oplog("review_carried_over", run_id=run_id, from_run=prev, n=n)
+    return n
+
+
+def review_state(run: str) -> tuple[dict[str, dict], list[dict]]:
+    """The latest decision per document (an "undo" removes it) and the exports, from runs/<run>/review.jsonl."""
+    p = OUT / "runs" / run / "review.jsonl"
+    dec: dict[str, dict] = {}
+    exports: list[dict] = []
+    for line in AuditLog.lines(p) if p.exists() else []:
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("event") == "review" and e.get("doc_id"):
+            if e.get("decision") == "undo":
+                dec.pop(e["doc_id"], None)
+            else:
+                dec[e["doc_id"]] = {k: e.get(k) for k in ("decision", "user", "note", "ts")}
+        elif e.get("event") == "export":
+            exports.append({k: e.get(k) for k in ("user", "ts", "counts")})
+    return dec, exports
 
 
 class H(BaseHTTPRequestHandler):
@@ -278,7 +420,8 @@ class H(BaseHTTPRequestHandler):
         for pre in ("/static/", "/img/", "/out/"):
             if path.startswith(pre) and not safe_subpath(path[len(pre):]):
                 return self._json({"error": "not found"}, 404)
-        if path in ("/api/result", "/api/export", "/api/audit-log") and not valid_run(q.get("run", "")):
+        if path in ("/api/result", "/api/export", "/api/audit-log", "/api/review", "/api/export-summary") \
+                and not valid_run(q.get("run", "")):
             return self._json({"error": "bad run"}, 400)
         if path in ("/", "/index.html"):
             return self._file(STATIC / "index.html", STATIC)
@@ -306,7 +449,10 @@ class H(BaseHTTPRequestHandler):
             if st not in {i["set"] for i in inboxes()}:
                 return self._json({"error": "unknown inbox"}, 400)
             clients, docs = pipeline.load_inbox(st)
-            return self._json({"set": st, "clients": [privacy.mask_client(c) for c in clients.values()],
+            box = next(i for i in inboxes() if i["set"] == st)
+            return self._json({"set": st, "name": box["name"], "synthetic": box["synthetic"],
+                               "skipped": pipeline.skipped_files(st),
+                               "clients": [privacy.mask_client(c) for c in clients.values()],
                                "docs": [{k: v for k, v in d.items() if k != "path"} | {"image": f"{st}/clients/{d['doc_id']}"}
                                         for d in docs]})
         if path == "/api/runs":
@@ -323,10 +469,67 @@ class H(BaseHTTPRequestHandler):
             if clear:
                 return self._file(p, OUT / "runs")
             return self._json(privacy.mask_result(json.loads(p.read_text(encoding="utf-8"))))
+        if path == "/api/review":
+            run = q.get("run", "")
+            rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+            if rp is None:
+                return self._json({"error": "not found"}, 404)
+            result = json.loads(rp.read_text(encoding="utf-8"))
+            dec, exports = review_state(run)
+            try:
+                status = {r["doc_id"]: r["status"] for r in export.rows(result)}
+            except (KeyError, TypeError, ValueError):
+                status = {}
+            if not (q.get("unmask") == "1" and self._unmasked(s, run)):
+                names = privacy.personal_names(result) if "docs" in result else ()
+                dec = {k: privacy.mask_entries([v], names)[0] for k, v in dec.items()}
+            lp = OUT / "runs" / run / "review.jsonl"
+            v = AuditLog.verify_detail(lp, keys.audit_key(create=False), head=True) if lp.exists() else None
+            return self._json({"decisions": dec, "exports": exports, "status": status,
+                               "blocking": sorted(export.BLOCKING),
+                               "log_ok": None if v is None else bool(v["chain_ok"] and v["mac_ok"] is not False
+                                                                      and v.get("tail_ok") is not False)})
+        if path == "/api/export-summary":
+            run = q.get("run", "")
+            rdir = OUT / "runs" / run
+            rp = self._inside(rdir / "result.json", OUT / "runs")
+            if rp is None:
+                return self._json({"error": "not found"}, 404)
+            if not (rdir / "export_summary.csv").exists():
+                export.write_summary_csv(json.loads(rp.read_text(encoding="utf-8")), rdir / "export_summary.csv")
+            oplog("export_summary_csv", user=s["user"], run_id=run, ip=self._ip())
+            return self._file(rdir / "export_summary.csv", OUT / "runs", download=f"ledger_room_{run}_401_summary.csv")
+        if path == "/api/jobs":
+            st = q.get("set", "")
+            if st not in {i["set"] for i in inboxes()}:
+                return self._json({"error": "unknown inbox"}, 400)
+            jid = ACTIVE.get(st)
+            j = JOBS.get(jid) if jid else None
+            return self._json({"active": public_job(j) if j and j.get("status") in RUNNING else None,
+                               "interrupted": interrupted_runs(st)})
         if path == "/api/export":
             run = q.get("run", "")
             clear = q.get("unmask") == "1" and self._unmasked(s, run)
             oplog("export_media_csv", user=s["user"], run_id=run, ip=self._ip(), masked=not clear)
+            rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+            result = json.loads(rp.read_text(encoding="utf-8")) if rp is not None else {}
+            if "docs" in result and "clients" in result:
+                # the reviewers' decisions (review.jsonl) applied; the export itself goes into that log too
+                dec, _ = review_state(run)
+                review = {k: {"decision": v["decision"], "user": v["user"], "note": v.get("note") or ""}
+                          for k, v in dec.items()}
+                text = export.reviewed_csv_text(result, review)
+                counts: dict[str, int] = {}
+                for r in export.rows(result, review):
+                    counts[r["status"]] = counts.get(r["status"], 0) + 1
+                review_log(run).add("export", user=s["user"], counts=counts, reviewed=len(review), masked=not clear)
+                if not clear:
+                    text = privacy.mask_csv(text, privacy.personal_names(result))
+                b = text.encode("utf-8")
+                name = f"ledger_room_{run}_media_reviewed{'' if clear else '_masked'}.csv"
+                self._headers("text/csv; charset=utf-8", len(b), 200, {"Content-Disposition": attachment(name)})
+                self.wfile.write(b)
+                return
             name = f"ledger_room_{run}_media{'' if clear else '_masked'}.csv"
             rdir = OUT / "runs" / run
             if (valid_run(run) and lexically_inside(rdir, OUT / "runs") and (rdir / "result.json").is_file()
@@ -370,7 +573,7 @@ class H(BaseHTTPRequestHandler):
                                "entries_verified": v["n"], "entries": entries[-500:]})
         if path.startswith("/api/job/"):
             j = JOBS.get(path.rsplit("/", 1)[-1])
-            return self._json(j or {"error": "no such job"}, 200 if j else 404)
+            return self._json(public_job(j) if j else {"error": "no such job"}, 200 if j else 404)
         if path == "/api/status":
             return self._json({"model_loaded": _reader is not None,
                                "model": _reader.model_id if _reader else None,
@@ -468,19 +671,66 @@ class H(BaseHTTPRequestHandler):
             UNMASK[(s["user"], s.get("token", "local"), run)] = now + UNMASK_S
             oplog("unmask", user=s["user"], role=s["role"], run_id=run, reason=reason, seconds=UNMASK_S, ip=self._ip())
             return self._json({"ok": True, "run": run, "expires_s": UNMASK_S})
+        if path == "/api/review":
+            run, doc = str(body.get("run", "")), str(body.get("doc_id", ""))[:200]
+            decision, note = str(body.get("decision", "")), str(body.get("note", "")).strip()[:300]
+            if not valid_run(run):
+                return self._json({"error": "bad run"}, 400)
+            rp = self._inside(OUT / "runs" / run / "result.json", OUT / "runs")
+            if rp is None:
+                return self._json({"error": "unknown run"}, 400)
+            if decision not in export.DECISIONS + ("undo",):
+                return self._json({"error": "decision must be one of " + ", ".join(export.DECISIONS + ("undo",))}, 400)
+            result = json.loads(rp.read_text(encoding="utf-8"))
+            known = ({d.get("doc_id") for d in result.get("docs", [])}
+                     | {e.get("doc_id") for e in (result.get("period_check") or {}).get("exceptions", [])})
+            if doc not in known:
+                return self._json({"error": "unknown document"}, 400)
+            review_log(run).add("review", doc_id=doc, decision=decision, note=note, user=s["user"], role=s["role"])
+            oplog("review", user=s["user"], run_id=run, doc_id=doc, decision=decision, ip=self._ip())
+            return self._json({"ok": True, "doc_id": doc, "decision": decision, "user": s["user"]})
         if path == "/api/run":
             st = str(body.get("set", "main"))[:64]
-            live = bool(body.get("live"))
+            resume = str(body.get("resume") or "")
+            live = bool(body.get("live")) or bool(resume)
             if st not in {i["set"] for i in inboxes()}:
                 return self._json({"error": "unknown inbox"}, 400)
             if live and s["role"] != "admin":
                 oplog("denied", user=s["user"], path="/api/run live", ip=self._ip())
                 return self._json({"error": "only an admin can run the model live"}, 403)
-            jid = uuid.uuid4().hex[:10]
-            JOBS[jid] = {"id": jid, "set": st, "live": live, "status": "queued", "i": 0, "n": 0}
-            oplog("run_start", user=s["user"], inbox=st, live=live, ip=self._ip())
-            threading.Thread(target=run_job, args=(jid, st, live, s["user"]), daemon=True).start()
-            return self._json(JOBS[jid])
+            reuse = None
+            if resume:
+                old = next((r for r in interrupted_runs(st) if r["run_id"] == resume), None) if valid_run(resume) else None
+                try:
+                    reuse = set(json.loads((OUT / "runs" / resume / "job.json").read_text(encoding="utf-8"))["done"]) \
+                        if old else None
+                except (OSError, ValueError, KeyError, TypeError):
+                    reuse = None
+                if reuse is None:
+                    return self._json({"error": "nothing to resume for that run"}, 400)
+            with RUN_LOCK:      # one check at a time per inbox: a second press (or a second tab) joins the first
+                cur = JOBS.get(ACTIVE.get(st) or "")
+                if cur and cur.get("status") in RUNNING:
+                    return self._json({"error": "this inbox is already being checked", "job": public_job(cur)}, 409)
+                jid = uuid.uuid4().hex[:10]
+                run_id = f"{st}-{time.strftime('%Y%m%d-%H%M%S')}-{jid[:4]}-{'live' if live else 'replay'}"
+                JOBS[jid] = {"id": jid, "set": st, "live": live, "status": "queued", "i": 0, "n": 0, "run_id": run_id,
+                             "user": s["user"], "started": time.time(), "_done": [],
+                             **({"resumed_from": resume, "n_reused": len(reuse)} if resume else {})}
+                ACTIVE[st] = jid
+            if resume:      # the old folder says where its documents went
+                op = OUT / "runs" / resume / "job.json"
+                try:
+                    oj = json.loads(op.read_text(encoding="utf-8"))
+                    op.write_text(json.dumps(oj | {"status": "resumed", "resumed_by": run_id}, ensure_ascii=False),
+                                  encoding="utf-8")
+                except (OSError, ValueError):
+                    pass
+            save_job(JOBS[jid])
+            oplog("run_start", user=s["user"], inbox=st, live=live, ip=self._ip(), run_id=run_id,
+                  **({"resumed_from": resume} if resume else {}))
+            threading.Thread(target=run_job, args=(jid, st, live, s["user"], reuse, resume or None), daemon=True).start()
+            return self._json(public_job(JOBS[jid]))
         return self._json({"error": "not found"}, 404)
 
 
@@ -523,6 +773,8 @@ def main():
                     help="with --proxy-origin: the Host header that proxy sends, when it is not the origin's host")
     ap.add_argument("--not-strict", action="store_true",
                     help="accept a value on one source (development only); the app checks strictly by default")
+    ap.add_argument("--all-inboxes", action="store_true",
+                    help="list every inbox under data/ (development); by default only those in web/inboxes.json")
     ap.add_argument("--behind-tls-proxy", action="store_true",
                     help="plain HTTP here, but only an HTTPS reverse proxy reaches this port; marks the cookie Secure")
     a = ap.parse_args()
@@ -531,6 +783,7 @@ def main():
     pipeline.STRICT = not a.not_strict and os.environ.get("LEDGER_STRICT_READ", "1") != "0"
     if bool(a.cert) != bool(a.key):
         sys.exit("--cert and --key go together.")
+    CFG["all_inboxes"] = a.all_inboxes
     CFG["users"] = userdb.load()
     CFG["local"] = not CFG["users"]
     CFG["host"] = a.host
