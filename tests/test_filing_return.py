@@ -80,6 +80,18 @@ def test_independent_checkers_pass(filed):
     assert rep["ok"], rep["errors"]
 
 
+def test_mof_checked_pair_is_consistent_and_differs_from_golden_only_in_prefixes():
+    """The pair run through the MOF checking program must also pass our own cross-check, and its TXT must be the golden
+    file with only the 2-letter invoice prefixes swapped (an 11-07 hand copy changed one deduction code by mistake)."""
+    mof = FIX / "mof_checked"
+    rep = check_pair(mof / f"{UBN}.TXT", mof / f"{UBN}.TET_U")
+    assert rep["ok"], rep["errors"]
+    gold = (GOLDEN / f"{UBN}.TXT").read_bytes().decode("ascii").splitlines()
+    seen = (mof / f"{UBN}.TXT").read_bytes().decode("ascii").splitlines()
+    assert len(gold) == len(seen)
+    assert all(g[:39] + g[41:] == m[:39] + m[41:] for g, m in zip(gold, seen))
+
+
 def test_tet_u_fields(filed):
     raw = filed["tet_u"].read_bytes()
     assert not raw.startswith(b"\xef\xbb\xbf") and raw.endswith(b"\r\n") and raw.count(b"\r\n") == 1
