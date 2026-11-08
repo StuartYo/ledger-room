@@ -421,7 +421,7 @@ What is in place, and what it does not do:
 - **Accounts and roles** (regulation Arts. 15 and 17(1)(1)): `python -m web.users add NAME --role admin|staff` stores
   PBKDF2-SHA256 password hashes in `%LOCALAPPDATA%\LedgerRoom\users.json`. With accounts, every request except the
   sign-in page needs a session (8 hours, HttpOnly, SameSite=Strict); five wrong passwords lock that name for five
-  minutes. Staff can read exceptions and documents, replay runs and export; only an admin can run the model live and
+  minutes. Staff can read exceptions and documents, decide held vouchers and export; only an admin can run the model and
   read the logs. Only then may `--host 0.0.0.0 --cert cert.pem --key key.pem` share it on the office LAN over HTTPS
   (or `--host 0.0.0.0 --behind-tls-proxy` when an HTTPS reverse proxy sits in front); it refuses plain HTTP off loopback.
 - **Operation log** (regulation Arts. 17(1)(4), 17(1)(6) and 19): sign-ins, failed sign-ins, runs, result views, log views and
@@ -531,11 +531,23 @@ disabled is still on the Stage II list.
    `data/out/runs/<run id>/` with `result.json`, evidence crops and `audit_log.jsonl`. Reads are cached in
    `data/out/cache`, so a second run with `--cache-only` replays them in seconds without loading the model.
    `--set main` runs the other inbox.
-5. **Open the web app.** `.venv\Scripts\python -m web.server`, then browse to http://127.0.0.1:8780, pick the
-   `heldout` inbox and press **Check this period** (reads every voucher with the model) or, after a first run, **Show last check** (cached reads, no re-reading). The app reads strictly by default (a filing value needs two agreeing sources); `--not-strict` turns that off for development.
-   **Export CSV** downloads the media-file lines of the run shown. To share it on the office LAN, first add accounts
-   (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with `--host 0.0.0.0 --cert cert.pem --key key.pem` (HTTPS); the documents still
-   stay on this machine.
+5. **Open the web app.** `.venv\Scripts\python -m web.server`, then browse to http://127.0.0.1:8780. The page is in
+   Traditional Chinese; the button at the top right switches to English. A bar of four steps says what to do next:
+   1. **Add vouchers**: the inbox (`data/<inbox>/clients/<client>/<YYYY-MM>/*.jpg|png`) shows how many it holds.
+   2. **Check this period**: reads every voucher with the model, then runs the rules. The progress is saved after every
+      voucher: close the page and it reconnects when you come back; if the computer restarts, the page offers to
+      continue from where it stopped without reading the finished vouchers again. One check runs per inbox at a time.
+   3. **Decide the held ones**: each held voucher shows the reason, the evidence crop and the rule, with four decisions
+      (checked OK, not deductible, leave out, next period) and a suggestion where the rule makes one. A decision is
+      saved at once (to `review.jsonl` in the run folder, hash-chained and signed like the audit log); made offline, it
+      waits in the browser and is sent when the connection is back. Keys: J / K, 1 to 4, Enter, U. A later check keeps
+      the decisions for vouchers whose issues did not change.
+   4. **Export the filing data**: enabled once every held voucher is decided; a summary shows how many lines go into the
+      filing, then the review CSV downloads with the decisions applied.
+   The app reads strictly by default (a filing value needs two agreeing sources); `--not-strict` turns that off for
+   development. Only the inboxes in `web/inboxes.json` are listed (`--all-inboxes` lists every folder). To share it on
+   the office LAN, first add accounts (`.venv\Scripts\python -m web.users add amy --role admin`), then start it with
+   `--host 0.0.0.0 --cert cert.pem --key key.pem` (HTTPS); the documents still stay on this machine.
 
 No Intel GPU? Set `LEDGER_DEVICE=CPU` (about 45 s per document on the laptop CPU). For the larger reader, download `--repo OpenVINO/Qwen3.5-9B-int4-ov --dir E:\models\Qwen3.5-9B-int4-ov` with the same `get_model` command and point `LEDGER_MODEL_DIR` at it. Other environment variables:
 `LEDGER_MODEL_DIR` (model folder), `LEDGER_OCR_DEVICE` (default `CPU`), `LEDGER_VLM_MAX_SIDE` (default 896 px).
