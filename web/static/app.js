@@ -15,14 +15,15 @@ const S = {
   job: null, jobEnd: null, interrupted: [], focus: 0, view: null,
   outbox: store.get("outbox", []), offline: false,
   page: ["queue", "documents", "log"].includes(store.get("page", "queue")) ? store.get("page", "queue") : "queue",
-  screen: null, qtab: store.get("qtab", "todo") === "done" ? "done" : "todo", group: !!store.get("group", false),
+  screen: null, qtab: ["done", "agent"].includes(store.get("qtab", "todo")) ? store.get("qtab") : "todo", group: !!store.get("group", false),
   q: "", collapsed: new Set(), allFields: false, zoom: 1, whyOpen: new Set(), last: null, status: null,
   // review screen: the left list folded to a strip (remembered; folded by default on narrow screens), tight field boxes
   miniHide: store.get("miniHide", window.innerWidth < 1600), tb: {}, editing: null,
+  agentOpen: false,       // the review panel's "how it was checked" section: one line until clicked
 };
 S.screen = S.page;
 const DECISIONS = ["confirm", "nondeductible", "exclude", "defer"];
-const GOOD = new Set(["ocr-confirmed", "ocr-confirmed (second reader)", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword", "person"]);
+const GOOD = new Set(["ocr-confirmed", "ocr-confirmed (second reader)", "snapped", "ocr-zoom", "ocr-role", "ocr", "ocr-keyword", "person", "agent-verified"]);
 // fields a person can correct on the review screen (ledger_room/corrections.py EDITABLE)
 const EDITABLE = ["invoice_no", "date", "seller_ubn", "buyer_ubn", "net", "tax", "total"];
 // a field a READ_REVIEW reason sends to a person is never labelled "two sources agree", whatever its provenance:
@@ -53,6 +54,8 @@ const ICONS = {
   maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  bot: '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
   shieldAlert: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
@@ -233,9 +236,18 @@ function modelLine() {
   if (!s) return t("modelLoading");
   return (s.model_loaded ? t("modelOn", { m: s.model, d: s.device }) : t("modelLater")) + (s.strict ? ` · ${t("strict")}` : "");
 }
+// the review agent on this machine (server agent_status): on, waiting for the first check, or not here at all
+function agentLine() {
+  const a = S.status?.agent;
+  if (!a) return "";
+  if (!a.available) return t("agentOff");
+  const mem = a.memory_gb ? ` · ${t("agentMem", { g: a.memory_gb })}` : "";
+  return (a.loaded ? t("agentOn", { m: a.model, d: a.device }) : t("agentLater", { m: a.model })) + mem;
+}
 function renderStatusPop() {
   const p = $("#statusPop");
-  p.innerHTML = `<div class="prow"><div class="ph2"><span class="dot"></span><b>${esc(t("statusLocal"))}</b></div><p>${esc(t("localTip"))}</p><p class="mono">${esc(modelLine())}</p></div>` + maskBlock();
+  const al = agentLine();
+  p.innerHTML = `<div class="prow"><div class="ph2"><span class="dot"></span><b>${esc(t("statusLocal"))}</b></div><p>${esc(t("localTip"))}</p><p class="mono">${esc(modelLine())}</p>${al ? `<p class="mono">${esc(al)}</p>` : ""}</div>` + maskBlock();
   bindPop(p);
 }
 function renderUserPop() {
@@ -317,7 +329,7 @@ const hwShort = (s) => String(s || "").replace(/\((R|TM|C)\)/gi, "").replace(/\(
 function renderStatus() {
   const hw = hwShort(S.status?.hardware);
   $("#statusText").textContent = t("statusLocal") + (hw ? ` · ${hw}` : "");
-  $("#statusBtn").title = `${t("localTip")}\n${modelLine()}`;
+  $("#statusBtn").title = `${t("localTip")}\n${modelLine()}${agentLine() ? "\n" + agentLine() : ""}`;
 }
 
 async function loadInbox(set) {
@@ -389,6 +401,24 @@ function items() {
   return _items;
 }
 const itemMap = () => new Map(items().map((it) => [it.doc_id, it]));
+// ---------- the review agent (ledger_room/agent.py): a 27B with tools proposes, code verifies, a person can override ----------
+// a voucher the agent cleared: every value it changed passed the code check, the rules found nothing left, nobody undid it
+const agentOk = (d) => d?.agent?.status === "verified" && !d.agent.overridden;
+// "total NT$1,150 -> NT$1,155", or "confirmed seller UBN" when it only confirmed what was read
+function agentChanges(a, sep) {
+  return Object.entries(a?.checks || {}).filter(([, c]) => c.accepted).map(([k, c]) => (String(c.old ?? "") === String(c.value ?? "")
+    ? t("agConfirmF", { f: t("f_" + k) }) : `${t("f_" + k)} ${fmtVal(k, c.old)} → ${fmtVal(k, c.value)}`)).join(sep || (S.lang === "zh" ? "・" : " · "));
+}
+const agentHow = (a) => [...new Set(Object.values(a?.checks || {}).filter((c) => c.accepted).flatMap((c) => c.evidence || []))].map((e) => t("agEvS_" + e)).join(S.lang === "zh" ? "、" : ", ");
+// vouchers the agent cleared that are not in the queue (a cleared one with a warning left stays "worth a look")
+function agentItems() {
+  if (!S.run) return [];
+  const im = itemMap(), q = S.q.toLowerCase();
+  return S.run.docs.filter((d) => agentOk(d) && !im.has(d.doc_id) && (S.client === "ALL" || d.client_id === S.client)
+      && (!q || [clientName(d.client_id), d.client_id, d.doc_id, d.fields?.invoice_no].some((x) => String(x || "").toLowerCase().includes(q))))
+    .map((d) => ({ doc_id: d.doc_id, client_id: d.client_id, doc: d, agent: true, inv: d.fields?.invoice_no, total: d.fields?.total, tax: d.fields?.tax, type: d.fields?.doc_type }))
+    .sort((a, b) => a.client_id.localeCompare(b.client_id) || a.doc_id.localeCompare(b.doc_id));
+}
 function sortItems(list) {
   return list.sort((a, b) => (b.must - a.must) || (SEV[a.primary.severity] ?? 5) - (SEV[b.primary.severity] ?? 5)
     || a.client_id.localeCompare(b.client_id) || a.doc_id.localeCompare(b.doc_id));
@@ -406,6 +436,7 @@ const undecided = () => items().filter((it) => !it.dec);
 
 // the queue as groups: by priority (must decide, worth a look) or by the main reason each voucher was held
 function groups() {
+  if (S.qtab === "agent") return [{ key: "all", items: agentItems() }];
   const list = S.qtab === "todo" ? todo() : done();
   if (!S.group) {
     if (S.qtab === "done") return [{ key: "all", items: list }];
@@ -444,6 +475,11 @@ function undoLast() {
   const L = S.last;
   if (!L || L.run !== S.runId) return;
   S.last = null;
+  if (L.kind === "agent") {           // take back "do not use the agent's fixes" (or the restore)
+    post("api/agent-override", { run: L.run, doc_id: L.doc, action: L.action === "reject" ? "restore" : "reject" })
+      .then(() => loadRun(S.runId)).then(() => toast(t("toastUndone", { n: 1 }))).catch((e) => toast(e.message));
+    return;
+  }
   if (L.kind === "correct") {         // put the field back to the value shown before the correction
     post("api/correct", { run: L.run, doc_id: L.doc, field: L.field, value: L.prev == null ? "" : String(L.prev) })
       .then(() => loadRun(S.runId)).then(() => toast(t("toastUndone", { n: 1 }))).catch((e) => toast(e.message));
@@ -605,13 +641,16 @@ function renderPeriod() {
   const its = items();
   const ids = new Set(S.inbox.docs.map((d) => d.doc_id).concat(its.map((it) => it.doc_id)));
   const must = its.filter((it) => it.must && !it.dec).length, look = its.filter((it) => !it.must && !it.dec).length;
-  const dec = its.filter((it) => it.dec).length, ready = ids.size - its.length;
-  const parts = [["m", must], ["w", look], ["d", dec], ["", ready]];
+  const im = itemMap();
+  const ag = [...ids].filter((id) => !im.has(id) && agentOk(docById(id))).length;
+  const dec = its.filter((it) => it.dec).length, ready = ids.size - its.length - ag;
+  const parts = [["m", must], ["w", look], ["d", dec], ["a", ag], ["", ready]];
   const cells = ids.size <= 240
     ? `<div class="cells" style="grid-template-columns:repeat(${ids.size},1fr)">${parts.map(([c, n]) => `<i class="${c}"></i>`.repeat(n)).join("")}</div>`
     : `<div class="cells bar">${parts.filter(([, n]) => n).map(([c, n]) => `<i class="${c}" style="flex:${n}"></i>`).join("")}</div>`;
   const lg = (cls, n, k) => `<span><i class="sw ${cls}"></i><b>${n}</b>${t(k)}</span>`;
-  const legend = lg("m", must, "lgMust") + lg("w", look, "lgLook") + lg("", ready, "lgReady") + (dec ? lg("d", dec, "lgDone") : "");
+  const legend = lg("m", must, "lgMust") + lg("w", look, "lgLook") + (ag || S.run.summary?.agent?.tried ? lg("a", ag, "lgAgent") : "")
+    + lg("", ready, "lgReady") + (dec ? lg("d", dec, "lgDone") : "");
   const s = S.run.summary || {};
   const when = runLabel(S.runId);
   const replay = !S.runId.endsWith("-live");
@@ -628,8 +667,13 @@ function renderPeriod() {
     const ps = S.client === "ALL" ? pc.summary : pc.by_client?.[S.client];
     if (ps) pline = t("periodLine", { who: S.client === "ALL" ? t("thisPeriod") : t("thisPeriodOf", { c: clientName(S.client) }), e: ps.einvoices, p: ps.paper, h: ps.held.total, r: ps.ready.total });
   }
+  // the agent step of this check: ran here, replayed from stored runs, or not on this machine (never pretends it ran)
+  const A = s.agent || {}, off = S.status?.agent && !S.status.agent.available;
+  const aline = A.ran ? (A.tried ? t("metaAgent", { m: A.model || "", n: A.tried, v: A.verified }) : t("metaAgentNone"))
+    : A.replay && A.tried ? t("metaAgentReplay", { n: A.tried, v: A.verified }) + (off ? dot + t("agentOff") : "")
+    : off ? t("agentOff") : "";
   $("#periodCard").innerHTML = `<div class="strip">${cells}<div class="legend">${legend}</div></div>
-    <div class="periodmeta"><div>${t("metaRead")}</div><div>${last}</div>${pline ? `<div>${esc(pline)}</div>` : ""}${hist ? `<div>${hist}</div>` : ""}</div>`;
+    <div class="periodmeta"><div>${t("metaRead")}</div><div>${last}</div>${aline ? `<div class="agline">${icon("bot", 13)}<span>${esc(aline)}</span></div>` : ""}${pline ? `<div>${esc(pline)}</div>` : ""}${hist ? `<div>${hist}</div>` : ""}</div>`;
   $("#runPick") && ($("#runPick").onchange = (e) => { S.jobEnd = null; loadRun(e.target.value); });
 }
 
@@ -640,13 +684,17 @@ function renderQueue() {
   const allTodo = items().filter((it) => !it.dec && inFilter(it)).length, allDone = items().filter((it) => it.dec && inFilter(it)).length;
   $("#cntTodo").textContent = S.run ? allTodo : "";
   $("#cntDone").textContent = S.run ? allDone : "";
+  const nAgent = agentItems().length;
+  $("#cntAgent").textContent = S.run ? nAgent : "";
+  $("#tabAgent").hidden = !S.run || (!nAgent && !S.run.summary?.agent?.tried && S.qtab !== "agent");
   const el = $("#qTable");
   const empty = (msg) => (el.innerHTML = `<tbody><tr><td class="empty" colspan="8">${esc(msg)}</td></tr></tbody>`);
   if (!S.run) return empty(t("noRunList"));
   const gs = groups();
-  if (!gs.length || !gs.some((g) => g.items.length)) return empty(S.q ? t("noMatch", { q: S.q }) : S.qtab === "todo" ? t("noTodo") : t("noDone"));
+  if (!gs.length || !gs.some((g) => g.items.length)) return empty(S.q ? t("noMatch", { q: S.q }) : S.qtab === "todo" ? t("noTodo") : S.qtab === "agent" ? t("noAgentList") : t("noDone"));
   const flat = visibleRows();
   S.focus = Math.max(0, Math.min(S.focus, flat.length - 1));
+  if (S.qtab === "agent") return renderAgentRows(el, flat);
   const isTodo = S.qtab === "todo";
   let i = 0;
   const row = (it) => {
@@ -681,6 +729,18 @@ function renderQueue() {
   $$("[data-undo]", el).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); const it = itemMap().get(b.dataset.undo); decide([b.dataset.undo], "undo", t("toastOne", { c: shortName(clientName(it.client_id)), d: t("taken") })); }));
   $$("[data-col]", el).forEach((b) => (b.onclick = () => { const k = b.dataset.col; S.collapsed.has(k) ? S.collapsed.delete(k) : S.collapsed.add(k); S.focus = 0; renderQueue(); }));
   $$("[data-batch]", el).forEach((b) => (b.onclick = (e) => { e.stopPropagation(); decideGroup(b.dataset.batch); }));
+}
+// the vouchers the agent cleared: what it changed and how code verified it; opening one shows the whole check
+function renderAgentRows(el, flat) {
+  el.innerHTML = `<thead><tr><th class="pad"></th><th>${t("thClient")}</th><th>${t("thNo")}</th><th>${t("thAgentDid")}</th><th class="r">${t("thTotal")}</th><th class="r">${t("thTax")}</th><th>${t("thAgentHow")}</th><th></th></tr></thead>
+    <tbody>${flat.map((it, k) => `<tr class="row ${k === S.focus ? "sel" : ""}" data-i="${k}" data-doc="${esc(it.doc_id)}">
+      <td class="pad"><i class="sdot a" title="${esc(t("agentShort"))}"></i></td>
+      <td class="cl"><span class="cname">${esc(shortName(clientName(it.client_id)))}</span><span class="cid">${esc(it.client_id)}</span></td>
+      <td class="no mono">${esc(it.inv || DOC_TYPE[S.lang]?.[it.type] || "—")}</td>
+      <td class="why"><span class="reason"><span class="rt">${esc(agentChanges(it.doc.agent))}</span></span></td>
+      <td class="r num">${esc(nt(it.total))}</td><td class="r num">${esc(nt(it.tax))}</td>
+      <td class="sug agv">${icon("check", 13)}<span>${esc(agentHow(it.doc.agent))}</span></td><td class="keys"></td></tr>`).join("")}</tbody>`;
+  $$("tr.row", el).forEach((tr) => (tr.onclick = () => { S.focus = +tr.dataset.i; openDoc(tr.dataset.doc, "agent"); }));
 }
 function markFocus() {
   $$("#qTable tr.row").forEach((r) => r.classList.toggle("sel", +r.dataset.i === S.focus));
@@ -755,11 +815,12 @@ function renderDocs() {
   $("#docGrid").innerHTML = docs.length ? docs.map((d) => {
     const it = byDoc.get(d.doc_id);
     const st = S.review.status?.[d.doc_id];
-    const label = it?.dec ? t("d_" + it.dec.decision) : st ? t("st_" + st) : "";
-    const ex = it ? ruleVerdict(it.primary.rule_id) + (it.exs.length > 1 ? ` +${it.exs.length - 1}` : "") : S.run ? t("noEx") : "";
+    const dd = docById(d.doc_id), ok = !it && agentOk(dd);
+    const label = it?.dec ? t("d_" + it.dec.decision) : ok ? t("agentShort") : st ? t("st_" + st) : "";
+    const ex = it ? ruleVerdict(it.primary.rule_id) + (it.exs.length > 1 ? ` +${it.exs.length - 1}` : "") : ok ? agentChanges(dd.agent) : S.run ? t("noEx") : "";
     return `<button class="doc" data-open="${esc(d.doc_id)}">
       <span class="thumb"><img src="img/${esc(d.image)}" alt="" loading="lazy"></span>
-      <span class="dn"><i class="sdot ${!it ? "n" : it.dec ? "d" : it.must ? "" : "w"}"></i>${esc(shortName(clientName(d.client_id)))}<span class="cid">${esc(d.client_id)}</span></span>
+      <span class="dn"><i class="sdot ${!it ? (ok ? "a" : "n") : it.dec ? "d" : it.must ? "" : "w"}"></i>${esc(shortName(clientName(d.client_id)))}<span class="cid">${esc(d.client_id)}</span></span>
       <span class="ds">${label ? `<b>${esc(label)}</b> · ` : ""}${esc(ex)}</span><span class="fn mono">${esc(d.doc_id)}</span></button>`;
   }).join("") : `<p class="empty">${esc(S.q ? t("noMatch", { q: S.q }) : t("emptyTitle"))}</p>`;
   $$("#docGrid .doc").forEach((el) => (el.onclick = () => openDoc(el.dataset.open, null)));
@@ -773,11 +834,12 @@ function openDoc(docId, mode, keep) {
   let ids;
   if (keep && S.view?.ids.includes(docId)) ids = S.view.ids;
   else {
-    const list = mode === "todo" || mode === "done" ? visibleRows() : mode == null ? $$("#docGrid .doc").map((x) => x.dataset.open) : null;
-    ids = mode === "todo" || mode === "done" ? list.map((it) => it.doc_id) : list && list.length ? list : [docId];
+    const fromQueue = ["todo", "done", "agent"].includes(mode);
+    const list = fromQueue ? visibleRows() : mode == null ? $$("#docGrid .doc").map((x) => x.dataset.open) : null;
+    ids = fromQueue ? list.map((it) => it.doc_id) : list && list.length ? list : [docId];
     if (!ids.includes(docId)) ids = [docId];
   }
-  if (S.view?.docId !== docId) { S.whyOpen = new Set(); S.zoom = 1; S.editing = null; }
+  if (S.view?.docId !== docId) { S.whyOpen = new Set(); S.zoom = 1; S.editing = null; S.agentOpen = false; }
   S.view = { docId, mode, ids };
   S.screen = "review";
   closePops();
@@ -824,13 +886,14 @@ function renderReview() {
   const docId = v.docId, f = d.fields || {}, map = itemMap();
   // queue on the left: the list this review started from; decided ones stay, dimmed
   const leftN = v.ids.filter((id) => map.has(id) && !map.get(id).dec).length;
-  $("#miniHead").textContent = v.mode === "done" ? t("tabDone") : v.mode === "todo" ? t("tabTodo") : t("navDocs");
+  $("#miniHead").textContent = v.mode === "done" ? t("tabDone") : v.mode === "todo" ? t("tabTodo") : v.mode === "agent" ? t("tabAgent") : t("navDocs");
   $("#miniLeft").textContent = t("revLeft", { n: leftN });
   $("#mini").innerHTML = v.ids.map((id) => {
     const x = map.get(id), dd = docById(id) || S.inbox.docs.find((y) => y.doc_id === id) || {};
-    const line = x ? (x.dec ? `${t("tabDone")} · ${t("d_" + x.dec.decision)}` : ruleVerdict(x.primary.rule_id)) : t("noEx");
+    const aok = !x && agentOk(dd);
+    const line = x ? (x.dec ? `${t("tabDone")} · ${t("d_" + x.dec.decision)}` : ruleVerdict(x.primary.rule_id)) : aok ? t("agentShort") : t("noEx");
     const tot = x ? x.total : dd.fields?.total;
-    return `<li class="${id === docId ? "sel" : ""} ${!x || x.dec ? "done" : ""}" data-id="${esc(id)}"><i class="sdot ${!x ? "n" : x.dec ? "d" : x.must ? "" : "w"}"></i>
+    return `<li class="${id === docId ? "sel" : ""} ${!x || x.dec ? "done" : ""}" data-id="${esc(id)}"><i class="sdot ${!x ? (aok ? "a" : "n") : x.dec ? "d" : x.must ? "" : "w"}"></i>
       <span class="a">${esc(shortName(clientName(x?.client_id || dd.client_id)))}</span><span class="t num">${esc(nt(tot))}</span><span class="b">${esc(line)}</span></li>`;
   }).join("");
   $$("#mini li").forEach((li) => (li.onclick = () => openDoc(li.dataset.id, v.mode, true)));
@@ -870,10 +933,15 @@ function renderReview() {
         ${evs || rel ? `<dt>${esc(t("dEvidence"))}</dt><dd>${evs}${rel}</dd>` : ""}
         ${R.check ? `<dt>${esc(t("dCheck"))}</dt><dd>${esc(R.check)}</dd>` : ""}</dl></details></div>`;
   };
+  const A = d.agent, aok = agentOk(d);
   $("#viewEx").innerHTML = exs.length
     ? `<div class="lbl"><i class="sdot ${it.must ? "" : "w"}"></i>${esc(it.must ? t("whyMust") : t("whyLook"))}</div>` + exs.map(block).join("")
       + (it.paper && !it.dec ? `<p class="paperhint">${icon("receipt", 14)}<span>${esc(t("paperHint"))}</span></p>` : "")
+    : aok ? `<div class="lbl"><i class="sdot a"></i>${esc(t("agHeldWas"))}</div><ul class="agwas">${(A.held_exceptions || []).map((e) =>
+        `<li><s>${esc(ruleVerdict(e.rule_id))}</s>${(e.evidence_fields || []).length ? `<small>${esc(e.evidence_fields.map((x) => t("f_" + x)).join(S.lang === "zh" ? "、" : ", "))}</small>` : ""}</li>`).join("")}</ul>
+        <div class="verdict agv">${icon("check", 16)}<span>${esc(t("agSumVerified"))}</span></div>`
     : `<p class="muted">${esc(S.run ? t("viewNone") : t("viewNotRun"))}</p>`;
+  renderAgentBox(d);
   // toggle events arrive after the fact: ignore one from a panel that was already redrawn or another voucher
   $$("#viewEx details").forEach((x) => x.addEventListener("toggle", () => {
     if (!x.isConnected || S.view?.docId !== docId) return;
@@ -883,9 +951,12 @@ function renderReview() {
 
   // the four decisions
   // the four decisions, always in view at the bottom of the panel; the suggested key is outlined, never filled
-  const cleared = !it && d.corrections && Object.keys(d.corrections).length && !d.platform;
+  const cleared = !it && d.corrections && Object.keys(d.corrections).length && !d.platform && !aok;
   const nextId = v.ids.slice(k + 1).find((id) => map.has(id) && !map.get(id).dec);
-  $("#viewDecide").innerHTML = cleared
+  $("#viewDecide").innerHTML = aok && !it
+    ? `<div class="lbl">${esc(t("decideLbl"))}</div><div class="decided agdec"><span class="dl">${icon("check", 15)}${esc(t("agDecided"))}</span><span class="sp"></span>
+        <button class="btn ghost sm" id="agReject">${icon("undo", 14)}<span>${esc(t("agReject"))}</span></button></div>`
+    : cleared
     ? `<div class="decided"><span class="dl">${icon("check", 15)}${esc(t("recheckClear"))}</span>${nextId ? `<span class="sp"></span><button class="btn ghost sm" id="goNext">${esc(t("nextDoc"))}${kbd("J")}</button>` : ""}</div>`
     : !it ? "" : it.dec
     ? `<div class="lbl">${esc(t("decideLbl"))}</div><div class="decided"><span class="dl">${icon("check", 15)}${esc(t("decidedAs", { d: t("d_" + it.dec.decision) }))}</span>
@@ -896,6 +967,7 @@ function renderReview() {
          <b>${esc(t("d_" + x))}${it.suggest === x ? `<span class="stag" title="${esc(t("sugTip"))}">${esc(t("sugTag"))}</span>` : ""}</b><small>${esc(t("d_" + x + "_sub"))}</small></button>`).join("")}</div>`;
   $$("#viewDecide .dbtn").forEach((b) => (b.onclick = () => decideInViewer(b.dataset.d)));
   $("#goNext") && ($("#goNext").onclick = () => stepView(1));
+  $("#agReject") && ($("#agReject").onclick = () => agentOverride("reject"));
   $("#undoOne") && ($("#undoOne").onclick = () => decide([docId], "undo", t("toastOne", { c: shortName(clientName(d.client_id)), d: t("taken") })));
 
   // what was read: only the fields read once are labelled; the rest carry no label
@@ -913,11 +985,16 @@ function renderReview() {
     const ok = provOk(x, p[x], held);
     if (has && p[x]) { counted++; if (ok) agree++; }
     const c = corr[x];
+    // a value the agent proposed and code verified: changed (first reading struck through) or confirmed as read
+    const acc = !c && aok && A.checks?.[x]?.accepted ? A.checks[x] : null;
+    const ac = acc && String(acc.old ?? "") !== String(acc.value ?? "") ? acc : null;
     const flag = c ? `<span class="ptag" title="${esc(t("fCorrectedTip", { who: c.user || "", old: fmtVal(x, c.old) }))}">${icon("userCheck", 12)}${esc(t("fCorrected"))}</span>`
+      : acc ? `<span class="ptag ag" title="${esc(t(ac ? "fAgentTip" : "fAgentTipSame", { old: fmtVal(x, acc.old), v: fmtVal(x, acc.value), ev: (acc.evidence || []).map((e) => t("agEvS_" + e)).join(S.lang === "zh" ? "、" : ", ") }))}">${icon("bot", 12)}${esc(t("fAgent"))}</span>`
       : has && p[x] && !ok ? `<span class="flag" title="${esc(t("provTip", { p: p[x] }))}"><i></i>${esc(t("readOnce"))}</span>` : "";
     const shown = has ? esc(val) : '<span class="muted">—</span>';
-    const was = !c ? "" : c.old == null || c.old === "" ? `<span class="was none">${esc(t("fWasNone"))}</span>`
-      : `<s class="was" title="${esc(t("fWas"))}">${esc(fmtVal(x, c.old))}</s>`;
+    const o = c || ac;
+    const was = !o ? "" : o.old == null || o.old === "" ? `<span class="was none">${esc(t("fWasNone"))}</span>`
+      : `<s class="was" title="${esc(t("fWas"))}">${esc(fmtVal(x, o.old))}</s>`;
     if (S.editing?.doc === docId && S.editing.field === x) {
       return `<tr class="editing ${key.includes(x) ? "key" : ""}"><td>${esc(t("f_" + x))}</td><td><form class="fedit" data-f="${x}" autocomplete="off">
         <input class="mono" name="v" value="${esc(S.editing.value)}" aria-label="${esc(t("fInputAria", { f: t("f_" + x) }))}" spellcheck="false">
@@ -925,9 +1002,9 @@ function renderReview() {
         <div class="ferr" role="alert">${esc(S.editing.err || "")}</div></form></td></tr>`;
     }
     const cell = EDITABLE.includes(x) && !d.platform
-      ? `${was}<button class="fv${c ? " fixed" : ""}" data-edit="${x}" title="${esc(t("fEditTip"))}"><span>${shown}</span>${icon("pencil", 12)}</button>${flag}${c ? `<button class="linkbtn rv" data-revert="${x}">${esc(t("fRevert"))}</button>` : ""}`
+      ? `${was}<button class="fv${o ? " fixed" : ""}" data-edit="${x}" title="${esc(t("fEditTip"))}"><span>${shown}</span>${icon("pencil", 12)}</button>${flag}${c ? `<button class="linkbtn rv" data-revert="${x}">${esc(t("fRevert"))}</button>` : ""}`
       : `${was}${shown}${flag}`;
-    return `<tr class="${key.includes(x) ? "key" : ""}${c ? " corrected" : ""}"><td>${esc(t("f_" + x))}</td><td>${cell}</td></tr>`;
+    return `<tr class="${key.includes(x) ? "key" : ""}${o ? " corrected" : ""}"><td>${esc(t("f_" + x))}</td><td>${cell}</td></tr>`;
   }).join("") : `<tr><td class="muted">${esc(t(d.platform ? "einvFields" : "notRead"))}</td></tr>`;
   $("#viewFields").innerHTML = rows;
   $("#editHint").textContent = d.fields && !d.platform ? t("editHint") : "";
@@ -967,6 +1044,77 @@ function renderReview() {
   if (img.complete && img.naturalWidth) draw(); else img.onload = draw;
   loadTight(docId).then(() => { if (S.view?.docId === docId && img.complete && img.naturalWidth) draw(); });
   const nx = v.ids[k + 1]; if (nx) setTimeout(() => loadTight(nx), 300);     // the next voucher's boxes, ahead of time
+}
+// "How it was checked": one line until clicked; then what the AI looked at, what code verified (ticks) and the outcome
+const agKey = (k) => I18N[S.lang]?.[k] != null;
+function agentStep(s, A) {
+  const a = s.args || {}, r = String(s.result || ""), tool = agKey("agTool_" + s.tool) ? s.tool : "bad";
+  let what = "";
+  if (s.tool === "zoom") {
+    const m = r.match(/crop: ([\s\S]*)$/), txt = m ? m[1].trim() : "";
+    what = !m ? t("agZoomFail") : txt && txt !== "(nothing read)" ? t("agZoomRead", { t: txt.length > 90 ? txt.slice(0, 90) + "…" : txt }) : t("agZoomNone");
+  } else if (s.tool === "calc") {
+    const nums = AMOUNT.filter((k) => a[k] != null && a[k] !== "").map((k) => `${t("f_" + k)} ${nt(a[k])}`).join(S.lang === "zh" ? "、" : ", ");
+    what = `${nums} → ${/NOT consistent/.test(r) ? t("agCalcBad") : /consistent/.test(r) ? t("agCalcOk") : t("agCalcPart")}`;
+  } else if (s.tool === "ubn_check") {
+    const m = r.match(/^(\d{8}): check digit (valid|INVALID)/);
+    what = m ? t(m[2] === "valid" ? "agUbnOk" : "agUbnBad", { u: m[1] }) : t("agUbnNot8");
+  } else if (s.tool === "history") {
+    const bits = [...r.matchAll(/seller UBN (\d+) confirmed on (\d+)/g)].map((m) => t("agHistHit", { u: m[1], n: m[2] }));
+    if (/no other confirmed document/.test(r)) bits.push(t("agHistNone"));
+    const same = r.match(/also on: \[(.*?)\]/);
+    if (same) bits.push(t("agHistInvSame", { d: same[1].replace(/'/g, "") }));
+    if (/not on any other document/.test(r)) bits.push(t("agHistInvNone"));
+    what = bits.join(S.lang === "zh" ? "；" : "; ");
+  } else if (s.tool === "platform") {
+    const m = r.match(/seller UBN (\S+) net (\S+) tax (\S+)/);
+    what = m ? t("agPlatHit", { u: m[1], n: nt(m[2]), t: nt(m[3]) }) : /not in the platform/.test(r) ? t("agPlatMiss") : t("agPlatNone");
+  } else if (s.tool === "finish") {
+    const pr = Object.entries(A.proposed || {}).map(([k, v]) => `${t("f_" + k)} ${fmtVal(k, v)}`).join(S.lang === "zh" ? "、" : ", ");
+    const nh = (A.need_human || []).map((k) => t("f_" + k)).join(S.lang === "zh" ? "、" : ", ");
+    what = [pr ? t("agPropose", { l: pr }) : t("agProposeNone"), nh ? t("agNeedHuman", { l: nh }) : ""].filter(Boolean).join(S.lang === "zh" ? "；" : "; ");
+  }
+  return `<li><span class="n">${s.step || ""}</span><span class="tl">${esc(t("agTool_" + tool))}</span><span class="tw">${esc(what)}</span></li>`;
+}
+function renderAgentBox(d) {
+  const box = $("#viewAgent"), A = d.agent;
+  box.hidden = !A;
+  if (!A) { box.innerHTML = ""; return; }
+  const ov = A.overridden, st = ov ? "overridden" : A.status === "verified" ? "verified" : A.status === "error" ? "error" : "held";
+  const sum = st === "verified" ? t("agSumVerified") : st === "overridden" ? t("agSumOverridden") : st === "error" ? t("agSumError") : t("agSumHeld");
+  const sep = S.lang === "zh" ? "、" : ", ";
+  const checks = Object.entries(A.checks || {}).map(([k, c]) => {
+    const same = String(c.old ?? "") === String(c.value ?? "");
+    const val = same ? t("agConfirmV", { v: fmtVal(k, c.value) }) : `${fmtVal(k, c.old)} → ${fmtVal(k, c.value)}`;
+    const why = c.accepted ? (c.evidence || []).map((e) => t("agEv_" + e)).join(sep)
+      : t("agRefused") + (S.lang === "zh" ? "：" : ": ") + t("agWhy_" + String(c.why || "").split(":")[0]);
+    return `<li class="${c.accepted ? "ok" : "no"}">${icon(c.accepted ? "check" : "x", 14)}<span class="k">${esc(t("f_" + k))}</span><span class="v mono">${esc(val)}</span><span class="w">${esc(why)}</span></li>`;
+  }).join("") || `<li class="no">${icon("x", 14)}<span class="w">${esc(t("agNoProposal"))}</span></li>`;
+  const still = (A.still_held_for || []).filter((x) => x !== "after-other-fixes");
+  const res = st === "verified" ? t("agResVerified") : st === "overridden" ? t("agResOverridden", { who: ov.user || "" })
+    : st === "error" ? t("agResError") : t("agResHeld") + (still.length ? ` (${still.map((x) => ruleVerdict(String(x).split(":")[0])).join(sep)})` : "");
+  const meta = [A.model, A.seconds != null ? t("agSecs", { s: Math.round(A.seconds * 10) / 10 }) : "", t("agSteps", { n: (A.steps || []).length }),
+    A.replayed ? t("agReplayed") : "", A.verify_version ? t("agRule", { v: A.verify_version }) : ""].filter(Boolean).join(S.lang === "zh" ? "・" : " · ");
+  const open = S.agentOpen;
+  box.innerHTML = `<button class="aghead" id="agToggle" aria-expanded="${open}">${icon("bot", 15)}<b>${esc(t("agTitle"))}</b>
+      <span class="agsum ${st}">${esc(sum)}</span>${icon(open ? "chevronDown" : "chevronRight", 14)}</button>
+    ${open ? `<ol class="agflow">
+      <li><div class="lbl">${esc(t("agStep1"))}</div><ul class="agtools">${(A.steps || []).map((s) => agentStep(s, A)).join("")}</ul></li>
+      <li><div class="lbl">${esc(t("agStep2"))}</div><ul class="agchecks">${checks}</ul></li>
+      <li><div class="lbl">${esc(t("agStep3"))}</div><p class="agres">${esc(res)}</p>
+        ${ov ? `<button class="btn ghost sm" id="agRestore">${icon("undo", 14)}<span>${esc(t("agRestore"))}</span></button>` : ""}</li>
+    </ol><p class="agmeta">${esc(meta)}</p>` : ""}`;
+  $("#agToggle").onclick = () => { S.agentOpen = !S.agentOpen; renderAgentBox(d); };
+  $("#agRestore") && ($("#agRestore").onclick = () => agentOverride("restore"));
+}
+async function agentOverride(action) {
+  const { d } = viewDoc();
+  if (!d || !S.runId) return;
+  try { await post("api/agent-override", { run: S.runId, doc_id: d.doc_id, action }); }
+  catch (e) { toast(e.message); return; }
+  S.last = { run: S.runId, kind: "agent", doc: d.doc_id, action };
+  await loadRun(S.runId);
+  toast(t(action === "reject" ? "agRejected" : "agRestored"), undoLast);
 }
 // fit the voucher in the stage, times the zoom
 function layoutPaper() {
@@ -1178,7 +1326,7 @@ function renderKeybar() {
   const K = (k, l) => `<span>${kbd(k)}${esc(l)}</span>`;
   let left = "";
   if (S.screen === "review") left = K("J K", t("kMove")) + K("1 2 3 4", t("kDecide")) + K("Enter", t("kAccept")) + K("C", t("kEdit")) + K("U", t("kChange")) + K("E", t("kReason")) + K("F", t("kFields")) + K("[", t("kList")) + K("Esc", t("kBack"));
-  else if (S.screen === "queue") left = K("J K", t("kMove")) + K("Enter", t("kOpen")) + (S.qtab === "todo" ? K("1 2 3 4", t("kDecide")) + K("G", t("kGroup")) + (S.group ? K("Shift D", t("kDecideGroup")) : "") : K("U", t("kChange")));
+  else if (S.screen === "queue") left = K("J K", t("kMove")) + K("Enter", t("kOpen")) + (S.qtab === "todo" ? K("1 2 3 4", t("kDecide")) + K("G", t("kGroup")) + (S.group ? K("Shift D", t("kDecideGroup")) : "") : S.qtab === "done" ? K("U", t("kChange")) : "");
   $("#keybar").innerHTML = left + K("Z", t("kUndo")) + K("/", t("kSearch"));
 }
 function onKey(e) {
@@ -1249,7 +1397,7 @@ async function renderLog() {
   $("#logTable").innerHTML = `<thead><tr><th>${t("lt_seq")}</th><th>${t("lt_time")}</th><th>${t("lt_event")}</th><th>${t("lt_doc")}</th><th>${t("lt_detail")}</th><th>${t("lt_hash")}</th></tr></thead><tbody>` +
     L.entries.map((e) => `<tr><td class="num">${e.seq}</td><td title="${esc(e.ts || "")}">${esc(ago(tsMs(e.ts)))}</td><td title="${esc(e.event)}">${esc(evName(e.event))}</td>
       <td class="mono">${esc(e.doc_id || "")}</td>
-      <td>${esc(e.rule_id ? ruleVerdict(e.rule_id) : (e.event === "doc_read" ? `${e.model || ""} ${e.device || ""}${e.cached ? ` (${t("ev_cached")})` : ""}` : e.event === "run_start" ? (S.lang === "zh" ? t("localTip") : e.network) : e.event === "run_end" ? `${e.n_exceptions}` : ""))}</td>
+      <td>${esc(e.event === "agent_check" ? [t("agSt_" + e.status), agentChanges({ checks: e.checks })].filter(Boolean).join(" · ") : e.rule_id ? ruleVerdict(e.rule_id) : (e.event === "doc_read" ? `${e.model || ""} ${e.device || ""}${e.cached ? ` (${t("ev_cached")})` : ""}` : e.event === "run_start" ? (S.lang === "zh" ? t("localTip") : e.network) : e.event === "run_end" ? `${e.n_exceptions}` : ""))}</td>
       <td class="h mono" title="${esc(e.hash || "")}">${esc((e.hash || "").slice(0, 10))}</td></tr>`).join("") + "</tbody>";
 }
 // an event name in the logs, in words; an unknown one stays as written
@@ -1268,7 +1416,8 @@ async function renderOplog() {
   $("#opTable").innerHTML = `<thead><tr><th>${t("lt_seq")}</th><th>${t("lt_time")}</th><th>${t("lt_event")}</th><th>${t("lt_user")}</th><th>${t("lt_detail")}</th><th>${t("lt_hash")}</th></tr></thead><tbody>` +
     L.entries.slice().reverse().slice(0, 200).map((e) => `<tr><td class="num">${e.seq}</td><td title="${esc(e.ts || "")}">${esc(ago(tsMs(e.ts)))}</td>
       <td title="${esc(e.event)}">${esc(evName(e.event))}</td><td>${esc(e.user || "")}</td><td class="mono">${esc([e.decision ? (e.decision === "undo" ? t("taken") : t("d_" + e.decision)) : "",
-        e.event === "correct" ? `${t("f_" + e.field)} ${fmtVal(e.field, e.old)} → ${fmtVal(e.field, e.new)}` : "", e.doc_id, e.run_id || e.inbox || e.host || e.path].filter(Boolean).join(" · "))}</td>
+        e.event === "correct" ? `${t("f_" + e.field)} ${fmtVal(e.field, e.old)} → ${fmtVal(e.field, e.new)}` : "",
+        e.event === "agent_override" ? t("agOver_" + e.action) : "", e.doc_id, e.run_id || e.inbox || e.host || e.path].filter(Boolean).join(" · "))}</td>
       <td class="h mono" title="${esc(e.hash || "")}">${esc((e.hash || "").slice(0, 10))}</td></tr>`).join("") + "</tbody>";
 }
 
