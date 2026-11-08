@@ -777,7 +777,7 @@ function renderChecks() {
   const li = (ok, ic, a, b, bad) => `<li class="${ok ? "ok" : "no"}${bad ? " bad" : ""}"><span class="ci">${icon(ic, 17)}</span><span><b>${esc(a)}</b>${esc(b)}</span></li>`;
   const sk = S.inbox.skipped?.length;
   const read = st.running ? (S.job.status === "agent"
-      ? li(false, "clock", t("chkAgent", { i: S.job.agent_i || 0, n: S.job.agent_n || 0 }), t("chkReadSub"))
+      ? li(false, "clock", t("chkAgent", { i: Math.min((S.job.agent_i || 0) + 1, S.job.agent_n || 0), n: S.job.agent_n || 0 }), t("chkReadSub"))
       : li(false, "clock", t("chkRun", { i: S.job.i || 0, n: S.job.n || st.n }), t("chkReadSub")))
     : !st.s1 ? li(false, "clock", t("emptyTitle"), "")
     : !S.run ? li(false, "clock", t("chkNone"), t("chkReadSub"))
