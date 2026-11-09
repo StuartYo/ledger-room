@@ -1,11 +1,14 @@
 """The review agent (ledger_room/agent.py) on the held documents of the synthetic sets -> eval/results_agent_b70.json
 
     LEDGER_DEVICE=GPU.1 .venv/bin/python -m eval.agent_eval              # 9B + 27B on one card, all four sets, twice
+    LEDGER_DEVICE=GPU.1 .venv/bin/python -m eval.agent_eval --strict     # the same with strict reading -> *_strict.json
     .venv/bin/python -m eval.agent_eval --find-only                      # no model: which documents are held
 
 What it measures (the same as the 2026-11-09 experiment, now through the product module):
   first pass   the current reading (9B, cached reads) and the rules -> documents held for a person (hold / review).
                Rules as the experiment ran them: not strict, no platform download, no business register.
+               --strict: the same with strict reading (pipeline.STRICT, as the product runs real documents); the
+               experiment numbers below were not strict, so "reproduced" is null for a strict run.
   agent        ledger_room.agent.process on every held document (27B, temperature 0, at most 6 tool calls).
   score        a document is "cleared" when no hold or review is left after the code-checked fixes; it is compared
                with the frozen answer key (eval/expected_<set>.json, read only) on eight key fields. A cleared
@@ -161,9 +164,14 @@ def main(argv=None):
     ap.add_argument("--repeat", type=int, default=2, help="runs of the agent (greedy: they should be identical)")
     ap.add_argument("--find-only", action="store_true", help="no model: list the held documents from cached reads")
     ap.add_argument("--models-root", default=os.environ.get("LEDGER_MODELS_ROOT", str(Path.home() / "models")))
-    ap.add_argument("--out", default=str(ROOT / "eval" / "results_agent_b70.json"))
+    ap.add_argument("--strict", action="store_true",
+                    help="strict reading (pipeline.STRICT); default off, as the experiment ran")
+    ap.add_argument("--out", default=None,
+                    help="default eval/results_agent_b70.json, with --strict eval/results_agent_b70_strict.json")
     a = ap.parse_args(argv)
-    pipeline.STRICT = False      # as the experiment and the other evaluations score the reading
+    if a.out is None:
+        a.out = str(ROOT / "eval" / ("results_agent_b70_strict.json" if a.strict else "results_agent_b70.json"))
+    pipeline.STRICT = a.strict   # off by default: as the experiment and the other evaluations score the reading
     sets = a.sets.split(",")
     if a.find_only:
         for s in sets:
@@ -188,7 +196,7 @@ def main(argv=None):
     except Exception:
         dev_name = None
     on_b70 = bool(dev_name and "B70" in dev_name)
-    print(f"9B {reader9.load_s}s, 27B {agent.load_s}s on {device} ({dev_name})", flush=True)
+    print(f"9B {reader9.load_s}s, 27B {agent.load_s}s on {device} ({dev_name}), strict {pipeline.STRICT}", flush=True)
     runs = []
     for i in range(a.repeat):
         runs.append(one_run(sets, reader9, agent))
@@ -200,14 +208,14 @@ def main(argv=None):
     mem["peak"] = pk.snapshot()
     s0 = runs[0]["summary"]
     by = runs[0]["sets"]
-    reproduced = (s0["held"] == EXPECT["held"] and s0["cleared"] == EXPECT["cleared"] and s0["slipped"] == 0
+    reproduced = None if a.strict else (s0["held"] == EXPECT["held"] and s0["cleared"] == EXPECT["cleared"] and s0["slipped"] == 0
                   and all([by.get(k, {}).get("held"), by.get(k, {}).get("cleared")] == v
                           for k, v in EXPECT["by_set"].items()))
     diff = [k for k, v in outcome(runs[0]).items() if any(outcome(r).get(k) != v for r in runs[1:])]
     doc = {
         "synthetic": True, "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "code_rev": pipeline.git_rev(), "device": device, "device_name": dev_name, "measured_on_b70": on_b70,
-        "targets_binding": on_b70 and sets == SETS, "strict": False,
+        "targets_binding": on_b70 and sets == SETS, "strict": pipeline.STRICT,
         "first_reader": M9, "agent_model": M27, "agent_version": A.AGENT_VERSION, "verify_version": A.VERIFY_VERSION,
         "max_steps": A.MAX_STEPS, "temperature": 0,
         "experiment_numbers": EXPECT, "reproduced": reproduced,
@@ -222,7 +230,7 @@ def main(argv=None):
                   "Synthetic data only; no real company documents."],
     }
     Path(a.out).write_text(json.dumps(doc, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
-    print("SUMMARY " + json.dumps({"reproduced": reproduced, "binding": doc["targets_binding"], **s0,
+    print("SUMMARY " + json.dumps({"strict": pipeline.STRICT, "reproduced": reproduced, "binding": doc["targets_binding"], **s0,
                                    "differ": len(diff), "peak": mem["peak"]}), flush=True)
 
 
