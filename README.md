@@ -35,8 +35,8 @@ without a person; *sent to a person* = held for a bookkeeper to check):
    the 9B takes 3.8 s a document on one B70 and 9.8 s on the host's two 86-core Xeon CPUs
    (`eval/results_same_host_cpu_vs_b70.json`). The spare memory leaves room: an optional 27B second reader, which
    re-reads the ones the 9B is unsure about (on the real box it cut wrong fields from 21.5% to 18.2%), fits on the same
-   card beside the 9B, peak 21.8 GB, 20 documents read by each, none failed (`eval/results_one_card.json`). The web app
-   runs the 9B alone today. The bigger reader is also the
+   card beside the 9B, peak 21.8 GB, 20 documents read by each, none failed (`eval/results_one_card.json`). In the web app the 9B is the only reader, and the 27B runs beside it
+   on the same card as the review agent (see "The review agent" below). The bigger reader is also the
    accurate one. Same real documents, strict reading, Qwen3.5-2B against Qwen3.5-9B:
 
    | Same real documents, strict reading | 2B | 9B |
