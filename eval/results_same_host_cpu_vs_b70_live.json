@@ -1,0 +1,65 @@
+{
+ "what": "Same host, same code, same 12 held-out synthetic documents: the 9B on Intel(R) Xeon(R) 6787P against the 9B on Intel(R) Arc(TM) Pro B70 Graphics (dGPU).",
+ "command": ".venv/bin/python -m eval.bench_cpu_vs_b70 --devices CPU,GPU.1",
+ "host": {
+  "cpu": "Intel(R) Xeon(R) 6787P",
+  "cpu_logical": 344,
+  "ram_gb": 251.5,
+  "openvino": "2026.4.1-22982-e213a147257-releases/2026/4"
+ },
+ "device_names": {
+  "CPU": "Intel(R) Xeon(R) 6787P",
+  "GPU.1": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)"
+ },
+ "code_rev": "0ebd76a",
+ "generated_at": "2026-11-09T16:13:07+00:00",
+ "runs": {
+  "CPU": {
+   "device": "CPU",
+   "sec_per_doc": {
+    "mean": 9.8,
+    "median": 9.1,
+    "n": 12
+   },
+   "sec_per_doc_excluding_first": {
+    "mean": 9.6,
+    "n": 11
+   },
+   "docs_per_hour": 367,
+   "wall_s": 118.0,
+   "fields_wrong": 0,
+   "fields_compared": 85,
+   "rule_micro": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 1,
+    "f1": 0.909
+   },
+   "run_id": "b70-Qwen3.5-9B-int4-ov-20261109-161310"
+  },
+  "GPU.1": {
+   "device": "GPU.1",
+   "sec_per_doc": {
+    "mean": 3.6,
+    "median": 3.6,
+    "n": 12
+   },
+   "sec_per_doc_excluding_first": {
+    "mean": 3.5,
+    "n": 11
+   },
+   "docs_per_hour": 1000,
+   "wall_s": 44.0,
+   "fields_wrong": 0,
+   "fields_compared": 85,
+   "rule_micro": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 1,
+    "f1": 0.909
+   },
+   "run_id": "b70-Qwen3.5-9B-int4-ov-20261109-161516"
+  }
+ },
+ "total_wall_s": 173.4
+}
