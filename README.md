@@ -36,7 +36,7 @@ without a person; *sent to a person* = held for a bookkeeper to check):
    (`eval/results_same_host_cpu_vs_b70.json`). The spare memory leaves room: an optional 27B second reader, which
    re-reads the ones the 9B is unsure about (on the real box it cut wrong fields from 21.5% to 18.2%), fits on the same
    card beside the 9B, peak 21.8 GB, 20 documents read by each, none failed (`eval/results_one_card.json`). In the web app the 9B is the only reader, and the 27B runs beside it
-   on the same card as the review agent (see "The review agent" below). The bigger reader is also the
+   on the same card as the review agent (see "Agent: a second look at held documents" below). The bigger reader is also the
    accurate one. Same real documents, strict reading, Qwen3.5-2B against Qwen3.5-9B:
 
    | Same real documents, strict reading | 2B | 9B |
