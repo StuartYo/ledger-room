@@ -1,0 +1,294 @@
+{
+ "set": "real_company (private_mom on the host)",
+ "aggregates_only": true,
+ "synthetic": false,
+ "generated_at": "2026-11-10T08:41:32+00:00",
+ "code_rev": "6b09221",
+ "device": "GPU.1",
+ "device_name": "Intel(R) Arc(TM) Pro B70 Graphics (dGPU)",
+ "measured_on_b70": true,
+ "strict": true,
+ "first_reader": "Qwen3.5-9B-int4-ov",
+ "first_reads": "saved reads of the box (no 9B re-read)",
+ "agent_model": "Qwen3.5-27B-int4-ov",
+ "agent_version": "a1 (2026-11-09)",
+ "verify_version": "v3",
+ "max_steps": 6,
+ "temperature": 0,
+ "all_held": true,
+ "utility_bills": "current product rules: routed to the e-invoice platform, not held, not given to the agent",
+ "memory_gb": {
+  "start": {},
+  "9B loaded": {
+   "gpu_total_system_gb": 0.21,
+   "gpu_resident_system_gb": 0.01,
+   "gpu_total_gtt_gb": 4.96,
+   "gpu_resident_gtt_gb": 4.96,
+   "gpu_total_vram0_gb": 5.8,
+   "gpu_resident_vram0_gb": 5.8
+  },
+  "9B+27B loaded": {
+   "gpu_total_system_gb": 0.61,
+   "gpu_resident_system_gb": 0.02,
+   "gpu_total_gtt_gb": 15.07,
+   "gpu_resident_gtt_gb": 15.07,
+   "gpu_total_vram0_gb": 20.55,
+   "gpu_resident_vram0_gb": 20.55
+  },
+  "peak": {
+   "gpu_total_system_gb": 0.61,
+   "gpu_resident_system_gb": 0.02,
+   "gpu_total_gtt_gb": 15.07,
+   "gpu_resident_gtt_gb": 15.07,
+   "gpu_total_vram0_gb": 23.39,
+   "gpu_resident_vram0_gb": 23.39
+  }
+ },
+ "load_s": {
+  "9B": 7.8,
+  "27B": 15.8
+ },
+ "wall_s": 2731.4,
+ "notes": [
+  "First complete run, script registered in commit 6b09221 before it ran; no earlier run with the agent on this box. The host's GPU.0 held the web server throughout; this run used GPU.1.",
+  "Copied from the host by hand (aggregate counts only); this notes list was added afterwards and changes no number.",
+  "The two runs differ on 1 voucher (a tax bill): different tool sequence (4 vs 3 calls) and one proposed value fewer in run 2 (refused by code in run 1), the same accepted values and the same outcome (held in both). Every count in whole_box, invoices_121 and by_kind is the same in both runs.",
+  "The one cleared voucher with a wrong field (a triplicate invoice): the agent fixed the date and buyer UBN (both accepted by code); the seller UBN was already wrong in the first reading, the agent did not propose it, and once the hold was cleared that first-reading value went through. Three-field check (invoice number, date, total): 0 wrong among the cleared.",
+  "Of the 9 cleared: 7 had a wrong field before the agent and none after (except the one above), 1 was right before and after.",
+  "accepted_values_wrong (8) are all on vouchers that stayed held (2-part register and triplicate invoices: seller UBN 6, date 2); 6 of them equal the first reading, 2 replace a wrong seller UBN with another wrong one. None of them reached the filing file.",
+  "whole_box wrong_and_not_held counts include the 155 utility bills, which are routed to the platform and not booked from paper (117 of them have a wrong field); the excluding_utility_bills line is the comparable one.",
+  "paired_113 is null: the list of the 113 invoices paired with the old ledger is not on the host. It can be filled with --rescore --paired FILE from the saved per-voucher records (no model run)."
+ ],
+ "reference_before_this_run": {
+  "strict_sent_to_a_person_code_fa8c027": 257,
+  "strict_sent_to_a_person_after_utility_routing": 112,
+  "invoices_121_strict_sent_to_a_person": 56,
+  "paired_113_strict_sent_to_a_person": 53,
+  "source": "eval/results_real_company.json (first_runs, invoices_121, old_ledger_vs_ledger_room, after_fix_utility_routing)"
+ },
+ "result": {
+  "whole_box": {
+   "vouchers": 336,
+   "sent_to_a_person_before": 112,
+   "sent_to_a_person_after": 103,
+   "cleared": 9,
+   "cleared_with_a_wrong_field_six": 1,
+   "cleared_with_a_wrong_field_three": 0,
+   "wrong_and_not_held_before_six": 119,
+   "wrong_and_not_held_after_six": 120,
+   "wrong_and_not_held_before_three": 109,
+   "wrong_and_not_held_after_three": 109
+  },
+  "whole_box_excluding_utility_bills_routed_to_platform": {
+   "vouchers": 181,
+   "wrong_and_not_held_before_six": 2,
+   "wrong_and_not_held_after_six": 3,
+   "wrong_and_not_held_before_three": 1,
+   "wrong_and_not_held_after_three": 1
+  },
+  "invoices_121": {
+   "vouchers": 121,
+   "sent_to_a_person_before": 56,
+   "sent_to_a_person_after": 48,
+   "cleared": 8,
+   "cleared_with_a_wrong_field_six": 1,
+   "cleared_with_a_wrong_field_three": 0,
+   "wrong_and_not_held_before_six": 1,
+   "wrong_and_not_held_after_six": 2,
+   "wrong_and_not_held_before_three": 0,
+   "wrong_and_not_held_after_three": 0
+  },
+  "paired_113": null,
+  "by_kind": {
+   "e_invoice": {
+    "vouchers": 83,
+    "sent_to_a_person_before": 27,
+    "sent_to_a_person_after": 21,
+    "cleared": 6,
+    "cleared_with_a_wrong_field_six": 0
+   },
+   "postage_receipt": {
+    "vouchers": 34,
+    "sent_to_a_person_before": 34,
+    "sent_to_a_person_after": 34,
+    "cleared": 0,
+    "cleared_with_a_wrong_field_six": 0
+   },
+   "receipt": {
+    "vouchers": 12,
+    "sent_to_a_person_before": 9,
+    "sent_to_a_person_after": 9,
+    "cleared": 0,
+    "cleared_with_a_wrong_field_six": 0
+   },
+   "tax_bill": {
+    "vouchers": 14,
+    "sent_to_a_person_before": 13,
+    "sent_to_a_person_after": 12,
+    "cleared": 1,
+    "cleared_with_a_wrong_field_six": 0
+   },
+   "three_part_invoice": {
+    "vouchers": 24,
+    "sent_to_a_person_before": 15,
+    "sent_to_a_person_after": 13,
+    "cleared": 2,
+    "cleared_with_a_wrong_field_six": 1
+   },
+   "two_part_register": {
+    "vouchers": 14,
+    "sent_to_a_person_before": 14,
+    "sent_to_a_person_after": 14,
+    "cleared": 0,
+    "cleared_with_a_wrong_field_six": 0
+   },
+   "utility_bill": {
+    "vouchers": 155,
+    "sent_to_a_person_before": 0,
+    "sent_to_a_person_after": 0,
+    "cleared": 0,
+    "cleared_with_a_wrong_field_six": 0
+   }
+  },
+  "agent": {
+   "vouchers_given_to_the_agent": 112,
+   "errors": 0,
+   "proposed_values": 206,
+   "proposed_values_scorable": 169,
+   "proposed_values_unscorable": 37,
+   "proposed_values_wrong": 45,
+   "values_refused_by_code": 142,
+   "wrong_values_refused_by_code": 37,
+   "accepted_values": 64,
+   "accepted_values_wrong": 8,
+   "accepted_values_unscorable": 3,
+   "sec_per_voucher_mean": 12.3,
+   "sec_per_voucher_max": 29.32,
+   "steps_mean": 2.2,
+   "tool_calls": {
+    "history": 3,
+    "finish": 103,
+    "zoom": 101,
+    "ubn_check": 7,
+    "null": 28,
+    "calc": 4
+   }
+  }
+ },
+ "repeats": 2,
+ "runs_identical": false,
+ "vouchers_with_a_different_outcome_between_runs": 1,
+ "other_runs_result": [
+  {
+   "whole_box": {
+    "vouchers": 336,
+    "sent_to_a_person_before": 112,
+    "sent_to_a_person_after": 103,
+    "cleared": 9,
+    "cleared_with_a_wrong_field_six": 1,
+    "cleared_with_a_wrong_field_three": 0,
+    "wrong_and_not_held_before_six": 119,
+    "wrong_and_not_held_after_six": 120,
+    "wrong_and_not_held_before_three": 109,
+    "wrong_and_not_held_after_three": 109
+   },
+   "whole_box_excluding_utility_bills_routed_to_platform": {
+    "vouchers": 181,
+    "wrong_and_not_held_before_six": 2,
+    "wrong_and_not_held_after_six": 3,
+    "wrong_and_not_held_before_three": 1,
+    "wrong_and_not_held_after_three": 1
+   },
+   "invoices_121": {
+    "vouchers": 121,
+    "sent_to_a_person_before": 56,
+    "sent_to_a_person_after": 48,
+    "cleared": 8,
+    "cleared_with_a_wrong_field_six": 1,
+    "cleared_with_a_wrong_field_three": 0,
+    "wrong_and_not_held_before_six": 1,
+    "wrong_and_not_held_after_six": 2,
+    "wrong_and_not_held_before_three": 0,
+    "wrong_and_not_held_after_three": 0
+   },
+   "paired_113": null,
+   "by_kind": {
+    "e_invoice": {
+     "vouchers": 83,
+     "sent_to_a_person_before": 27,
+     "sent_to_a_person_after": 21,
+     "cleared": 6,
+     "cleared_with_a_wrong_field_six": 0
+    },
+    "postage_receipt": {
+     "vouchers": 34,
+     "sent_to_a_person_before": 34,
+     "sent_to_a_person_after": 34,
+     "cleared": 0,
+     "cleared_with_a_wrong_field_six": 0
+    },
+    "receipt": {
+     "vouchers": 12,
+     "sent_to_a_person_before": 9,
+     "sent_to_a_person_after": 9,
+     "cleared": 0,
+     "cleared_with_a_wrong_field_six": 0
+    },
+    "tax_bill": {
+     "vouchers": 14,
+     "sent_to_a_person_before": 13,
+     "sent_to_a_person_after": 12,
+     "cleared": 1,
+     "cleared_with_a_wrong_field_six": 0
+    },
+    "three_part_invoice": {
+     "vouchers": 24,
+     "sent_to_a_person_before": 15,
+     "sent_to_a_person_after": 13,
+     "cleared": 2,
+     "cleared_with_a_wrong_field_six": 1
+    },
+    "two_part_register": {
+     "vouchers": 14,
+     "sent_to_a_person_before": 14,
+     "sent_to_a_person_after": 14,
+     "cleared": 0,
+     "cleared_with_a_wrong_field_six": 0
+    },
+    "utility_bill": {
+     "vouchers": 155,
+     "sent_to_a_person_before": 0,
+     "sent_to_a_person_after": 0,
+     "cleared": 0,
+     "cleared_with_a_wrong_field_six": 0
+    }
+   },
+   "agent": {
+    "vouchers_given_to_the_agent": 112,
+    "errors": 0,
+    "proposed_values": 205,
+    "proposed_values_scorable": 169,
+    "proposed_values_unscorable": 36,
+    "proposed_values_wrong": 45,
+    "values_refused_by_code": 141,
+    "wrong_values_refused_by_code": 37,
+    "accepted_values": 64,
+    "accepted_values_wrong": 8,
+    "accepted_values_unscorable": 3,
+    "sec_per_voucher_mean": 12.02,
+    "sec_per_voucher_max": 28.31,
+    "steps_mean": 2.19,
+    "tool_calls": {
+     "history": 3,
+     "finish": 103,
+     "zoom": 101,
+     "ubn_check": 7,
+     "null": 27,
+     "calc": 4
+    }
+   }
+  }
+ ],
+ "paired_113_note": "pairing list not given (--paired): not in the repository or on the host; re-aggregate with --rescore --paired FILE, no model run",
+ "definitions": "eval/agent_real_eval.py docstring (registered before the first run)"
+}
