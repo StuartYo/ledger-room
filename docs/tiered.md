@@ -1,6 +1,6 @@
-# Draft: tiered reading on two cards
+# Tiered reading on two cards
 
-Status: draft for the README. Not measured on a B70 yet. The rule for "unsure" below was written down before any
+Measured results: [b70_measurements.md](b70_measurements.md) (rows "27B as second reader" and "Two cards at once"). The rule for "unsure" below was written down before any
 tiered run and is fixed in code (`ledger_room/tiered.py`, rule version `t1`).
 
 ## What it does

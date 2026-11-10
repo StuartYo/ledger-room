@@ -8,7 +8,7 @@ Both readers go through the same OCR lines and the same reconciliation code (rea
 is one more vote. It never overwrites a field the first reading already confirmed on the page, and a field still
 unconfirmed after both readings keeps its provenance, so the rule engine sends it to a person exactly as before.
 
-"Unsure" is fixed here and written down in docs/tiered_draft.md before any tiered run. Do not tune it on results.
+"Unsure" is fixed here and written down in docs/tiered.md before any tiered run. Do not tune it on results.
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def escalation_reasons(res: dict) -> list[str]:
     f = res.get("fields") or {}
     if rules.amounts_inconsistent(f.get("net"), f.get("tax"), f.get("total")):
         reasons.append("amounts_inconsistent")
-    if pipeline.STRICT:   # docs/strict_draft.md: the second reader can be the second source for these
+    if pipeline.STRICT:   # docs/strict.md: the second reader can be the second source for these
         for k in ("invoice_no", "date"):
             if (k in pipeline.strict_uncertain(f, prov, res.get("ocr_lines"), res.get("raw"))
                     and f"{k}_unconfirmed" not in reasons):
@@ -109,7 +109,7 @@ def merge(first: dict, second: dict, reasons: list[str]) -> dict:
                                                  and fields.get(k) is None):
             take(k)
     if pipeline.STRICT:
-        # docs/strict_draft.md: OCR and the first model disagreed (or only OCR read it); the second model reading the
+        # docs/strict.md: OCR and the first model disagreed (or only OCR read it); the second model reading the
         # same OCR lines lands on the value the first reading kept -> OCR and two models agree
         for k in ("invoice_no", "date"):
             if (fields.get(k) and prov.get(k) not in pipeline.STRICT_CONFIRMED and k not in taken

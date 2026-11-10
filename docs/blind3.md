@@ -1,6 +1,6 @@
-# Blind set 3: first run (draft)
+# Blind set 3: first run
 
-The set itself is described in `docs/new_sets_draft.md`. The first and only official run is in
+The set itself is described in `docs/new_sets.md`. The first and only official run is in
 `eval/results_tiered.json` under `sets/blind3`: Qwen3.5-9B alone on the Intel Arc Pro B70, code `77fa568`,
 2026-11-06.
 

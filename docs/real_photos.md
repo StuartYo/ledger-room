@@ -1,6 +1,7 @@
-# Real photos: draft section (not in README yet)
+# Real photos: method
 
-Draft. Numbers marked TBD come from the first full run on the B70 host.
+How the public real-photo sets were chosen, labelled and scored. The measured numbers are in
+[b70_measurements.md](b70_measurements.md#real-photos-first-run-then-strict-reading).
 
 ## Why
 
@@ -36,12 +37,12 @@ someone else printed and photographed. This section adds real vouchers that anyo
 For each reader it reports the field error rate, the photos with a wrong field that were not held, and the photos
 sent to a person.
 
-Results: TBD.
+Results: [b70_measurements.md](b70_measurements.md#real-photos-first-run-then-strict-reading).
 
 ### Limits
 
-- The labels were written by Claude, a different model from the readers under test, by looking at each photo. No
-  person has checked them. A labelling error counts against every reader the same way.
+- The labels were written from the image only, independently of the readers under test, and frozen before any
+  run. No person has checked them. A labelling error counts against every reader the same way.
 - All 41 photos come from one Commons contributor. Most are flat scans or flat, well-lit photos on a plain
   background. They are easier than a phone photo taken at a counter.
 - 41 photos is a small set. Only one voucher prints a separate untaxed amount and tax, so net and tax are barely
@@ -95,7 +96,7 @@ Ledger Room's own reader is not run on them: its prompt and labels are Taiwanese
 The script compares the OCR total row alone, the model's answer alone, and the two together, where a receipt goes to
 a person when they disagree.
 
-Results: TBD.
+Results: [b70_measurements.md](b70_measurements.md), row "Real receipts, CORD v2".
 
 ### Limits
 

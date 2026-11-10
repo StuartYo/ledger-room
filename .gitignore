@@ -25,3 +25,6 @@ eval/runs/
 # private real-data inboxes (never committed)
 data/private_*/
 eval/*private_*
+
+# local security-scan reports (never committed)
+CLAUDE-SECURITY-*/

@@ -76,7 +76,7 @@ def load_inbox(set_name: str) -> tuple[dict, list[dict]]:
 
 UNCONFIRMED = {"model-only", "unconfirmed"}
 
-# Strict reading (docs/strict_draft.md, fixed 2026-11-07 before the real_tw2 run): a value that goes into the filing
+# Strict reading (docs/strict.md, fixed 2026-11-07 before the real_tw2 run): a value that goes into the filing
 # file is accepted without a person only when two independent sources agree (OCR text, a model reading, a check digit).
 STRICT = os.environ.get("LEDGER_STRICT_READ") == "1"
 STRICT_CONFIRMED = {"ocr-confirmed", "ocr-confirmed (second reader)",

@@ -13,7 +13,7 @@ code checks what it proposes. "AI checks, code verifies, a person signs."
                    reasons, every tool call and every check are kept in result.json and in the audit log
          held      anything else: the document goes to a person exactly as before; the agent's record stays beside it
 
-Verification rule v3 (fixed 2026-11-09 after the experiment, E:/contests/.../G_代理實驗.md; docs/agent_draft.md):
+Verification rule v3 (fixed 2026-11-09 after the experiment; docs/agent.md):
   invoice number, UBN, date: the code-run OCR of the agent's zoom crop reads the same string, or the page OCR has it
       and the first reader (9B) said the same; a UBN that OCR places with the other party is refused.
   amounts: net + tax = total and tax = 5% of net, AND the other two numbers were confirmed on the first reading or

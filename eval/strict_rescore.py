@@ -1,4 +1,4 @@
-"""Re-score a real-photo set from saved reads, default vs strict reading (docs/strict_draft.md). No model is loaded:
+"""Re-score a real-photo set from saved reads, default vs strict reading (docs/strict.md). No model is loaded:
 every read must already be in data/out/cache (from an official run).
 
     python -I eval/strict_rescore.py real_tw --model Qwen3.5-9B-int4-ov --out eval/results_real_tw_strict.json

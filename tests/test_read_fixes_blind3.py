@@ -1,4 +1,4 @@
-"""Three reading fixes made after the first blind3 run (docs/blind3_draft.md). Every page here is a handful of
+"""Three reading fixes made after the first blind3 run (docs/blind3.md). Every page here is a handful of
 hand-made OCR lines (no model, no photo, no blind3 file): the situations are the ones real receipts produce.
 
 1. An invoice number printed with a gap between its letters and digits ('AB　12345678') comes back from OCR as two

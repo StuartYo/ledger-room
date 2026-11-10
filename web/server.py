@@ -1029,7 +1029,7 @@ def main():
     ap.add_argument("--behind-tls-proxy", action="store_true",
                     help="plain HTTP here, but only an HTTPS reverse proxy reaches this port; marks the cookie Secure")
     a = ap.parse_args()
-    # The app always runs strict reading unless told not to (docs/strict_draft.md): a filing value needs two agreeing
+    # The app always runs strict reading unless told not to (docs/strict.md): a filing value needs two agreeing
     # sources, otherwise a person sees it. LEDGER_STRICT_READ=0 or --not-strict turns it off for development.
     pipeline.STRICT = not a.not_strict and os.environ.get("LEDGER_STRICT_READ", "1") != "0"
     if bool(a.cert) != bool(a.key):

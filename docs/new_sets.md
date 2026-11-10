@@ -1,4 +1,4 @@
-# Two new synthetic test sets (draft, not part of the README yet)
+# Two new synthetic test sets
 
 Both sets are synthetic. The author wrote the programs that draw them, and the author knows the six rules. No real
 company, person, receipt or photo is in either set. UBNs are random numbers that pass (or, where planted, fail) the
@@ -78,7 +78,7 @@ The issues are the same six types, shown in new ways:
   re-renders the images and compares them.
 - No model, no OCR and no Ledger Room code has been run on it. The only check before freezing opened each image and
   checked its size. The first and only scored run is planned on the B70. (Run on 2026-11-06; results and the fixes
-  made after it: `docs/blind3_draft.md`.)
+  made after it: `docs/blind3.md`.)
 
 **Known biases.**
 - The author still knows the rules and wrote the code earlier, so he knows what kind of mistake it makes. Writing
