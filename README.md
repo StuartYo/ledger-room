@@ -30,7 +30,7 @@ documents and the files disagree.
 | **113 real invoices of one company: its old ledger let 15 wrong rows through, Ledger Room let 0** (10 misread, all 10 held for a person) | `eval/results_real_company.json` → `old_ledger_vs_ledger_room` |
 | **58 public real Taiwan photos, strict reading: 0 let through** (41 real_tw + 17 real_tw2, the latter a first run with its key frozen before any read) | `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` |
 | **Review agent, strict reading: 19 of 52 held vouchers cleared, 0 cleared wrong** (every proposal re-checked by code) | `eval/results_agent_b70_strict.json` → `summary` |
-| **9B reader + 27B agent on one card: 21.8 GB with both reading, 22.4 GB peak** of 32 GB | `eval/results_one_card.json`, `eval/results_agent_b70.json` → `memory_gb.peak` |
+| **9B reader + 27B (second reader or agent) on one card: 21.8 GB with both reading, 22.4 GB peak** of 32 GB | `eval/results_one_card.json`, `eval/results_agent_b70.json` → `memory_gb.peak` |
 | **3.6 s a voucher on one B70 vs 9.8 s on the host's two Xeon CPUs**, same code, same 12 documents | `eval/results_same_host_cpu_vs_b70_live.json` |
 | **About 1,000 vouchers an hour a card; two cards for 70 minutes: 2,042 an hour, 0 restarts** | `eval/results_concurrency.json`, `eval/results_longrun_zoompad.json` |
 | **194 W while reading, 187 Wh per 1,000 vouchers** (one card) | `eval/results_concurrency.json` → `rows[0].power` |
