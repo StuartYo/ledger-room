@@ -110,9 +110,9 @@ Bookkeeping and CPA firms that file VAT for many clients. They buy it to catch w
 | | |
 |---|---|
 | **The need** | 85,288 VAT violation cases in Taiwan in 2025; 25,600 were fined, NT$3.5 billion in total (MOF Fiscal Statistics Yearbook 2025, Table 3-29). A claim corrected before filing draws no fine (Tax Collection Act Art. 48-1). |
-| **Example** | A NT$6,000 non-deductible input-tax claim found first by the tax office draws a NT$6,000 fine (MOF penalty reference table, 1×); a duplicate claim draws 0.5× the tax. Two catches like that a year pay a 50-client firm's licence. |
+| **Example** | A NT$6,000 non-deductible input-tax claim found first by the tax office draws a NT$6,000 fine (MOF penalty reference table, 1×); a duplicate claim draws 0.5× the tax. Two catches like that a year pay a 50-client firm's licence; eight a year pay off the box and the licence within three years, about 1 return in 38 (50 clients × 6 returns a year). |
 | **Price** | One office box built from ASUS parts with an ASUS UGen B70 card, NT$91,501–99,245 (ASUS parts NT$66,451–74,195 of it at Taiwan retail), plus NT$20 per client a month, at least 50 clients (NT$12,000 a year). |
-| **Market** | About 8,600 bookkeeping firms and 2,435 CPA firms in Taiwan; first the roughly 320 large ones. |
+| **Market** | About 8,600 bookkeeping firms and 2,435 CPA firms in Taiwan; first the roughly 320 large ones. Every box carries NT$66,451–74,195 of ASUS parts: NT$21–24 million for the first 320 firms. |
 | **Route** | An on-premises bundle on ASUS EXPERTHUB, whose four finance apps do not serve firms that file for many clients. |
 
 Staff also key less: every voucher arrives already read, and they open only the held ones (53 of 113 on a real
