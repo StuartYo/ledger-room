@@ -10,9 +10,9 @@ still in doubt, each with its reason and legal source. Client data never leaves 
 *Live run on the organizers' Arc Pro B70 host, synthetic sample firm. Also: a held voucher with its reason, the law
 it rests on, the evidence crops and one-key decisions ([second screenshot](docs/img/held_voucher_b70_host.png)).*
 
+<!-- On submission day add as the first table row:  | Demo video | [YouTube](VIDEO_URL) |  -->
 | Start here | |
 |---|---|
-| Demo video | <!-- VIDEO_URL --> *(link added on submission day)* |
 | Slides | [docs/slides.pdf](docs/slides.pdf) |
 | System architecture | [System architecture](#system-architecture) · [how it works, in detail](docs/how_it_works.md) |
 | Model information | [Model information](#model-information) |
