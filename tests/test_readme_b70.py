@@ -1,4 +1,7 @@
-"""The B70 section of README.md must quote the B70 results files (no model needed)."""
+"""The B70 numbers in README.md and docs/ must quote the B70 results files (no model needed).
+
+The full tables live in docs/b70_measurements.md, docs/real_data.md and docs/evaluation.md; the README shows a summary. Every file is
+checked: a number may appear in any of them, and no stale statement may appear in any of them."""
 import json
 from pathlib import Path
 
@@ -6,7 +9,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 EV = ROOT / "eval"
-README = (ROOT / "README.md").read_text(encoding="utf-8")
+FILES = [ROOT / "README.md", ROOT / "docs" / "b70_measurements.md", ROOT / "docs" / "real_data.md",
+         ROOT / "docs" / "evaluation.md"]   # evaluation.md: the Stage II targets and their B70 result
+README = "\n\n".join(p.read_text(encoding="utf-8") for p in FILES)
 
 
 def _load(name):
@@ -17,7 +22,7 @@ def _load(name):
 
 
 def _has(s):
-    assert s in README, f"README does not say {s!r} (taken from the B70 results files)"
+    assert s in README, f"README.md / docs do not say {s!r} (taken from the B70 results files)"
 
 
 def test_stale_b70_statements_are_gone():
@@ -137,3 +142,47 @@ def test_real_company_strict_and_evidence():
     _has(f"9B strict: {af['sent_to_a_person']} sent to a person ({fr['Qwen3.5-9B-int4-ov']['strict']['sent_to_a_person']} before), "
          f"{af['wrong_and_not_held_excluding_bills']} wrong and not held outside the\nbills")
     assert README.count("used with the owner's consent") == 1
+
+
+def test_readme_first_screen_quotes_the_results_files():
+    """The README summary tables (first screen) must equal the results files they name."""
+    txt = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    def has(s):
+        assert s in txt, f"README.md does not say {s!r}"
+
+    ol = _load("results_real_company.json")["old_ledger_vs_ledger_room"]
+    l9 = ol["ledger_room_strict"]["Qwen3.5-9B-int4-ov"]
+    has(f"{ol['old_ledger']['rows']} real invoices of one company: its old ledger let {ol['old_ledger']['wrong_rows']} "
+        f"wrong rows through, Ledger Room let {l9['wrong_and_not_held']}")
+    has(f"({l9['read_wrong']} misread, all {l9['read_wrong']} held for a person)")
+    tw = _load("results_real_tw_strict.json")["conditions"]["strict"]
+    tw2 = _load("results_real_tw2_strict.json")["conditions"]["strict"]
+    assert tw["wrong_and_not_held"] == 0 and tw2["wrong_and_not_held"] == 0
+    has("58 public real Taiwan photos, strict reading: 0 let through")
+    ag = _load("results_agent_b70_strict.json")
+    assert ag["strict"] is True and ag["measured_on_b70"] is True
+    a = ag["summary"]
+    has(f"{a['cleared']} of {a['held']} held vouchers cleared, {a['slipped']} cleared wrong")
+    one = _load("results_one_card.json")["peak_card_memory"]["gpu_resident_vram0_gb"]
+    agp = _load("results_agent_b70.json")["memory_gb"]["peak"]["gpu_resident_vram0_gb"]
+    has(f"{one} GB with both reading, {agp} GB peak")
+    cv = _load("results_same_host_cpu_vs_b70_live.json")["runs"]
+    has(f"{cv['GPU.1']['sec_per_doc']['mean']} s a voucher on one B70 vs {cv['CPU']['sec_per_doc']['mean']} s")
+    has(f"| {cv['CPU']['docs_per_hour']} vs {cv['GPU.1']['docs_per_hour']:,} | "
+        f"{cv['CPU']['sec_per_doc']['median']} s vs {cv['GPU.1']['sec_per_doc']['median']} s |")
+    c1 = _load("results_concurrency.json")["rows"][0]
+    c2 = _load("results_concurrency_2cards.json")["rows"][0]
+    lr = _load("results_longrun_zoompad.json")["rows"][0]
+    assert lr["restarts"] == 0 and c1["workers_loaded"] == 1
+    for r in (c1, c2, lr):
+        has(f"| {r['docs_per_hour']:,} | {r['latency_s']['p50']:.1f} s | {r['latency_s']['p95']:.1f} s |")
+        has(f"| {round(r['power']['wh_per_1000_docs'])} | ")
+    has(f"two cards for 70 minutes: {lr['docs_per_hour']:,} an hour, {lr['restarts']} restarts")
+    has(f"**{round(c1['power']['by_device']['GPU.0']['mean_w'])} W while reading, "
+        f"{round(c1['power']['wh_per_1000_docs'])} Wh per 1,000 vouchers**")
+    off = _load("results_offline_b70.json")
+    assert off["pass"] is True and off["non_local_connections"] == []
+    has(f"({off['docs_read']} documents read, {off['duration_s']} s watched)")
+    for s in ("UGen workstation", "On the UGen B70", "What it does not do yet", "work in progress", "still off"):
+        assert s not in txt, s

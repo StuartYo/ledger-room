@@ -13,10 +13,10 @@ def test_thresholds_are_the_frozen_readme_numbers():
     assert t9["key_fields_wrong_max"] == round(20 / 337 + 0.01, 4)
     assert (t9["f1_min"], t9["sec_per_doc_pass"], t9["sec_per_doc_goal"]) == (0.95, 6.0, 3.0)
     assert (t27["f1_min"], t27["sec_per_doc_pass"], t27["key_fields_wrong_below"]) == (0.95, 12.0, "9B")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme = (ROOT / "docs" / "evaluation.md").read_text(encoding="utf-8")   # the frozen targets table lives here
     for s in ["no worse than the laptop 9B plus 1 point", "at least 0.95", "pass 6 s, goal 3 s", "at most 12 s",
               "6% (20/337)"]:
-        assert s in readme, f"README target text changed: {s!r}; bench_b70 thresholds must follow the frozen table"
+        assert s in readme, f"docs/evaluation.md target text changed: {s!r}; bench_b70 thresholds must follow the frozen table"
 
 
 def _res(fer, f1, sec, pure=True):

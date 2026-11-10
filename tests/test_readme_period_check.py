@@ -1,15 +1,16 @@
-"""The period-check paragraph of README.md must quote eval/results_period_check.json, and the measurement must hold."""
+"""The period-check paragraph of docs/evaluation.md must quote eval/results_period_check.json, and the measurement must hold."""
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-README = (ROOT / "README.md").read_text(encoding="utf-8")
+# the paragraph is in docs/evaluation.md, the rule rows in docs/how_it_works.md
+README = "\n\n".join((ROOT / "docs" / n).read_text(encoding="utf-8") for n in ("evaluation.md", "how_it_works.md"))
 R = json.loads((ROOT / "eval" / "results_period_check.json").read_text(encoding="utf-8"))
 KEY = json.loads((ROOT / "eval" / "expected_period_check_synthetic.json").read_text(encoding="utf-8"))
 
 
 def _has(s):
-    assert s in README, f"README does not say {s!r} (taken from eval/results_period_check.json)"
+    assert s in README, f"docs/evaluation.md / docs/how_it_works.md do not say {s!r} (taken from eval/results_period_check.json)"
 
 
 def test_readme_quotes_the_results_file():

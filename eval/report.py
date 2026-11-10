@@ -1,4 +1,4 @@
-"""Render eval/RESULTS.md and the README results block from eval/results.json (never by hand).
+"""Render eval/RESULTS.md and the results block of docs/evaluation.md from eval/results.json (never by hand).
 
 python -m eval.report
 """
@@ -314,7 +314,7 @@ def readme_block(R: dict) -> str:
         f"{pc['after_false_flags']} false flags after, {pc['before_flags']} flags before. "
         f"Gate (stop if pure model >= {R['gate_threshold']:.0%} of Ledger Room): "
         f"max ratio {f2(R['gate']['max_ratio'])}, {'STOP' if R['gate']['stop'] else 'pass'}. "
-        "Details: [eval/RESULTS.md](eval/RESULTS.md).",
+        "Details: [eval/RESULTS.md](../eval/RESULTS.md).",
         "",
         f"Runtime choice, measured on {ms['measured_on']} ({ms['hardware']}):",
         "",
@@ -442,7 +442,7 @@ def results_md(R: dict) -> str:
 def write():
     R = load()
     (ROOT / "eval" / "RESULTS.md").write_text(results_md(R), encoding="utf-8")
-    rp = ROOT / "README.md"
+    rp = ROOT / "docs" / "evaluation.md"
     txt = rp.read_text(encoding="utf-8")
     block = readme_block(R)
     if START in txt and END in txt:
@@ -450,7 +450,7 @@ def write():
     else:
         txt = txt.rstrip() + "\n\n## Results\n\n" + block + "\n"
     rp.write_text(txt, encoding="utf-8")
-    print("wrote eval/RESULTS.md and README block")
+    print("wrote eval/RESULTS.md and the docs/evaluation.md block")
 
 
 if __name__ == "__main__":

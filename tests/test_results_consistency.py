@@ -1,4 +1,4 @@
-"""Every number shown in README.md and eval/RESULTS.md must come from eval/results.json."""
+"""Every number in the results block of docs/evaluation.md and in eval/RESULTS.md must come from eval/results.json."""
 import re
 from pathlib import Path
 
@@ -18,10 +18,10 @@ def R():
 
 
 def test_readme_block_matches_json(R):
-    txt = (ROOT / "README.md").read_text(encoding="utf-8")
+    txt = (ROOT / "docs" / "evaluation.md").read_text(encoding="utf-8")
     m = re.search(re.escape(report.START) + r".*?" + re.escape(report.END), txt, flags=re.S)
-    assert m, "README results block missing"
-    assert m.group(0) == report.readme_block(R), "README numbers differ from eval/results.json; run python -m eval.report"
+    assert m, "docs/evaluation.md results block missing"
+    assert m.group(0) == report.readme_block(R), "docs/evaluation.md numbers differ from eval/results.json; run python -m eval.report"
 
 
 def test_results_md_matches_json(R):

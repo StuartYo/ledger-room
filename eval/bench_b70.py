@@ -17,7 +17,8 @@ What it does, in order:
   4. Judges each Stage II target against the numbers frozen in README.md on 2026-10-14 (below) and writes
      eval/results_b70.json (dry run: eval/results_b70_dryrun.json; it never overwrites the real file).
 
-The thresholds are copied from README.md "Stage II targets on the B70" and must not be edited here.
+The thresholds are copied from README.md "Stage II targets on the B70" (the table now lives in docs/evaluation.md)
+and must not be edited here.
 """
 from __future__ import annotations
 

@@ -2,7 +2,7 @@
 
 python -m eval.run_eval              # run what is not cached yet (loads the model), then score
 python -m eval.run_eval --score-only # re-score from caches only
-Then: python -m eval.report          # writes eval/RESULTS.md and the README results block
+Then: python -m eval.report          # writes eval/RESULTS.md and the results block in docs/evaluation.md
 """
 from __future__ import annotations
 
