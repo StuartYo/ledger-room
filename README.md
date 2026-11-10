@@ -103,30 +103,20 @@ flowchart LR
 - A firm sees all of its clients' vouchers. Only a firm-level system can notice the same receipt claimed by two
   different client companies.
 
-## Who buys it and when it pays back
+## Who buys it
 
-The buyer is the bookkeeping firm, in two versions:
+Bookkeeping and CPA firms that file VAT for many clients. They buy it to catch wrong claims before the tax office does.
 
-- **Pro**: one ASUS workstation with an Arc Pro B70 and the 9B reader, for larger bookkeeping firms or CPA firms.
-  Box NT$81,590–148,189 at Taiwan prices read on 2026-11-07 (a parts build plus the card, up to an ASUS WS780T plus the
-  card; card NT$51,290), plus a licence of NT$1,500–3,000 a month per firm (our proposal).
-- **Lite**: the firm's own laptop with the 2B reader, for small bookkeeping firms; licence only.
+| | |
+|---|---|
+| **The need** | 85,288 VAT violation cases in Taiwan in 2025; 25,600 were fined, NT$3.5 billion in total (MOF Fiscal Statistics Yearbook 2025, Table 3-29). A claim corrected before filing draws no fine (Tax Collection Act Art. 48-1). |
+| **Example** | A NT$6,000 non-deductible input-tax claim found first by the tax office draws a NT$6,000 fine (MOF penalty reference table, 1×); a duplicate claim draws 0.5× the tax. Two catches like that a year pay a 50-client firm's licence. |
+| **Price** | One office box built from ASUS parts with an ASUS UGen B70 card, NT$91,501–99,245 (ASUS parts NT$66,451–74,195 of it at Taiwan retail), plus NT$20 per client a month, at least 50 clients (NT$12,000 a year). |
+| **Market** | About 8,600 bookkeeping firms and 2,435 CPA firms in Taiwan; first the roughly 320 large ones. |
+| **Route** | An on-premises bundle on ASUS EXPERTHUB, whose four finance apps do not serve firms that file for many clients. |
 
-Method (our calculation): the saving is 45 s of keying a voucher (published estimates 30–60 s) at NT$219 a staff hour
-(NT$38,000 a month, MOL 2025 occupational wage survey, no employer costs), counted only for vouchers that pass
-without a person; a held voucher saves nothing. Share that passes, real data, strict reading: 9B 54% (the real
-company's 121 invoices) to 66% (the 41 public photos); 2B 19% to 49%. Vouchers a month are our assumption, paper
-only (e-invoices come from the platform download; scanning not counted).
-
-| Paper vouchers a month | Pro: payback | Lite: net a month |
-|---|---|---|
-| 10,000 | 5–13 months | +NT$2,200 to +NT$11,900 |
-| 5,000 | 11–34 months | −NT$400 to +NT$5,200 |
-| 2,000 | no payback in 3 years (39 months at best): Lite | −NT$2,000 to +NT$1,200 |
-
-Pro best case: cheaper box, higher pass share, lower licence; worst case the opposite. At 10,000 vouchers a month and
-30 s a voucher: 8–22 months; at 60 s: 4–9 months. The keying speed comes from published estimates, and a held
-voucher's check time is not counted; a pilot firm measures both. The speed was measured on the organizers' B70 host.
+Staff also key less: every voucher arrives already read, and they open only the held ones (53 of 113 on a real
+company's invoices). Every number and its source: [slides](docs/slides.pdf), slide 9 and appendix A7.
 
 ## What it checks
 
