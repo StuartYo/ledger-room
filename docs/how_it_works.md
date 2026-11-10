@@ -138,8 +138,8 @@ The review panel has a "How it was checked" line that opens into what the AI loo
 or the refusal reason) and the outcome. A value the agent changed is shown like a value a person corrected (first
 reading struck through) and tagged "agent · code-verified". A person can reject the agent's result with one button: the
 document goes back to its first reading and its original reasons, and both the rejection and any restore are written to
-the audit log, as is every agent check. The 27B and the 9B reader fit on one B70 card (peak 22.4 GB VRAM plus 15.3 GB
-GTT). A machine without the 27B turns the agent off by itself and the status shows "agent not enabled on this machine";
+the audit log, as is every agent check. The 27B and the 9B reader fit on one B70 card (peak 23.0 GB VRAM plus 15.2 GB GTT in the strict-reading agent run,
+`eval/results_agent_b70_strict.json`; 22.4 GB VRAM plus 15.3 GB GTT in the default-reading run, `eval/results_agent_b70.json`). A machine without the 27B turns the agent off by itself and the status shows "agent not enabled on this machine";
 `LEDGER_AGENT=0` turns it off, `LEDGER_AGENT_DEVICE=GPU.1` moves it to another card.
 
 Measured on the Arc Pro B70 (GPU.1, `eval/results_agent_b70.json`, two runs, identical outcomes per document):

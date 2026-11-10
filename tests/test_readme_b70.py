@@ -165,8 +165,9 @@ def test_readme_first_screen_quotes_the_results_files():
     a = ag["summary"]
     has(f"{a['cleared']} of {a['held']} held vouchers cleared, {a['slipped']} cleared wrong")
     one = _load("results_one_card.json")["peak_card_memory"]["gpu_resident_vram0_gb"]
-    agp = _load("results_agent_b70.json")["memory_gb"]["peak"]["gpu_resident_vram0_gb"]
-    has(f"{one} GB with both reading, {agp} GB peak")
+    ags = _load("results_agent_b70_strict.json")["memory_gb"]["peak"]["gpu_resident_vram0_gb"]
+    has(f"{one} GB with both reading, {ags:.1f} GB peak in the agent run (strict reading)")
+    assert ags >= _load("results_agent_b70.json")["memory_gb"]["peak"]["gpu_resident_vram0_gb"]   # the higher peak is quoted
     cv = _load("results_same_host_cpu_vs_b70_live.json")["runs"]
     has(f"{cv['GPU.1']['sec_per_doc']['mean']} s a voucher on one B70 vs {cv['CPU']['sec_per_doc']['mean']} s")
     has(f"| {cv['CPU']['docs_per_hour']} vs {cv['GPU.1']['docs_per_hour']:,} | "

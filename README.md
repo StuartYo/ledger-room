@@ -30,12 +30,12 @@ documents and the files disagree.
 | **113 real invoices of one company: its old ledger let 15 wrong rows through, Ledger Room let 0** (10 misread, all 10 held for a person) | `eval/results_real_company.json` → `old_ledger_vs_ledger_room` |
 | **58 public real Taiwan photos, strict reading: 0 let through** (41 real_tw + 17 real_tw2, the latter a first run with its key frozen before any read) | `eval/results_real_tw_strict.json`, `eval/results_real_tw2_strict.json` |
 | **Review agent, strict reading: 19 of 52 held vouchers cleared, 0 cleared wrong** (every proposal re-checked by code) | `eval/results_agent_b70_strict.json` → `summary` |
-| **9B reader + 27B (second reader or agent) on one card: 21.8 GB with both reading, 22.4 GB peak** of 32 GB | `eval/results_one_card.json`, `eval/results_agent_b70.json` → `memory_gb.peak` |
+| **9B reader + 27B agent on one card: 21.8 GB with both reading, 23.0 GB peak in the agent run (strict reading), of 32 GB** | `eval/results_one_card.json`, `eval/results_agent_b70_strict.json` → `memory_gb.peak` |
 | **3.6 s a voucher on one B70 vs 9.8 s on the host's two Xeon CPUs**, same code, same 12 documents | `eval/results_same_host_cpu_vs_b70_live.json` |
 | **About 1,000 vouchers an hour a card; two cards for 70 minutes: 2,042 an hour, 0 restarts** | `eval/results_concurrency.json`, `eval/results_longrun_zoompad.json` |
 | **194 W while reading, 187 Wh per 1,000 vouchers** (one card) | `eval/results_concurrency.json` → `rows[0].power` |
 | **0 outside connections during a live batch** (47 documents read, 175.8 s watched) | `eval/results_offline_b70.json` |
-| **The 401 filing pair passes the MOF offline checking program** (synthetic client) | `tests/fixtures/platform/mof_checked/`, [log](docs/stage2_log.md) |
+| **The 401 filing pair passes the MOF offline checking program** (sample client) | `tests/fixtures/platform/mof_checked/`, [log](docs/stage2_log.md) |
 
 ### Performance on the Arc Pro B70
 
@@ -179,7 +179,7 @@ e-invoices, utility bills, customs certificates and more) are listed in
 | Part | Model | Format and runtime | Size on disk | Card memory on the B70 | License |
 |---|---|---|---|---|---|
 | Reader (every voucher) | Qwen3.5-9B, [OpenVINO/Qwen3.5-9B-int4-ov](https://huggingface.co/OpenVINO/Qwen3.5-9B-int4-ov) | INT4 weights, OpenVINO GenAI 2026.4.1 `VLMPipeline`, thinking mode off | 5.85 GB | 6.6 GB reading (7.99 GB peak in the held-out bench) | Apache-2.0 |
-| Review agent (held vouchers only) | Qwen3.5-27B, [OpenVINO/Qwen3.5-27B-int4-ov](https://huggingface.co/OpenVINO/Qwen3.5-27B-int4-ov) | INT4, OpenVINO GenAI 2026.4.1, temperature 0 | 14.87 GB | 17.04 GB alone; 9B + 27B together 21.8 GB, 22.4 GB peak | Apache-2.0 |
+| Review agent (held vouchers only) | Qwen3.5-27B, [OpenVINO/Qwen3.5-27B-int4-ov](https://huggingface.co/OpenVINO/Qwen3.5-27B-int4-ov) | INT4, OpenVINO GenAI 2026.4.1, temperature 0 | 14.87 GB | 17.04 GB alone; 9B + 27B together 21.8 GB, 23.0 GB peak (agent run, strict reading) | Apache-2.0 |
 | Reader on a laptop (Lite) | Qwen3.5-2B, [OpenVINO/Qwen3.5-2B-int4-ov](https://huggingface.co/OpenVINO/Qwen3.5-2B-int4-ov) | INT4, OpenVINO GenAI, Intel iGPU | 1.99 GB | 3.9 GB peak RAM on the laptop iGPU | Apache-2.0 |
 | OCR | PP-OCRv4 det/rec from the `rapidocr-onnxruntime` 1.4.4 wheel | ONNX models compiled and run by OpenVINO 2026.4.1, CPU | bundled in the wheel | none (CPU) | Apache-2.0 |
 
@@ -189,7 +189,7 @@ e-invoices, utility bills, customs certificates and more) are listed in
 - Devices: `LEDGER_DEVICE=GPU.0` for the reader, `LEDGER_AGENT_DEVICE` for the agent (same card by default),
   `LEDGER_OCR_DEVICE=CPU`; images go to the model at a long side of at most 896 px (`LEDGER_VLM_MAX_SIDE`).
 - Sources of the memory figures: `eval/results_concurrency.json` (fdinfo per reader), `eval/results_b70.json` →
-  `results[...].peak_memory`, `eval/results_one_card.json`, `eval/results_agent_b70.json`, `eval/reader_memory.json`.
+  `results[...].peak_memory`, `eval/results_one_card.json`, `eval/results_agent_b70_strict.json`, `eval/reader_memory.json`.
 - Why 9B on the B70 and not the 2B: on the same 113 real invoices the 2B sends 91 to a person and lets 1 through, the 9B
   sends 53 and lets 0 through; on the 336-voucher real box 36.1% against 21.5% of fields wrong
   ([details](docs/b70_measurements.md#headline-results-in-detail)). Runtime choices and the Stage II targets set before
